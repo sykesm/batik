@@ -26,6 +26,9 @@ func FullVersion() string {
 // a zero time is returned.
 func Built() time.Time {
 	// ignore parse failure and return a zero time
-	built, _ := time.Parse(time.RFC3339, Timestamp)
+	built, err := time.Parse(time.RFC3339, Timestamp)
+	if err != nil {
+		built = time.Now()
+	}
 	return built
 }
