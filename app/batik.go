@@ -8,8 +8,8 @@ import (
 	"io"
 	"sort"
 
-	cli "github.com/urfave/cli/v2"
 	"github.com/sykesm/batik/pkg/buildinfo"
+	cli "github.com/urfave/cli/v2"
 )
 
 func Batik(args []string, stdin io.ReadCloser, stdout io.Writer) *cli.App {
