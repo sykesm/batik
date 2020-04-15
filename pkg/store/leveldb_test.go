@@ -30,10 +30,10 @@ import (
 )
 
 func BenchmarkLevelDB(b *testing.B) {
+	b.StopTimer()
+
 	path, cleanup := btest.TempDir(b, "", "level")
 	defer cleanup()
-
-	b.StopTimer()
 
 	db, err := NewLevelDB(path)
 	require.NoError(b, err)
@@ -61,7 +61,19 @@ func BenchmarkLevelDB(b *testing.B) {
 	}
 }
 
-func TestLevelDB_Existence(t *testing.T) {
+func testExistence(t *testing.T, kv KV) {
+	_, err := kv.Get([]byte("not_exist"))
+	require.Error(t, err)
+
+	err = kv.Put([]byte("exist"), []byte{})
+	require.NoError(t, err)
+
+	val, err := kv.Get([]byte("exist"))
+	require.NoError(t, err)
+	require.Equal(t, []byte{}, val)
+}
+
+func TestLevelDBExistence(t *testing.T) {
 	path, cleanup := btest.TempDir(t, "", "level")
 	defer cleanup()
 
@@ -69,15 +81,15 @@ func TestLevelDB_Existence(t *testing.T) {
 	require.NoError(t, err)
 	defer btest.Close(t, db)
 
-	_, err = db.Get([]byte("not_exist"))
-	require.Error(t, err)
+	testExistence(t, db)
+}
 
-	err = db.Put([]byte("exist"), []byte{})
+func TestLevelDBMemStorage(t *testing.T) {
+	db, err := NewLevelDB("")
 	require.NoError(t, err)
+	defer btest.Close(t, db)
 
-	val, err := db.Get([]byte("exist"))
-	require.NoError(t, err)
-	require.Equal(t, []byte{}, val)
+	testExistence(t, db)
 }
 
 func TestLevelDB(t *testing.T) {
@@ -121,34 +133,82 @@ func TestLevelDBWriteBatch(t *testing.T) {
 	path, cleanup := btest.TempDir(t, "", "level")
 	defer cleanup()
 
-	db, err := NewLevelDB(path)
-	require.NoError(t, err)
+	t.Run("CloseWithoutCommit", func(t *testing.T) {
+		db, err := NewLevelDB(path)
+		require.NoError(t, err)
 
-	wb := db.NewWriteBatch()
-	for i := 0; i < 100000; i++ {
-		require.NoError(t, wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1))))
-	}
+		wb := db.NewWriteBatch()
+		for i := 0; i < 100000; i++ {
+			require.NoError(t, wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1))))
+		}
+		require.NoError(t, db.Close()) // Close without committing the WriteBatch
 
-	require.NoError(t, db.Close())
+		db2, err := NewLevelDB(path)
+		require.NoError(t, err)
+		defer btest.Close(t, db2)
 
-	db2, err := NewLevelDB(path)
-	require.NoError(t, err)
+		_, err = db2.Get([]byte("key_batch100000"))
+		require.EqualError(t, errors.Cause(err), ErrNotFound.Error())
+	})
 
-	_, err = db2.Get([]byte("key_batch100000"))
-	require.EqualError(t, errors.Cause(err), ErrNotFound.Error())
+	t.Run("CommitThenClose", func(t *testing.T) {
+		db, err := NewLevelDB(path)
+		require.NoError(t, err)
 
-	wb = db2.NewWriteBatch()
-	for i := 0; i < 100000; i++ {
-		require.NoError(t, wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1))))
-	}
+		wb := db.NewWriteBatch()
+		for i := 0; i < 100000; i++ {
+			require.NoError(t, wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1))))
+		}
 
-	require.NoError(t, wb.Commit())
-	require.NoError(t, db2.Close())
+		require.NoError(t, wb.Commit())
+		require.NoError(t, db.Close())
 
-	db3, err := NewLevelDB(path)
-	require.NoError(t, err)
+		db2, err := NewLevelDB(path)
+		require.NoError(t, err)
+		defer btest.Close(t, db2)
 
-	v, err := db3.Get([]byte("key_batch100000"))
-	require.NoError(t, err)
-	require.EqualValues(t, []byte("val_batch100000"), v)
+		v, err := db2.Get([]byte("key_batch100000"))
+		require.NoError(t, err)
+		require.EqualValues(t, []byte("val_batch100000"), v)
+	})
+
+	t.Run("DeleteAndPut", func(t *testing.T) {
+		path, cleanup := btest.TempDir(t, "", "level")
+		defer cleanup()
+
+		db, err := NewLevelDB(path)
+		require.NoError(t, err)
+		defer btest.Close(t, db)
+
+		wb := db.NewWriteBatch()
+		require.Equal(t, 0, wb.Count())
+
+		require.NoError(t, wb.Delete([]byte("key_batch1")))
+		require.Equal(t, 1, wb.Count())
+
+		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
+		require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
+		require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
+		require.Equal(t, 4, wb.Count())
+
+		require.NoError(t, wb.Commit())
+	})
+
+	t.Run("Clear", func(t *testing.T) {
+		path, cleanup := btest.TempDir(t, "", "level")
+		defer cleanup()
+
+		db, err := NewLevelDB(path)
+		require.NoError(t, err)
+		defer btest.Close(t, db)
+
+		wb := db.NewWriteBatch()
+		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
+		require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
+		require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
+		require.Equal(t, 3, wb.Count())
+
+		wb.Clear()
+		require.Equal(t, 0, wb.Count())
+	})
 }

@@ -59,15 +59,7 @@ func TestInmemExistence(t *testing.T) {
 	kv := NewInmem()
 	defer btest.Close(t, kv)
 
-	_, err := kv.Get([]byte("not_exist"))
-	require.Error(t, err)
-
-	err = kv.Put([]byte("exist"), []byte{})
-	require.NoError(t, err)
-
-	val, err := kv.Get([]byte("exist"))
-	require.NoError(t, err)
-	require.Equal(t, []byte{}, val)
+	testExistence(t, kv)
 }
 
 func TestInmemKV(t *testing.T) {
@@ -103,10 +95,10 @@ func TestInmemIdempotentClose(t *testing.T) {
 }
 
 func TestInmemWriteBatch(t *testing.T) {
-	kv := NewInmem()
-	defer btest.Close(t, kv)
-
 	t.Run("DeleteAndPut", func(t *testing.T) {
+		kv := NewInmem()
+		defer btest.Close(t, kv)
+
 		wb := kv.NewWriteBatch()
 		require.Equal(t, 0, wb.Count())
 
@@ -119,13 +111,16 @@ func TestInmemWriteBatch(t *testing.T) {
 		require.Equal(t, 4, wb.Count())
 
 		require.NoError(t, wb.Commit())
+
+		mv, err := kv.MultiGet([]byte("key_batch1"), []byte("key_batch2"), []byte("key_batch3"))
+		require.NoError(t, err)
+		require.Equal(t, [][]byte{[]byte("val_batch1"), []byte("val_batch2"), []byte("val_batch3")}, mv)
 	})
 
-	mv, err := kv.MultiGet([]byte("key_batch1"), []byte("key_batch2"), []byte("key_batch3"))
-	require.NoError(t, err)
-	require.Equal(t, [][]byte{[]byte("val_batch1"), []byte("val_batch2"), []byte("val_batch3")}, mv)
-
 	t.Run("Clear", func(t *testing.T) {
+		kv := NewInmem()
+		defer btest.Close(t, kv)
+
 		wb := kv.NewWriteBatch()
 		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
 		require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
