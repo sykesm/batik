@@ -11,6 +11,8 @@ var (
 	Version   = "dev"     // Version is the version of the program that was built.
 	GitCommit = "unknown" // GitCommit is the git commit that was used when the program was built.
 	Timestamp = "unknown" // Timestamp is the time when the program build process was started.
+
+	now func() time.Time = time.Now
 )
 
 // FullVersion returns the concatenation of the version and the git commit
@@ -28,7 +30,7 @@ func Built() time.Time {
 	// ignore parse failure and return a zero time
 	built, err := time.Parse(time.RFC3339, Timestamp)
 	if err != nil {
-		built = time.Now()
+		built = now()
 	}
 	return built
 }

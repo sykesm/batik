@@ -56,7 +56,7 @@ func New(app *cli.App, opts ...Option) *REPL {
 	return r
 }
 
-func newScanner(r io.Reader) *scanner.Scanner {
+func newScanner(r io.Reader, stderr io.Writer) *scanner.Scanner {
 	s := &scanner.Scanner{}
 	s.Init(r)
 	s.Mode ^= scanner.ScanChars      // don't scan go character literals ('\n' is a char literal)
@@ -72,12 +72,15 @@ func newScanner(r io.Reader) *scanner.Scanner {
 			return unicode.IsLetter(ch) || unicode.IsDigit(ch)
 		}
 	}
+	s.Error = func(s *scanner.Scanner, msg string) {
+		fmt.Fprintf(stderr, "%s: %s\n", msg, s.TokenText())
+	}
 
 	return s
 }
 
 // TODO: The scanning functions should probabably all hang off an object that
-// embeds the text/scanner instead we interact with.
+// embeds the text/scanner that we interact with.
 
 // scanCommandLine attempts to read and tokenize a command and arguments.
 // Tokens are separted by whitespace and a unescaped newline characters
@@ -111,14 +114,15 @@ func scanCommandLine(s *scanner.Scanner) ([]string, error) {
 
 // Run starts executing the REPL control loop.
 func (r *REPL) Run(ctx context.Context) {
-	s := newScanner(r.stdin)
+	s := newScanner(r.stdin, r.stderr)
 	for {
 		args, err := scanCommandLine(s)
 		if err == io.EOF {
 			return
 		}
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(r.app.ErrWriter, "scan command line: %s", err.Error())
+			continue
 		}
 		if len(args) == 0 {
 			continue

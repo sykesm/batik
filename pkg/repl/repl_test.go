@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"testing"
 	"text/scanner"
@@ -40,7 +41,7 @@ func TestScanner(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			reader := strings.NewReader(tt.input)
-			s := newScanner(reader)
+			s := newScanner(reader, ioutil.Discard)
 			var output []string
 			for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
 				output = append(output, s.TokenText())
@@ -64,14 +65,14 @@ func TestScanCommandLine(t *testing.T) {
 		{"command \"quoted argument string\"", []string{"command", "quoted argument string"}, ""},
 		{"command \\\nacross many\\\nlines", []string{"command", "across", "many", "lines"}, ""},
 		{`command \\ goo`, []string{"command", `\`, "goo"}, ""},
+		{`"unmatched'`, nil, "invalid syntax"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			reader := strings.NewReader(tt.input + "\n")
-			s := newScanner(reader)
+			s := newScanner(strings.NewReader(tt.input+"\n"), ioutil.Discard)
 			args, err := scanCommandLine(s)
 			if tt.expectedErr == "" {
 				gt.Expect(err).NotTo(HaveOccurred())
@@ -108,6 +109,7 @@ func TestRun(t *testing.T) {
 	}{
 		{"", "", "", ""},
 		{"echo", "echo arg1 arg2 arg3", "[arg1 arg2 arg3]", ""},
+		{"echo", `"arg1'`, "", "literal not terminated: \"arg1'\nscan command line: invalid syntax"},
 		{"fail", "fail", "", "command failed: bummer..."},
 	}
 
