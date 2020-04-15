@@ -31,11 +31,21 @@ var _ WriteBatch = (*leveldbWriteBatch)(nil)
 
 type leveldbWriteBatch struct {
 	batch *leveldb.Batch
+	kv    *LevelDBKV
 }
 
 func (b *leveldbWriteBatch) Put(key, value []byte) error {
 	b.batch.Put(key, value)
 	return nil
+}
+
+func (b *leveldbWriteBatch) Delete(key []byte) error {
+	b.batch.Delete(key)
+	return nil
+}
+
+func (b *leveldbWriteBatch) Commit() error {
+	return b.kv.commitWriteBatch(b)
 }
 
 func (b *leveldbWriteBatch) Clear() {
@@ -44,15 +54,6 @@ func (b *leveldbWriteBatch) Clear() {
 
 func (b *leveldbWriteBatch) Count() int {
 	return b.batch.Len()
-}
-
-func (b *leveldbWriteBatch) Destroy() {
-	b.batch = nil
-}
-
-func (b *leveldbWriteBatch) Delete(key []byte) error {
-	b.batch.Delete(key)
-	return nil
 }
 
 var _ KV = (*LevelDBKV)(nil)
@@ -97,15 +98,11 @@ func (l *LevelDBKV) Put(key, value []byte) error {
 func (l *LevelDBKV) NewWriteBatch() WriteBatch {
 	return &leveldbWriteBatch{
 		batch: &leveldb.Batch{},
+		kv:    l,
 	}
 }
 
-func (l *LevelDBKV) CommitWriteBatch(batch WriteBatch) error {
-	wb, ok := batch.(*leveldbWriteBatch)
-	if !ok {
-		return errors.New("leveldb: not fed in a proper leveldb write batch")
-	}
-
+func (l *LevelDBKV) commitWriteBatch(wb *leveldbWriteBatch) error {
 	return l.db.Write(wb.batch, nil)
 }
 

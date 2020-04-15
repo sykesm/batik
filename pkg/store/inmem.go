@@ -27,15 +27,23 @@ import (
 	"github.com/pkg/errors"
 )
 
-type kvPair struct {
+type kvOpType uint8
+
+const (
+	kvOpTypeDel kvOpType = iota + 1
+	kvOpTypePut
+)
+
+type kvOp struct {
+	opType     kvOpType
 	key, value []byte
 }
 
 var _ WriteBatch = (*inmemWriteBatch)(nil)
 
 type inmemWriteBatch struct {
-	pairs      []kvPair
-	deleteKeys [][]byte
+	ops []kvOp
+	kv  *InmemKV
 }
 
 // It is safe to modify the contents of the argument after Put returns but not
@@ -47,30 +55,30 @@ func (b *inmemWriteBatch) Put(key, value []byte) error {
 	valueCopy := make([]byte, len(value))
 	copy(valueCopy, value)
 
-	b.pairs = append(b.pairs, kvPair{key: keyCopy, value: valueCopy})
+	b.ops = append(b.ops, kvOp{opType: kvOpTypePut, key: keyCopy, value: valueCopy})
 
 	return nil
-}
-
-func (b *inmemWriteBatch) Clear() {
-	b.pairs = make([]kvPair, 0)
-}
-
-func (b *inmemWriteBatch) Count() int {
-	return len(b.pairs)
-}
-
-func (b *inmemWriteBatch) Destroy() {
-	b.pairs = nil
 }
 
 func (b *inmemWriteBatch) Delete(key []byte) error {
 	keyCopy := make([]byte, len(key))
 	copy(keyCopy, key)
 
-	b.deleteKeys = append(b.deleteKeys, keyCopy)
+	b.ops = append(b.ops, kvOp{opType: kvOpTypeDel, key: keyCopy, value: nil})
 
 	return nil
+}
+
+func (b *inmemWriteBatch) Commit() error {
+	return b.kv.commitWriteBatch(b)
+}
+
+func (b *inmemWriteBatch) Clear() {
+	b.ops = nil
+}
+
+func (b *inmemWriteBatch) Count() int {
+	return len(b.ops)
 }
 
 var _ KV = (*InmemKV)(nil)
@@ -165,28 +173,30 @@ var (
 )
 
 func (s *InmemKV) NewWriteBatch() WriteBatch {
-	return writeBatchPool.Get().(WriteBatch)
+	wb := writeBatchPool.Get().(*inmemWriteBatch)
+	wb.kv = s
+	return wb
 }
 
-func (s *InmemKV) CommitWriteBatch(batch WriteBatch) error {
+func (s *InmemKV) commitWriteBatch(wb *inmemWriteBatch) error {
 	s.Lock()
 	defer s.Unlock()
 
-	if wb, ok := batch.(*inmemWriteBatch); ok {
-		for _, pair := range wb.pairs {
-			_ = s.db.Set(pair.key, pair.value)
+	for _, op := range wb.ops {
+		switch op.opType {
+		case kvOpTypePut:
+			_ = s.db.Set(op.key, op.value)
+		case kvOpTypeDel:
+			_ = s.db.Remove(op.key)
+		default:
+			return errors.Errorf("inmem: unknown op type %d", op.opType)
 		}
-
-		for _, key := range wb.deleteKeys {
-			_ = s.db.Remove(key)
-		}
-
-		writeBatchPool.Put(wb)
-
-		return nil
 	}
 
-	return errors.New("inmem: not fed in a proper in-memory write batch")
+	wb.ops = nil
+	writeBatchPool.Put(wb)
+
+	return nil
 }
 
 // It is safe to modify the contents of the arguments after Delete returns but

@@ -30,8 +30,8 @@ import (
 func BenchmarkInmem(b *testing.B) {
 	b.StopTimer()
 
-	db := NewInmem()
-	defer btest.Close(b, db)
+	kv := NewInmem()
+	defer btest.Close(b, kv)
 
 	b.StartTimer()
 	defer b.StopTimer()
@@ -45,27 +45,94 @@ func BenchmarkInmem(b *testing.B) {
 		_, err = rand.Read(randomValue[:])
 		require.NoError(b, err)
 
-		err = db.Put(randomKey[:], randomValue[:])
+		err = kv.Put(randomKey[:], randomValue[:])
 		require.NoError(b, err)
 
-		value, err := db.Get(randomKey[:])
+		value, err := kv.Get(randomKey[:])
 		require.NoError(b, err)
 
 		require.EqualValues(b, randomValue[:], value)
 	}
 }
 
-func TestExistence(t *testing.T) {
-	db := NewInmem()
-	defer btest.Close(t, db)
+func TestInmemExistence(t *testing.T) {
+	kv := NewInmem()
+	defer btest.Close(t, kv)
 
-	_, err := db.Get([]byte("not_exist"))
+	_, err := kv.Get([]byte("not_exist"))
 	require.Error(t, err)
 
-	err = db.Put([]byte("exist"), []byte{})
+	err = kv.Put([]byte("exist"), []byte{})
 	require.NoError(t, err)
 
-	val, err := db.Get([]byte("exist"))
+	val, err := kv.Get([]byte("exist"))
 	require.NoError(t, err)
 	require.Equal(t, []byte{}, val)
+}
+
+func TestInmemKV(t *testing.T) {
+	kv := NewInmem()
+	defer btest.Close(t, kv)
+
+	err := kv.Put([]byte("exist"), []byte("value"))
+	require.NoError(t, err)
+
+	v, err := kv.Get([]byte("exist"))
+	require.NoError(t, err)
+	require.Equal(t, []byte("value"), v)
+
+	require.NoError(t, kv.Delete([]byte("exist")))
+	_, err = kv.Get([]byte("exist"))
+	require.Error(t, err)
+
+	wb := kv.NewWriteBatch()
+	require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
+	require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
+	require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
+	require.NoError(t, wb.Commit())
+
+	mv, err := kv.MultiGet([]byte("key_batch1"), []byte("key_batch2"), []byte("key_batch3"))
+	require.NoError(t, err)
+	require.Equal(t, [][]byte{[]byte("val_batch1"), []byte("val_batch2"), []byte("val_batch3")}, mv)
+}
+
+func TestInmemIdempotentClose(t *testing.T) {
+	kv := NewInmem()
+	require.NoError(t, kv.Close())
+	require.NoError(t, kv.Close())
+}
+
+func TestInmemWriteBatch(t *testing.T) {
+	kv := NewInmem()
+	defer btest.Close(t, kv)
+
+	t.Run("DeleteAndPut", func(t *testing.T) {
+		wb := kv.NewWriteBatch()
+		require.Equal(t, 0, wb.Count())
+
+		require.NoError(t, wb.Delete([]byte("key_batch1")))
+		require.Equal(t, 1, wb.Count())
+
+		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
+		require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
+		require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
+		require.Equal(t, 4, wb.Count())
+
+		require.NoError(t, wb.Commit())
+	})
+
+	mv, err := kv.MultiGet([]byte("key_batch1"), []byte("key_batch2"), []byte("key_batch3"))
+	require.NoError(t, err)
+	require.Equal(t, [][]byte{[]byte("val_batch1"), []byte("val_batch2"), []byte("val_batch3")}, mv)
+
+	t.Run("Clear", func(t *testing.T) {
+		wb := kv.NewWriteBatch()
+		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
+		require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
+		require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
+		require.Equal(t, 3, wb.Count())
+
+		wb.Clear()
+		require.Equal(t, 0, wb.Count())
+	})
 }

@@ -93,8 +93,8 @@ func TestLevelDB(t *testing.T) {
 	wb := db.NewWriteBatch()
 	require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
 	require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
-	require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch2")))
-	require.NoError(t, db.CommitWriteBatch(wb))
+	require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
+	require.NoError(t, wb.Commit())
 
 	require.NoError(t, db.Close())
 
@@ -117,7 +117,7 @@ func TestLevelDB(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestLevelDB_WriteBatch(t *testing.T) {
+func TestLevelDBWriteBatch(t *testing.T) {
 	path, cleanup := btest.TempDir(t, "", "level")
 	defer cleanup()
 
@@ -142,7 +142,7 @@ func TestLevelDB_WriteBatch(t *testing.T) {
 		require.NoError(t, wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1))))
 	}
 
-	require.NoError(t, db2.CommitWriteBatch(wb))
+	require.NoError(t, wb.Commit())
 	require.NoError(t, db2.Close())
 
 	db3, err := NewLevelDB(path)

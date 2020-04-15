@@ -32,14 +32,14 @@ type KV interface {
 	io.Closer
 
 	Get(key []byte) ([]byte, error)
-	MultiGet(keys ...[]byte) ([][]byte, error)
-
 	Put(key, value []byte) error
+	Delete(key []byte) error
 
 	NewWriteBatch() WriteBatch
-	CommitWriteBatch(batch WriteBatch) error
+}
 
-	Delete(key []byte) error
+type MultiGetter interface {
+	MultiGet(keys ...[]byte) ([][]byte, error)
 }
 
 // WriteBatch batches a collection of put operations in memory before
@@ -54,8 +54,8 @@ type KV interface {
 type WriteBatch interface {
 	Put(key, value []byte) error
 	Delete(key []byte) error
+	Commit() error
 
 	Clear()
 	Count() int
-	Destroy()
 }
