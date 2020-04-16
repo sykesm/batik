@@ -29,17 +29,24 @@ import (
 	"github.com/sykesm/batik/pkg/tested"
 )
 
-func BenchmarkLevelDB(b *testing.B) {
-	b.StopTimer()
-
+func BenchmarkLevelDBFileSystem(b *testing.B) {
 	path, cleanup := tested.TempDir(b, "", "level")
 	defer cleanup()
 
+	benchmarkLevelDB(b, path)
+}
+
+func BenchmarkLevelDBInMemory(b *testing.B) {
+	benchmarkLevelDB(b, "")
+}
+
+func benchmarkLevelDB(b *testing.B, path string) {
 	db, err := NewLevelDB(path)
 	require.NoError(b, err)
 	defer tested.Close(b, db)
 
-	b.StartTimer()
+	b.ResetTimer()
+	b.ReportAllocs()
 	defer b.StopTimer()
 
 	for i := 0; i < b.N; i++ {

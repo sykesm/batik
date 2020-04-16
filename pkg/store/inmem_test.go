@@ -34,6 +34,7 @@ func BenchmarkInmem(b *testing.B) {
 	defer tested.Close(b, kv)
 
 	b.StartTimer()
+	b.ReportAllocs()
 	defer b.StopTimer()
 
 	for i := 0; i < b.N; i++ {
