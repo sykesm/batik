@@ -9,7 +9,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/huandu/skiplist v0.0.0-20191129113331-b90e16040d86
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/onsi/gomega v1.9.0
 	github.com/pkg/errors v0.9.1
