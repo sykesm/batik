@@ -24,14 +24,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/sykesm/batik/pkg/btest"
+	"github.com/sykesm/batik/pkg/tested"
 )
 
 func BenchmarkInmem(b *testing.B) {
 	b.StopTimer()
 
 	kv := NewInmem()
-	defer btest.Close(b, kv)
+	defer tested.Close(b, kv)
 
 	b.StartTimer()
 	defer b.StopTimer()
@@ -57,14 +57,14 @@ func BenchmarkInmem(b *testing.B) {
 
 func TestInmemExistence(t *testing.T) {
 	kv := NewInmem()
-	defer btest.Close(t, kv)
+	defer tested.Close(t, kv)
 
 	testExistence(t, kv)
 }
 
 func TestInmemKV(t *testing.T) {
 	kv := NewInmem()
-	defer btest.Close(t, kv)
+	defer tested.Close(t, kv)
 
 	err := kv.Put([]byte("exist"), []byte("value"))
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestInmemIdempotentClose(t *testing.T) {
 func TestInmemWriteBatch(t *testing.T) {
 	t.Run("DeleteAndPut", func(t *testing.T) {
 		kv := NewInmem()
-		defer btest.Close(t, kv)
+		defer tested.Close(t, kv)
 
 		wb := kv.NewWriteBatch()
 		require.Equal(t, 0, wb.Count())
@@ -119,7 +119,7 @@ func TestInmemWriteBatch(t *testing.T) {
 
 	t.Run("Clear", func(t *testing.T) {
 		kv := NewInmem()
-		defer btest.Close(t, kv)
+		defer tested.Close(t, kv)
 
 		wb := kv.NewWriteBatch()
 		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))

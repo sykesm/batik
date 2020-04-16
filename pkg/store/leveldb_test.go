@@ -26,18 +26,18 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/sykesm/batik/pkg/btest"
+	"github.com/sykesm/batik/pkg/tested"
 )
 
 func BenchmarkLevelDB(b *testing.B) {
 	b.StopTimer()
 
-	path, cleanup := btest.TempDir(b, "", "level")
+	path, cleanup := tested.TempDir(b, "", "level")
 	defer cleanup()
 
 	db, err := NewLevelDB(path)
 	require.NoError(b, err)
-	defer btest.Close(b, db)
+	defer tested.Close(b, db)
 
 	b.StartTimer()
 	defer b.StopTimer()
@@ -74,12 +74,12 @@ func testExistence(t *testing.T, kv KV) {
 }
 
 func TestLevelDBExistence(t *testing.T) {
-	path, cleanup := btest.TempDir(t, "", "level")
+	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
 	db, err := NewLevelDB(path)
 	require.NoError(t, err)
-	defer btest.Close(t, db)
+	defer tested.Close(t, db)
 
 	testExistence(t, db)
 }
@@ -87,13 +87,13 @@ func TestLevelDBExistence(t *testing.T) {
 func TestLevelDBMemStorage(t *testing.T) {
 	db, err := NewLevelDB("")
 	require.NoError(t, err)
-	defer btest.Close(t, db)
+	defer tested.Close(t, db)
 
 	testExistence(t, db)
 }
 
 func TestLevelDB(t *testing.T) {
-	path, cleanup := btest.TempDir(t, "", "level")
+	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
 	db, err := NewLevelDB(path)
@@ -130,7 +130,7 @@ func TestLevelDB(t *testing.T) {
 }
 
 func TestLevelDBWriteBatch(t *testing.T) {
-	path, cleanup := btest.TempDir(t, "", "level")
+	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
 	t.Run("CloseWithoutCommit", func(t *testing.T) {
@@ -145,7 +145,7 @@ func TestLevelDBWriteBatch(t *testing.T) {
 
 		db2, err := NewLevelDB(path)
 		require.NoError(t, err)
-		defer btest.Close(t, db2)
+		defer tested.Close(t, db2)
 
 		_, err = db2.Get([]byte("key_batch100000"))
 		require.EqualError(t, errors.Cause(err), ErrNotFound.Error())
@@ -165,7 +165,7 @@ func TestLevelDBWriteBatch(t *testing.T) {
 
 		db2, err := NewLevelDB(path)
 		require.NoError(t, err)
-		defer btest.Close(t, db2)
+		defer tested.Close(t, db2)
 
 		v, err := db2.Get([]byte("key_batch100000"))
 		require.NoError(t, err)
@@ -173,12 +173,12 @@ func TestLevelDBWriteBatch(t *testing.T) {
 	})
 
 	t.Run("DeleteAndPut", func(t *testing.T) {
-		path, cleanup := btest.TempDir(t, "", "level")
+		path, cleanup := tested.TempDir(t, "", "level")
 		defer cleanup()
 
 		db, err := NewLevelDB(path)
 		require.NoError(t, err)
-		defer btest.Close(t, db)
+		defer tested.Close(t, db)
 
 		wb := db.NewWriteBatch()
 		require.Equal(t, 0, wb.Count())
@@ -195,12 +195,12 @@ func TestLevelDBWriteBatch(t *testing.T) {
 	})
 
 	t.Run("Clear", func(t *testing.T) {
-		path, cleanup := btest.TempDir(t, "", "level")
+		path, cleanup := tested.TempDir(t, "", "level")
 		defer cleanup()
 
 		db, err := NewLevelDB(path)
 		require.NoError(t, err)
-		defer btest.Close(t, db)
+		defer tested.Close(t, db)
 
 		wb := db.NewWriteBatch()
 		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
