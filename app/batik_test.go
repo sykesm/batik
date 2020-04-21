@@ -4,6 +4,8 @@
 package app
 
 import (
+	"bytes"
+	"io/ioutil"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -12,7 +14,10 @@ import (
 func TestBatik(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	app := Batik(nil, nil, nil)
+	in := bytes.NewBuffer(nil)
+	out := bytes.NewBuffer(nil)
+	err := bytes.NewBuffer(nil)
+	app := Batik(nil, ioutil.NopCloser(in), out, err)
 	gt.Expect(app.Copyright).To(MatchRegexp("© Copyright IBM Corporation [\\d]{4}. All rights reserved."))
 
 	gt.Expect(app.Flags).To(BeEmpty())

@@ -4,16 +4,23 @@
 package repl
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"os"
-	"strconv"
-	"text/scanner"
-	"unicode"
 
+	"github.com/peterh/liner"
 	cli "github.com/urfave/cli/v2"
+	"golang.org/x/crypto/ssh/terminal"
 )
+
+type exitError string
+
+// ErrExit should be returned by commands that cleanly terminate the REPL.
+const ErrExit = exitError("exit")
+
+func (ee exitError) Error() string { return string(ee) }
 
 // A REPL implements an interactive Read, Evaluate, Print Loop for a cli.App.
 type REPL struct {
@@ -56,72 +63,97 @@ func New(app *cli.App, opts ...Option) *REPL {
 	return r
 }
 
-func newScanner(r io.Reader, stderr io.Writer) *scanner.Scanner {
-	s := &scanner.Scanner{}
-	s.Init(r)
-	s.Mode ^= scanner.ScanChars      // don't scan go character literals ('\n' is a char literal)
-	s.Mode ^= scanner.ScanComments   // don't scan go comments
-	s.Mode ^= scanner.ScanRawStrings // don't scan go raw strings (`this is a raw string`)
-	// s.Mode ^= scanner.ScanStrings    // don't scan go go strings ("string" is a string)
-	s.Whitespace ^= 1 << '\n' // don't skip new lines
-	s.IsIdentRune = func(ch rune, i int) bool {
-		switch ch {
-		case '_', '.', '-', ',':
-			return true
-		default:
-			return unicode.IsLetter(ch) || unicode.IsDigit(ch)
-		}
-	}
-	s.Error = func(s *scanner.Scanner, msg string) {
-		fmt.Fprintf(stderr, "%s: %s\n", msg, s.TokenText())
-	}
-
-	return s
+// A prompter deals with issuing a command prmopt and reading the command line.
+// This encapsulates the contract of liner.State.
+type prompter interface {
+	Prompt(prompt string) (string, error)
 }
 
-// TODO: The scanning functions should probabably all hang off an object that
-// embeds the text/scanner that we interact with.
+// A scanerPrompter is a prompter implementation that simply reads lines of text
+// from the embedded scanner.
+type scannerPrompter struct {
+	scanner *bufio.Scanner
+}
 
-// scanCommandLine attempts to read and tokenize a command and arguments.
-// Tokens are separted by whitespace and a unescaped newline characters
-// indicate the end of the command.
-//
-// BUG(mjs): This does not properly handle basic shell semantics such as
-// single quoted and multi-line quoted strings.
-func scanCommandLine(s *scanner.Scanner) ([]string, error) {
-	var args []string
+func (s *scannerPrompter) Prompt(p string) (string, error) {
+	if !s.scanner.Scan() && s.scanner.Err() == nil {
+		return "", io.EOF
+	}
+	return s.scanner.Text(), nil
+}
+
+// readCommandLine  reads and tokenizes a command and arguments.
+func (r *REPL) readCommandLine(prompter prompter) ([]string, error) {
+	scanner := &Scanner{}
+
+	primaryPrompt := fmt.Sprintf("%s%% ", r.app.Name)
+	secondaryPrompt := "> "
+
+	prompt := primaryPrompt
+	incomplete := false
 	for {
-		switch s.Scan() {
-		case '\\':
-			if ch := s.Next(); ch != '\n' {
-				args = append(args, string(ch))
-			}
-		case '\n':
-			return args, nil
-		case scanner.String:
-			str, err := strconv.Unquote(s.TokenText())
-			if err != nil {
-				return nil, err
-			}
-			args = append(args, str)
-		case scanner.EOF:
-			return nil, io.EOF
-		default:
-			args = append(args, s.TokenText())
+		line, err := prompter.Prompt(prompt)
+		if err == io.EOF && incomplete {
+			break
 		}
+		if err == io.EOF {
+			return nil, io.EOF
+		}
+		if err == liner.ErrPromptAborted {
+			prompt = primaryPrompt
+			scanner.Reset()
+			continue
+		}
+
+		incomplete, err = scanner.ScanLine(line)
+		if err != nil {
+			return nil, err
+		}
+		if !incomplete {
+			break
+		}
+		prompt = secondaryPrompt
+	}
+
+	return scanner.Tokens()
+}
+
+func isInteractiveTerminal() bool {
+	if !terminal.IsTerminal(int(os.Stdin.Fd())) {
+		return false
+	}
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		return false
+	}
+	return true
+}
+
+func (r *REPL) newPrompter() prompter {
+	if r.stdin == os.Stdin && r.stdout == os.Stdout && isInteractiveTerminal() {
+		rl := liner.NewLiner()
+		rl.SetCtrlCAborts(true)
+		return rl
+	}
+
+	return &scannerPrompter{
+		scanner: bufio.NewScanner(r.stdin),
 	}
 }
 
 // Run starts executing the REPL control loop.
-func (r *REPL) Run(ctx context.Context) {
-	s := newScanner(r.stdin, r.stderr)
+func (r *REPL) Run(ctx context.Context) error {
+	prompter := r.newPrompter()
+	if closer, ok := prompter.(io.Closer); ok {
+		defer closer.Close()
+	}
+
 	for {
-		args, err := scanCommandLine(s)
+		args, err := r.readCommandLine(prompter)
 		if err == io.EOF {
-			return
+			return nil
 		}
 		if err != nil {
-			fmt.Fprintf(r.app.ErrWriter, "scan command line: %s", err.Error())
+			fmt.Fprintf(r.app.ErrWriter, "%s\n", err.Error())
 			continue
 		}
 		if len(args) == 0 {
@@ -130,6 +162,9 @@ func (r *REPL) Run(ctx context.Context) {
 
 		args = append([]string{r.app.Name}, args...)
 		err = r.app.RunContext(ctx, args)
+		if err == ErrExit {
+			return nil
+		}
 		if err != nil {
 			fmt.Fprintf(r.app.ErrWriter, "command failed: %s", err.Error())
 		}

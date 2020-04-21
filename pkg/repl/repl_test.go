@@ -8,81 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"testing"
-	"text/scanner"
 
 	. "github.com/onsi/gomega"
 	cli "github.com/urfave/cli/v2"
 )
-
-func TestScanner(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected []string
-	}{
-		{`simple`, "simple", []string{"simple"}},
-		{`word1 word2`, "word1 word2", []string{"word1", "word2"}},
-		{`newline`, "new\nline", []string{"new", "\n", "line"}},
-		{`newline`, "new\nline", []string{"new", "\n", "line"}},
-		{`go comment`, "// comment", []string{"/", "/", "comment"}},
-		{`id_with_underscores`, "id_with_underscore", []string{"id_with_underscore"}},
-		{`id.with.dots`, "id.with.dots", []string{"id.with.dots"}},
-		{`alphanum`, "abc 123 abc123", []string{"abc", "123", "abc123"}},
-		{`decimal`, "1.2345", []string{"1.2345"}},
-		{`"double quoted strings"`, `"double quoted strings"`, []string{`"double quoted strings"`}},
-		{`'single quoted strings'`, `'single quoted strings'`, []string{"'", "single", "quoted", "strings", "'"}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gt := NewGomegaWithT(t)
-
-			reader := strings.NewReader(tt.input)
-			s := newScanner(reader, ioutil.Discard)
-			var output []string
-			for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-				output = append(output, s.TokenText())
-			}
-			gt.Expect(output).To(Equal(tt.expected))
-			gt.Expect(s.ErrorCount).To(Equal(0))
-		})
-	}
-}
-
-func TestScanCommandLine(t *testing.T) {
-	tests := []struct {
-		input       string
-		expected    []string
-		expectedErr string
-	}{
-		{"command", []string{"command"}, ""},
-		{"command subcommand", []string{"command", "subcommand"}, ""},
-		{"command --flag1 arg1", []string{"command", "--flag1", "arg1"}, ""},
-		{"command --flag1 comma,separated,args", []string{"command", "--flag1", "comma,separated,args"}, ""},
-		{"command \"quoted argument string\"", []string{"command", "quoted argument string"}, ""},
-		{"command \\\nacross many\\\nlines", []string{"command", "across", "many", "lines"}, ""},
-		{`command \\ goo`, []string{"command", `\`, "goo"}, ""},
-		{`"unmatched'`, nil, "invalid syntax"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			gt := NewGomegaWithT(t)
-
-			s := newScanner(strings.NewReader(tt.input+"\n"), ioutil.Discard)
-			args, err := scanCommandLine(s)
-			if tt.expectedErr == "" {
-				gt.Expect(err).NotTo(HaveOccurred())
-				gt.Expect(args).To(Equal(tt.expected))
-			} else {
-				gt.Expect(err).To(MatchError(tt.expectedErr))
-			}
-		})
-	}
-}
 
 func TestRun(t *testing.T) {
 	commands := []*cli.Command{
@@ -107,9 +38,9 @@ func TestRun(t *testing.T) {
 		expectedOut string
 		expectedErr string
 	}{
-		{"", "", "", ""},
+		{"empty", "", "", ""},
 		{"echo", "echo arg1 arg2 arg3", "[arg1 arg2 arg3]", ""},
-		{"echo", `"arg1'`, "", "literal not terminated: \"arg1'\nscan command line: invalid syntax"},
+		{"echo-unterminated", `"arg1'`, "", "scanner: double quoted string not terminated\n"},
 		{"fail", "fail", "", "command failed: bummer..."},
 	}
 
