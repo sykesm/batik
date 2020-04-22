@@ -69,13 +69,14 @@ func shellApp() (*cli.App, error) {
 
 	app.Commands = []*cli.Command{
 		{
-			Name:    "exit",
-			Aliases: []string{"quit", ":q"},
+			Name:        "exit",
+			Description: "exit the shell",
 			Action: func(ctx *cli.Context) error {
 				return repl.ErrExit
 			},
 		},
 	}
+	sort.Sort(cli.CommandsByName(app.Commands))
 
 	// Generate the help message
 	s := strings.Builder{}

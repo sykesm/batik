@@ -75,6 +75,7 @@ type scannerPrompter struct {
 	scanner *bufio.Scanner
 }
 
+// Prompt is used to prompt and retrieve command line input.
 func (s *scannerPrompter) Prompt(p string) (string, error) {
 	if !s.scanner.Scan() && s.scanner.Err() == nil {
 		return "", io.EOF
@@ -82,9 +83,9 @@ func (s *scannerPrompter) Prompt(p string) (string, error) {
 	return s.scanner.Text(), nil
 }
 
-// readCommandLine  reads and tokenizes a command and arguments.
-func (r *REPL) readCommandLine(prompter prompter) ([]string, error) {
-	scanner := &Scanner{}
+// readCommand reads and tokenizes a command and arguments.
+func (r *REPL) readCommand(prompter prompter) ([]string, error) {
+	scanner := &argScanner{}
 
 	primaryPrompt := fmt.Sprintf("%s%% ", r.app.Name)
 	secondaryPrompt := "> "
@@ -115,9 +116,11 @@ func (r *REPL) readCommandLine(prompter prompter) ([]string, error) {
 		prompt = secondaryPrompt
 	}
 
-	return scanner.Tokens()
+	return scanner.Args()
 }
 
+// isInteractiveTerminal returns true iff os.Stdin and os.Stdout are terminal
+// devices.
 func isInteractiveTerminal() bool {
 	if !terminal.IsTerminal(int(os.Stdin.Fd())) {
 		return false
@@ -128,7 +131,11 @@ func isInteractiveTerminal() bool {
 	return true
 }
 
-func (r *REPL) newPrompter() prompter {
+// prompter returns an instance of a command prompt that can be used to read
+// input from the command line. The liner package does not provide any
+// mechanism to replace stdin or stdout streams so we use the scannerPrompter
+// in environments without a terminal.
+func (r *REPL) prompter() prompter {
 	if r.stdin == os.Stdin && r.stdout == os.Stdout && isInteractiveTerminal() {
 		rl := liner.NewLiner()
 		rl.SetCtrlCAborts(true)
@@ -140,15 +147,16 @@ func (r *REPL) newPrompter() prompter {
 	}
 }
 
-// Run starts executing the REPL control loop.
+// Run executes the REPL control loop. The method returns when any command returns
+// ErrExit or when EOF is encountered on stdin.
 func (r *REPL) Run(ctx context.Context) error {
-	prompter := r.newPrompter()
+	prompter := r.prompter()
 	if closer, ok := prompter.(io.Closer); ok {
 		defer closer.Close()
 	}
 
 	for {
-		args, err := r.readCommandLine(prompter)
+		args, err := r.readCommand(prompter)
 		if err == io.EOF {
 			return nil
 		}

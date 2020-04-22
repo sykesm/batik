@@ -19,20 +19,19 @@ const (
 	singleQuoteState
 )
 
-// TODO(mjs): unexport
-type Scanner struct {
-	state        state
-	text         string
-	pos          int
-	buf          *bytes.Buffer
-	moreExpected bool
-	tokens       []string
+type argScanner struct {
+	state      state
+	text       string
+	pos        int
+	buf        *bytes.Buffer
+	incomplete bool
+	args       []string
 }
 
-func (s *Scanner) ScanLine(text string) (bool, error) {
+func (s *argScanner) ScanLine(text string) (bool, error) {
 	s.text = text
 	s.pos = 0
-	s.moreExpected = false
+	s.incomplete = false
 
 	for ch := s.next(); ch != eol; ch = s.next() {
 		if ch == utf8.RuneError {
@@ -70,7 +69,7 @@ func (s *Scanner) ScanLine(text string) (bool, error) {
 		case '\\':
 			ch = s.next()
 			if ch == eol { // line continuation
-				s.moreExpected = true
+				s.incomplete = true
 				return true, nil
 			}
 
@@ -110,16 +109,38 @@ func (s *Scanner) ScanLine(text string) (bool, error) {
 	return s.state != initialState, nil
 }
 
-func (s *Scanner) completeToken() {
+func (s *argScanner) Args() ([]string, error) {
+	if s.state == doubleQuoteState {
+		return nil, errors.New("scanner: double quoted string not terminated")
+	}
+	if s.state == singleQuoteState {
+		return nil, errors.New("scanner: single quoted string not terminated")
+	}
+	if s.incomplete {
+		return nil, errors.New("scanner: incomplete scan")
+	}
+	return s.args, nil
+}
+
+func (s *argScanner) Reset() {
+	s.state = initialState
+	s.text = ""
+	s.pos = 0
+	s.buf = nil
+	s.incomplete = false
+	s.args = nil
+}
+
+func (s *argScanner) completeToken() {
 	if s.buf == nil {
 		return
 	}
 
-	s.tokens = append(s.tokens, s.buf.String())
+	s.args = append(s.args, s.buf.String())
 	s.buf = nil
 }
 
-func (s *Scanner) writeRune(ch rune) error {
+func (s *argScanner) writeRune(ch rune) error {
 	if s.buf == nil {
 		s.buf = bytes.NewBuffer(nil)
 	}
@@ -128,7 +149,7 @@ func (s *Scanner) writeRune(ch rune) error {
 	return err
 }
 
-func (s *Scanner) next() rune {
+func (s *argScanner) next() rune {
 	if s.pos >= len(s.text) {
 		return eol
 	}
@@ -137,26 +158,4 @@ func (s *Scanner) next() rune {
 	s.pos += l
 
 	return ch // may be RuneError
-}
-
-func (s *Scanner) Tokens() ([]string, error) {
-	if s.state == doubleQuoteState {
-		return nil, errors.New("scanner: double quoted string not terminated")
-	}
-	if s.state == singleQuoteState {
-		return nil, errors.New("scanner: single quoted string not terminated")
-	}
-	if s.moreExpected {
-		return nil, errors.New("scanner: incomplete scan")
-	}
-	return s.tokens, nil
-}
-
-func (s *Scanner) Reset() {
-	s.state = initialState
-	s.text = ""
-	s.pos = 0
-	s.buf = nil
-	s.moreExpected = false
-	s.tokens = nil
 }
