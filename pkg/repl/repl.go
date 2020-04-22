@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
+	"unicode"
 
 	"github.com/peterh/liner"
 	cli "github.com/urfave/cli/v2"
@@ -139,6 +141,20 @@ func (r *REPL) prompter() prompter {
 	if r.stdin == os.Stdin && r.stdout == os.Stdout && isInteractiveTerminal() {
 		rl := liner.NewLiner()
 		rl.SetCtrlCAborts(true)
+		rl.SetTabCompletionStyle(liner.TabPrints)
+
+		// TODO(mjs): This is a really bare-bones starting point.
+		rl.SetCompleter(func(line string) []string {
+			l := strings.TrimLeftFunc(line, unicode.IsSpace)
+
+			var candidates []string
+			for _, command := range r.app.Commands {
+				if strings.HasPrefix(command.Name, l) {
+					candidates = append(candidates, command.Name)
+				}
+			}
+			return candidates
+		})
 		return rl
 	}
 
