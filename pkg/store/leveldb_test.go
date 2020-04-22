@@ -71,6 +71,7 @@ func benchmarkLevelDB(b *testing.B, path string) {
 func testExistence(t *testing.T, kv KV) {
 	_, err := kv.Get([]byte("not_exist"))
 	require.Error(t, err)
+	require.True(t, errors.Is(err, ErrNotFound))
 
 	err = kv.Put([]byte("exist"), []byte{})
 	require.NoError(t, err)
@@ -129,11 +130,16 @@ func TestLevelDB(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, [][]byte{[]byte("val_batch1"), []byte("val_batch2")}, mv)
 
+	_, err = db2.MultiGet([]byte("missing"), []byte("key_batch2"))
+	require.Error(t, err)
+	require.True(t, errors.Is(err, ErrNotFound))
+
 	// Check delete
 	require.NoError(t, db2.Delete([]byte("exist")))
 
 	_, err = db2.Get([]byte("exist"))
 	require.Error(t, err)
+	require.True(t, errors.Is(err, ErrNotFound))
 }
 
 func TestLevelDBWriteBatch(t *testing.T) {
