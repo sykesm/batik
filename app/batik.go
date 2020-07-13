@@ -10,9 +10,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	cli "github.com/urfave/cli/v2"
 	"github.com/sykesm/batik/pkg/buildinfo"
 	"github.com/sykesm/batik/pkg/repl"
-	cli "github.com/urfave/cli/v2"
 )
 
 func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {

@@ -9,9 +9,9 @@ import (
 	"runtime"
 	"time"
 
+	cli "github.com/urfave/cli/v2"
 	"github.com/sykesm/batik/app"
 	"github.com/sykesm/batik/pkg/buildinfo"
-	cli "github.com/urfave/cli/v2"
 )
 
 func main() {
