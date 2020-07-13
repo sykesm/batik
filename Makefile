@@ -5,7 +5,7 @@ VERSION ?= "dev"
 BUILD_TIME ?= $(shell date +%Y-%m-%dT%H:%M:%S%:z)
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 
-all: batik
+all: batik checks
 
 .PHONY: batik
 batik:
@@ -18,3 +18,14 @@ batik:
 		" \
 		-o dist/$@ \
 		github.com/sykesm/batik/cmd/batik
+
+checks: linting unit-test
+
+.PHONY: unit-test unit-tests
+unit-tests: unit-test
+unit-test:
+	scripts/run-unit-tests
+
+.PHONY: lintint
+linting:
+	scripts/run-linting

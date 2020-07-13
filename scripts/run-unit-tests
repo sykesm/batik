@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+main() {
+    go test -race -cover -timeout 20m ./...
+}
+
+main

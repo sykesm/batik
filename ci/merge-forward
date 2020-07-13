@@ -1,0 +1,32 @@
+#!/bin/bash -e
+
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+if [ ! "$TRAVIS_BRANCH" == "develop" ]; then
+    exit 0
+fi
+
+deploy_key="$(mktemp)"
+repo_dir=$(mktemp -d)
+
+cleanup() {
+  rm -f "$deploy_key"
+  rm -rf "$repo_dir"
+}
+trap cleanup EXIT
+
+printf "%s" "$TRAVIS_PROMOTION_KEY" > "$deploy_key"
+
+export GIT_COMMITTER_EMAIL="travis@travis-ci.com"
+export GIT_COMMITTER_NAME="Travis CI"
+export GIT_SSH_COMMAND="ssh -i $deploy_key -o IdentitiesOnly=yes"
+
+git clone git@github.com:sykesm/batik "$repo_dir"
+
+cd "$repo_dir"
+git checkout main
+git merge --ff-only "$TRAVIS_COMMIT"
+git show
+git push origin main
