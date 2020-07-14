@@ -1,7 +1,14 @@
+# Copyright IBM Corp. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 ---
 language: go
 go:
 - 1.14.x
+
+apt:
+  packages:
+  - protobuf-compiler
 
 after_success:
 - ci/merge-forward
