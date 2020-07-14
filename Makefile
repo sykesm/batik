@@ -5,12 +5,19 @@ VERSION ?= "dev"
 BUILD_TIME ?= $(shell date +%Y-%m-%dT%H:%M:%S%:z)
 GIT_COMMIT ?= $(shell git rev-parse --short HEAD)
 
-all: batik checks
+GOTOOLS = protoc-gen-go
+GOTOOLS_BINDIR = tools/bin
+
+all: gotools batik checks
+
+.PHONY: clean
+clean:
+	@-rm -rf dist
 
 .PHONY: batik
 batik:
 	-mkdir -p dist
-	go build \
+	@go build \
 		-ldflags "\
 		-X \"github.com/sykesm/batik/pkg/buildinfo.Version=$(VERSION)\" \
 		-X \"github.com/sykesm/batik/pkg/buildinfo.GitCommit=$(GIT_COMMIT)\" \
@@ -19,13 +26,25 @@ batik:
 		-o dist/$@ \
 		github.com/sykesm/batik/cmd/batik
 
-checks: linting unit-test
+checks: gotools linting unit-test
 
 .PHONY: unit-test unit-tests
-unit-tests: unit-test
-unit-test:
-	scripts/run-unit-tests
+unit-test unit-tests:
+	@scripts/run-unit-tests
 
-.PHONY: lintint
+.PHONY: linting
 linting:
-	scripts/run-linting
+	@scripts/run-linting
+
+# go tool->path mapping
+gotool.protoc-gen-go := github.com/golang/protobuf/protoc-gen-go
+
+gotools: $(patsubst %,$(GOTOOLS_BINDIR)/%, $(GOTOOLS))
+
+$(GOTOOLS_BINDIR)/%: tools/go.sum
+	@echo "Building ${gotool.$*} -> $@"
+	@GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install -tags tools ${gotool.$*}
+
+.PHONY: gotools-clean
+gotools-clean:
+	@rm -rf $(GOTOOLS_BINDIR)
