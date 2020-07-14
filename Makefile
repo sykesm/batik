@@ -43,7 +43,7 @@ gotools: $(patsubst %,$(GOTOOLS_BINDIR)/%, $(GOTOOLS))
 
 $(GOTOOLS_BINDIR)/%: tools/go.sum
 	@echo "Building ${gotool.$*} -> $@"
-	@GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install -tags tools ${gotool.$*}
+	@cd tools && GOBIN=$(abspath $(GOTOOLS_BINDIR)) go install -tags tools ${gotool.$*}
 
 .PHONY: gotools-clean
 gotools-clean:
