@@ -6,6 +6,7 @@
 set -euo pipefail
 
 main() {
+    >&2 echo "Running go test..."
     go test -race -cover -timeout 20m ./...
 }
 

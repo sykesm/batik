@@ -6,5 +6,6 @@
 package tools
 
 import (
+	_ "github.com/uber/prototool/cmd/prototool"
 	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
 )

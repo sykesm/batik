@@ -5,8 +5,19 @@
 
 set -euo pipefail
 
-main() {
+govet() {
+    >&2 echo Running go vet...
     go vet -c=5 ./...
+}
+
+protolint() {
+    >&2 echo Running prototool lint...
+    prototool lint
+}
+
+main() {
+    protolint
+    govet
 }
 
 main

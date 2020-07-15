@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Copyright IBM Corp. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+cd protos
+for dir in $(find . -name '*.proto' -exec dirname {} \; | sort -u); do
+  protoc "--go_out=plugins=grpc,paths=source_relative:../pkg/pb" "$dir"/*.proto
+done
