@@ -21,11 +21,11 @@ package store
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/require"
+	. "github.com/onsi/gomega"
 	"github.com/sykesm/batik/pkg/tested"
 )
 
@@ -41,8 +41,9 @@ func BenchmarkLevelDBInMemory(b *testing.B) {
 }
 
 func benchmarkLevelDB(b *testing.B, path string) {
+	gt := NewGomegaWithT(b)
 	db, err := NewLevelDB(path)
-	require.NoError(b, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(b, db)
 
 	b.ResetTimer()
@@ -54,92 +55,94 @@ func benchmarkLevelDB(b *testing.B, path string) {
 		var randomValue [600]byte
 
 		_, err := rand.Read(randomKey[:])
-		require.NoError(b, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 		_, err = rand.Read(randomValue[:])
-		require.NoError(b, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 
 		err = db.Put(randomKey[:], randomValue[:])
-		require.NoError(b, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 
 		value, err := db.Get(randomKey[:])
-		require.NoError(b, err)
-
-		require.EqualValues(b, randomValue[:], value)
+		gt.Expect(err).NotTo(HaveOccurred())
+		gt.Expect(value).To(Equal(randomValue[:]))
 	}
 }
 
 func testExistence(t *testing.T, kv KV) {
+	gt := NewGomegaWithT(t)
 	_, err := kv.Get([]byte("not_exist"))
-	require.Error(t, err)
-	require.True(t, errors.Is(err, ErrNotFound))
+	gt.Expect(err).To(MatchError(ErrNotFound))
+	gt.Expect(errors.Is(err, ErrNotFound)).To(BeTrue())
 
 	err = kv.Put([]byte("exist"), []byte{})
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	val, err := kv.Get([]byte("exist"))
-	require.NoError(t, err)
-	require.Equal(t, []byte{}, val)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(val).To(Equal([]byte{}))
 }
 
 func TestLevelDBExistence(t *testing.T) {
+	gt := NewGomegaWithT(t)
 	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
 	db, err := NewLevelDB(path)
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
 	testExistence(t, db)
 }
 
 func TestLevelDBMemStorage(t *testing.T) {
+	gt := NewGomegaWithT(t)
 	db, err := NewLevelDB("")
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
 	testExistence(t, db)
 }
 
 func TestLevelDB(t *testing.T) {
+	gt := NewGomegaWithT(t)
 	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
 	db, err := NewLevelDB(path)
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	err = db.Put([]byte("exist"), []byte("value"))
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	wb := db.NewWriteBatch()
-	require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
-	require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
-	require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
-	require.NoError(t, wb.Commit())
-
-	require.NoError(t, db.Close())
+	gt.Expect(wb.Put([]byte("key_batch1"), []byte("val_batch1"))).To(Succeed())
+	gt.Expect(wb.Put([]byte("key_batch2"), []byte("val_batch2"))).To(Succeed())
+	gt.Expect(wb.Put([]byte("key_batch3"), []byte("val_batch3"))).To(Succeed())
+	gt.Expect(wb.Commit()).To(Succeed())
+	gt.Expect(db.Close()).To(Succeed())
 
 	db2, err := NewLevelDB(path)
-	require.NoError(t, err)
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	v, err := db2.Get([]byte("exist"))
-	require.NoError(t, err)
-	require.Equal(t, []byte("value"), v)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(v).To(Equal([]byte("value")))
 
 	// Check multiget
 	mv, err := db2.MultiGet([]byte("key_batch1"), []byte("key_batch2"))
-	require.NoError(t, err)
-	require.Equal(t, [][]byte{[]byte("val_batch1"), []byte("val_batch2")}, mv)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(mv).To(Equal([][]byte{[]byte("val_batch1"), []byte("val_batch2")}))
 
 	_, err = db2.MultiGet([]byte("missing"), []byte("key_batch2"))
-	require.Error(t, err)
-	require.True(t, errors.Is(err, ErrNotFound))
+	gt.Expect(err).To(MatchError(ErrNotFound))
+	gt.Expect(errors.Is(err, ErrNotFound)).To(BeTrue())
 
 	// Check delete
-	require.NoError(t, db2.Delete([]byte("exist")))
+	gt.Expect(db2.Delete([]byte("exist"))).To(Succeed())
 
 	_, err = db2.Get([]byte("exist"))
-	require.Error(t, err)
-	require.True(t, errors.Is(err, ErrNotFound))
+	gt.Expect(err).To(MatchError(ErrNotFound))
+	gt.Expect(errors.Is(err, ErrNotFound)).To(BeTrue())
 }
 
 func TestLevelDBWriteBatch(t *testing.T) {
@@ -147,81 +150,86 @@ func TestLevelDBWriteBatch(t *testing.T) {
 	defer cleanup()
 
 	t.Run("CloseWithoutCommit", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
 		db, err := NewLevelDB(path)
-		require.NoError(t, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 
 		wb := db.NewWriteBatch()
 		for i := 0; i < 100000; i++ {
-			require.NoError(t, wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1))))
+			gt.Expect(wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1)))).To(Succeed())
 		}
-		require.NoError(t, db.Close()) // Close without committing the WriteBatch
+		gt.Expect(db.Close()).To(Succeed()) // Close without committing the WriteBatch
 
 		db2, err := NewLevelDB(path)
-		require.NoError(t, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 		defer tested.Close(t, db2)
 
 		_, err = db2.Get([]byte("key_batch100000"))
-		require.EqualError(t, errors.Cause(err), ErrNotFound.Error())
+		gt.Expect(err).To(MatchError(ErrNotFound))
+		gt.Expect(errors.Is(err, ErrNotFound)).To(BeTrue())
 	})
 
 	t.Run("CommitThenClose", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
 		db, err := NewLevelDB(path)
-		require.NoError(t, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 
 		wb := db.NewWriteBatch()
 		for i := 0; i < 100000; i++ {
-			require.NoError(t, wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1))))
+			gt.Expect(wb.Put([]byte(fmt.Sprintf("key_batch%d", i+1)), []byte(fmt.Sprintf("val_batch%d", i+1)))).To(Succeed())
 		}
 
-		require.NoError(t, wb.Commit())
-		require.NoError(t, db.Close())
+		gt.Expect(wb.Commit()).To(Succeed())
+		gt.Expect(db.Close()).To(Succeed())
 
 		db2, err := NewLevelDB(path)
-		require.NoError(t, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 		defer tested.Close(t, db2)
 
 		v, err := db2.Get([]byte("key_batch100000"))
-		require.NoError(t, err)
-		require.EqualValues(t, []byte("val_batch100000"), v)
+		gt.Expect(err).NotTo(HaveOccurred())
+		gt.Expect(v).To(Equal([]byte("val_batch100000")))
 	})
 
 	t.Run("DeleteAndPut", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
 		path, cleanup := tested.TempDir(t, "", "level")
 		defer cleanup()
 
 		db, err := NewLevelDB(path)
-		require.NoError(t, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 		defer tested.Close(t, db)
 
 		wb := db.NewWriteBatch()
-		require.Equal(t, 0, wb.Count())
+		gt.Expect(wb.Count()).To(Equal(0))
 
-		require.NoError(t, wb.Delete([]byte("key_batch1")))
-		require.Equal(t, 1, wb.Count())
+		gt.Expect(wb.Delete([]byte("key_batch1"))).To(Succeed())
+		gt.Expect(wb.Count()).To(Equal(1))
 
-		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
-		require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
-		require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
-		require.Equal(t, 4, wb.Count())
+		gt.Expect(wb.Put([]byte("key_batch1"), []byte("val_batch1"))).To(Succeed())
+		gt.Expect(wb.Put([]byte("key_batch2"), []byte("val_batch2"))).To(Succeed())
+		gt.Expect(wb.Put([]byte("key_batch3"), []byte("val_batch3"))).To(Succeed())
+		gt.Expect(wb.Count()).To(Equal(4))
 
-		require.NoError(t, wb.Commit())
+		gt.Expect(wb.Commit()).To(Succeed())
 	})
 
 	t.Run("Clear", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
 		path, cleanup := tested.TempDir(t, "", "level")
 		defer cleanup()
 
 		db, err := NewLevelDB(path)
-		require.NoError(t, err)
+		gt.Expect(err).NotTo(HaveOccurred())
 		defer tested.Close(t, db)
 
 		wb := db.NewWriteBatch()
-		require.NoError(t, wb.Put([]byte("key_batch1"), []byte("val_batch1")))
-		require.NoError(t, wb.Put([]byte("key_batch2"), []byte("val_batch2")))
-		require.NoError(t, wb.Put([]byte("key_batch3"), []byte("val_batch3")))
-		require.Equal(t, 3, wb.Count())
+		gt.Expect(wb.Put([]byte("key_batch1"), []byte("val_batch1"))).To(Succeed())
+		gt.Expect(wb.Put([]byte("key_batch2"), []byte("val_batch2"))).To(Succeed())
+		gt.Expect(wb.Put([]byte("key_batch3"), []byte("val_batch3"))).To(Succeed())
+		gt.Expect(wb.Count()).To(Equal(3))
 
 		wb.Clear()
-		require.Equal(t, 0, wb.Count())
+		gt.Expect(wb.Count()).To(Equal(0))
 	})
 }
