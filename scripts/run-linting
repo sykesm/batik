@@ -12,7 +12,7 @@ govet() {
 
 protolint() {
     >&2 echo Running prototool lint...
-    prototool lint
+    prototool lint protos
 }
 
 main() {

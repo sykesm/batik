@@ -1,0 +1,17 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto2";
+
+package proto.test2;
+
+option go_package = "github.com/sykesm/batik/pkg/protomsg/internal/testprotos/test2";
+
+message TestMessage {
+  message NestedMessage {
+    optional int32 a = 1;
+  }
+
+  required string field_string = 1;
+  optional NestedMessage nested_message = 2;
+}
