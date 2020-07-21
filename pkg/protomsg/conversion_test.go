@@ -14,14 +14,23 @@ import (
 )
 
 func TestToMessageSlice(t *testing.T) {
+	messages := []proto.Message{
+		&emptypb.Empty{},
+		&durationpb.Duration{Seconds: 999, Nanos: 888},
+	}
+
 	t.Run("ProtoSlice", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
-		messages := []proto.Message{
-			&emptypb.Empty{},
-			&durationpb.Duration{Seconds: 999, Nanos: 888},
-		}
 
 		result, err := toMessageSlice(messages)
+		gt.Expect(err).NotTo(HaveOccurred())
+		gt.Expect(result).To(Equal(messages))
+	})
+
+	t.Run("ProtoVariadic", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		result, err := toMessageSlice(messages[0], messages[1])
 		gt.Expect(err).NotTo(HaveOccurred())
 		gt.Expect(result).To(Equal(messages))
 	})

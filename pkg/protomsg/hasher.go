@@ -40,8 +40,8 @@ func (h *Hasher) HashMessage(sr proto.Message) ([]byte, error) {
 
 // HashMessages encodes and hashes a slice of objects that implement
 // proto.Message.
-func (h *Hasher) HashMessages(in interface{}) ([][]byte, error) {
-	msgs, err := toMessageSlice(in)
+func (h *Hasher) HashMessages(in ...interface{}) ([][]byte, error) {
+	msgs, err := toMessageSlice(in...)
 	if err != nil {
 		return nil, err
 	}
