@@ -44,7 +44,6 @@ func TestHashMessage(t *testing.T) {
 			hasher := &Hasher{Hash: tt.hash}
 			actual, err := hasher.HashMessage(tt.sr)
 			gt.Expect(err).NotTo(HaveOccurred())
-			t.Logf("actual: %x", actual)
 			gt.Expect(fmt.Sprintf("%x", actual)).To(Equal(tt.expected))
 		})
 	}

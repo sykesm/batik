@@ -81,13 +81,30 @@ func TestDelegateToProto(t *testing.T) {
 }
 
 func TestUnknownFields(t *testing.T) {
-	gt := NewGomegaWithT(t)
+	nested := &test3.TestAllTypes_NestedMessage{}
+	nested.ProtoReflect().SetUnknown(protoreflect.RawFields("raw-fields"))
 
-	m := &test3.TestAllTypes{}
-	m.ProtoReflect().SetUnknown(protoreflect.RawFields("raw-fields"))
+	tests := []struct {
+		desc string
+		f    func(*test3.TestAllTypes)
+	}{
+		{"top", func(m *test3.TestAllTypes) { m.ProtoReflect().SetUnknown(protoreflect.RawFields("raw-fields")) }},
+		{"nested", func(m *test3.TestAllTypes) { m.SingularNestedMessage = nested }},
+		{"list", func(m *test3.TestAllTypes) { m.RepeatedNestedMessage = []*test3.TestAllTypes_NestedMessage{nested} }},
+		{"map", func(m *test3.TestAllTypes) {
+			m.MapStringNestedMessage = map[string]*test3.TestAllTypes_NestedMessage{"key": nested}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			m := &test3.TestAllTypes{}
 
-	_, err := protomsg.MarshalDeterministic(m)
-	gt.Expect(err).To(MatchError("protomsg: refusing to marshal unknown fields with length 10"))
+			tt.f(m)
+			_, err := protomsg.MarshalDeterministic(m)
+			gt.Expect(err).To(MatchError("protomsg: refusing to marshal unknown fields with length 10"))
+		})
+	}
 }
 
 func TestSortedMap(t *testing.T) {
@@ -120,7 +137,10 @@ func TestInvalidString(t *testing.T) {
 
 	m := &test3.TestAllTypes{SingularString: string([]byte{200, 200, 200})}
 	_, err := protomsg.MarshalDeterministic(m)
-	gt.Expect(err).To(MatchError("protomsg: field proto.test3.TestAllTypes.singular_string contains invalid UTF-8"))
+	gt.Expect(err).To(SatisfyAny(
+		MatchError("protomsg: field proto.test3.TestAllTypes.singular_string contains invalid UTF-8"),
+		MatchError("string field contains invalid UTF-8"), // https://github.com/golang/protobuf/issues/1174
+	))
 }
 
 func BenchmarkProtoMarshal(b *testing.B) {
@@ -139,6 +159,33 @@ func BenchmarkProtoMarshal(b *testing.B) {
 func BenchmarkProtoDeterministicMarshal(b *testing.B) {
 	m := makeProto()
 	for n := 0; n < b.N; n++ {
+		out, err := proto.MarshalOptions{Deterministic: true}.Marshal(m)
+		if err != nil {
+			b.Fatalf("marshal failed: %v", err)
+		}
+		if len(out) == 0 {
+			b.Fatalf("output is empty")
+		}
+	}
+}
+
+func BenchmarkValidateMessage(b *testing.B) {
+	m := makeProto()
+	for n := 0; n < b.N; n++ {
+		err := protomsg.ValidateMessage(m)
+		if err != nil {
+			b.Fatalf("validate failed: %v", err)
+		}
+	}
+}
+
+func BenchmarkValidateProtoDeterministicMarshal(b *testing.B) {
+	m := makeProto()
+	for n := 0; n < b.N; n++ {
+		err := protomsg.ValidateMessage(m)
+		if err != nil {
+			b.Fatalf("validate failed: %v", err)
+		}
 		out, err := proto.MarshalOptions{Deterministic: true}.Marshal(m)
 		if err != nil {
 			b.Fatalf("marshal failed: %v", err)

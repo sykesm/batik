@@ -7,7 +7,10 @@ set -euo pipefail
 
 main() {
     >&2 echo "Running go test..."
-    go test -race -cover -timeout 20m ./...
+    time go test -race -cover -timeout 20m ./...
+    echo
+    >&2 echo "Running tests with the goproto tag enabled..."
+    time go test -race -cover -tags goproto -timeout 20m ./...
 }
 
 main

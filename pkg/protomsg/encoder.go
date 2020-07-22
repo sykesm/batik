@@ -60,6 +60,11 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// This is set when the `goproto` build tag is set and determines if we use the
+// implementation of deterministic marshaling from the gooogle package (with
+// additional up-front validatIon) or the custom marshaling implemented here.
+var useGoProto bool
+
 // MarshalDeterministic performs deterministic marshaling of a protocol buffer
 // message. The official implementation emphasizes that we cannot rely on the
 // stability of deterministic marshaling across versions and recommends that
@@ -81,8 +86,11 @@ import (
 // implementation for as long as it remains stable. This requires some
 // additional test infrascture to validate the constraints hold.
 func MarshalDeterministic(m proto.Message) ([]byte, error) {
-	if m == nil || !m.ProtoReflect().IsValid() {
-		return proto.Marshal(m)
+	if m == nil || !m.ProtoReflect().IsValid() || useGoProto {
+		if err := ValidateMessage(m); err != nil {
+			return nil, err
+		}
+		return proto.MarshalOptions{Deterministic: true}.Marshal(m)
 	}
 
 	return marshal(nil, m.ProtoReflect())
@@ -92,23 +100,25 @@ func MarshalDeterministic(m proto.Message) ([]byte, error) {
 // For profiling purposes, avoid changing the name of this function or
 // introducing other code paths for marshal that do not go through this.
 func marshal(b []byte, m protoreflect.Message) ([]byte, error) {
+	// Explicitly refuse to encode proto2 messages.
 	if m.Descriptor().Syntax() == protoreflect.Proto2 {
-		// Explicitly refuse to encode proto2 messages.
 		// Support for required fields and groups has been removed.
 		return nil, errors.New("protomsg: proto2 syntax is not supported")
 	}
 
-	var err error
-	b, err = marshalMessageSlow(b, m)
+	buf, err := marshalMessageSlow(b, m)
 	if err != nil {
 		return nil, err
 	}
-	return b, checkInitialized(m)
+	return buf, checkInitialized(m)
 }
 
 func marshalMessageSlow(b []byte, m protoreflect.Message) ([]byte, error) {
 	if isMessageSet(m.Descriptor()) {
 		return b, errors.New("protomsg: no support for message_set_wire_format")
+	}
+	if len(m.GetUnknown()) != 0 {
+		return b, fmt.Errorf("protomsg: refusing to marshal unknown fields with length %d", len(m.GetUnknown()))
 	}
 
 	var err error
@@ -118,9 +128,6 @@ func marshalMessageSlow(b []byte, m protoreflect.Message) ([]byte, error) {
 	})
 	if err != nil {
 		return b, err
-	}
-	if len(m.GetUnknown()) != 0 {
-		return b, fmt.Errorf("protomsg: refusing to marshal unknown fields with length %d", len(m.GetUnknown()))
 	}
 	return b, nil
 }
