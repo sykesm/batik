@@ -20,6 +20,12 @@ func TestNewTree(t *testing.T) {
 		expectedHash string
 	}{
 		{
+			testName: "empty tree",
+			inputs:   [][]byte{},
+			// Hash of empty string
+			expectedHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+		},
+		{
 			testName: "0 levels",
 			inputs: [][]byte{
 				[]byte("inputA"),
@@ -100,22 +106,15 @@ func TestNewTree(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			tree, err := NewTree(tt.inputs)
-
+			gt.Expect(err).NotTo(HaveOccurred())
+			hash, err := tree.MerkleRoot()
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			expectedHash, err := hex.DecodeString(tt.expectedHash)
 			gt.Expect(err).NotTo(HaveOccurred())
-			gt.Expect(tree.MerkleRoot()).To(Equal(expectedHash))
+			gt.Expect(hash).To(Equal(expectedHash))
 		})
 	}
-}
-
-func TestNewTree_Failure(t *testing.T) {
-	gt := NewGomegaWithT(t)
-
-	tree, err := NewTree([][]byte{})
-	gt.Expect(err).To(MatchError("empty leaf hashes"))
-	gt.Expect(tree).To(BeNil())
 }
 
 func TestNewTreeWithHashingStrategy(t *testing.T) {
@@ -180,12 +179,12 @@ func TestNewTreeWithHashingStrategy(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			tree, err := NewTreeWithHashStrategy(tt.inputs, tt.hashingStrategy)
-
 			gt.Expect(err).NotTo(HaveOccurred())
+			hash, err := tree.MerkleRoot()
 
 			expectedHash, err := hex.DecodeString(tt.expectedHash)
 			gt.Expect(err).NotTo(HaveOccurred())
-			gt.Expect(tree.MerkleRoot()).To(Equal(expectedHash))
+			gt.Expect(hash).To(Equal(expectedHash))
 		})
 	}
 }
@@ -214,6 +213,8 @@ func TestSecondPreImageAttack(t *testing.T) {
 		[]byte("inputC"),
 	})
 	gt.Expect(err).NotTo(HaveOccurred())
+	tree1Hash, err := tree1.MerkleRoot()
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	ab, err := hex.DecodeString("014b2aab6bded4698071f17454b66940a19e67a9f3a70c3a91a811410b0c617c31")
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -225,8 +226,10 @@ func TestSecondPreImageAttack(t *testing.T) {
 		ab, cpad,
 	})
 	gt.Expect(err).NotTo(HaveOccurred())
+	tree2Hash, err := tree2.MerkleRoot()
+	gt.Expect(err).NotTo(HaveOccurred())
 
 	// A tree formed from the combined hashes of the original leaves
 	// should not produce the same tree
-	gt.Expect(tree1.MerkleRoot()).NotTo(Equal(tree2.MerkleRoot()))
+	gt.Expect(tree1Hash).NotTo(Equal(tree2Hash))
 }

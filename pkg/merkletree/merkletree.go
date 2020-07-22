@@ -35,8 +35,17 @@ type Proof struct {
 }
 
 // MerkleRoot returns the hash of the merkle tree.
-func (m *MerkleTree) MerkleRoot() []byte {
-	return m.Root.Hash
+func (m *MerkleTree) MerkleRoot() ([]byte, error) {
+	// If the tree is empty, return the hash of an empty string
+	if m.Root == nil {
+		h := m.hashStrategy()
+		if _, err := h.Write([]byte{}); err != nil {
+			return nil, err
+		}
+
+		return h.Sum(nil), nil
+	}
+	return m.Root.Hash, nil
 }
 
 // NewTree builds a merkle tree based off the input data representing the
@@ -48,20 +57,20 @@ func NewTree(serializedLeaves [][]byte) (*MerkleTree, error) {
 // GetMerkleTreeWithHashStrategy builds a merkle tree based off the input data
 // representing the serialized leaves and a specified hash algorithm.
 func NewTreeWithHashStrategy(serializedLeaves [][]byte, hashStrategy func() hash.Hash) (*MerkleTree, error) {
+	t := &MerkleTree{
+		hashStrategy: hashStrategy,
+	}
+
 	numLeaves := len(serializedLeaves)
 
 	if numLeaves == 0 {
-		return nil, errors.New("empty leaf hashes")
+		return t, nil
 	}
 
 	// Pad with empty hash if not full
 	for !isPow2(numLeaves) {
 		serializedLeaves = append(serializedLeaves, []byte{})
 		numLeaves++
-	}
-
-	t := &MerkleTree{
-		hashStrategy: hashStrategy,
 	}
 
 	root, leaves, err := buildMerkleTree(serializedLeaves, t)
