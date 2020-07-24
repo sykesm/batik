@@ -9,21 +9,21 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// A HashNewer is responsble for creating new instances of hash.Hash. All
+// A Hash is responsble for creating new instances of hash.Hash. All
 // crypto.Hash implementaions from the standard library satisfy this interface.
-type HashNewer interface {
+type Hash interface {
 	New() hash.Hash
 }
 
-// HashNewerFunc is an adapter to allow the use of a function as a HashNewer.
-type HashNewerFunc func() hash.Hash
+// NewHashFunc is an adapter to allow the use of a function as a Hash.
+type NewHashFunc func() hash.Hash
 
-// New calls the handlder function h.
-func (h HashNewerFunc) New() hash.Hash { return h() }
+// New calls the NewHashFunc function n.
+func (n NewHashFunc) New() hash.Hash { return n() }
 
 // A Hasher is responsible for deterministic hashing of a proto.Message.
 type Hasher struct {
-	Hash HashNewer
+	Hash Hash
 }
 
 // HashMessage encodes a proto.Message and returns the hash of the result.
