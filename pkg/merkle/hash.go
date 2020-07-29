@@ -39,6 +39,7 @@ func Root(h Hasher, leaves ...[]byte) []byte {
 	return NewTree(h, leaves...).Root()
 }
 
+// A Tree represents a bnary Merkle Tree.
 type Tree struct {
 	hash  Hasher
 	size  int
@@ -49,6 +50,13 @@ type node struct {
 	hash []byte
 }
 
+// NewTree constructs a binary Merkle tree from the provided data by using the
+// provided Hasher. This implementation is based on RFC 6962 and uses leaf
+// hashes directly as internal nodes when the tree is unbalanced.
+//
+// The tree does not support increment build processing so, unless diagnostic
+// information is required, most consumers should use the Root function to
+// calculate the root hash instead of creating a tree.
 func NewTree(h Hasher, leaves ...[]byte) *Tree {
 	levels := treeDepth(len(leaves))
 
@@ -102,6 +110,7 @@ func hashNode(hash Hasher, left, right []byte) []byte {
 	return h.Sum(nil)
 }
 
+// Root returns the Merkle root hash of the tree.
 func (t *Tree) Root() []byte {
 	if len(t.nodes) == 0 {
 		return t.hash.New().Sum(nil)
@@ -109,10 +118,18 @@ func (t *Tree) Root() []byte {
 	return t.nodes[len(t.nodes)-1][0].hash
 }
 
+// String satisfies the fmt.Stringer interface and returns the hex encoded root
+// hash of the tree.
 func (t *Tree) String() string {
 	return hex.EncodeToString(t.Root())
 }
 
+// Format satisfies the fmt.Formatter interace. The following format verbs are
+// supported:
+//
+//     %s, %q, %v  print the hex encoded merkle hash root
+//     %+v         dump the hashes of all elements in the tree
+//
 func (t *Tree) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
@@ -127,6 +144,8 @@ func (t *Tree) Format(s fmt.State, verb rune) {
 	}
 }
 
+// Dump writes a text formatted representation of the tree to the provided
+// writer. The tree is formatted horizontally in post-order traversal.
 func (t *Tree) Dump(w io.Writer) {
 	if t == nil || t.size == 0 {
 		io.WriteString(w, "empty: "+hex.EncodeToString(t.Root())+"\n")

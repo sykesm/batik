@@ -282,9 +282,8 @@ func PATH(m int, D [][]byte) [][]byte {
 		k := largestPowerOfTwoLessThan(n)
 		if m < k {
 			return append(PATH(m, D[0:k]), MTH(D[k:n]))
-		} else {
-			return append(PATH(m-k, D[k:n]), MTH(D[0:k]))
 		}
+		return append(PATH(m-k, D[k:n]), MTH(D[0:k]))
 	}
 }
 
