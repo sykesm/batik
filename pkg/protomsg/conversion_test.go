@@ -22,7 +22,7 @@ func TestToMessageSlice(t *testing.T) {
 	t.Run("ProtoSlice", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
-		result, err := toMessageSlice(messages)
+		result, err := ToMessageSlice(messages)
 		gt.Expect(err).NotTo(HaveOccurred())
 		gt.Expect(result).To(Equal(messages))
 	})
@@ -30,7 +30,7 @@ func TestToMessageSlice(t *testing.T) {
 	t.Run("ProtoVariadic", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
-		result, err := toMessageSlice(messages[0], messages[1])
+		result, err := ToMessageSlice(messages[0], messages[1])
 		gt.Expect(err).NotTo(HaveOccurred())
 		gt.Expect(result).To(Equal(messages))
 	})
@@ -39,7 +39,7 @@ func TestToMessageSlice(t *testing.T) {
 		gt := NewGomegaWithT(t)
 		duration := &durationpb.Duration{Seconds: 987, Nanos: 123}
 
-		result, err := toMessageSlice(duration)
+		result, err := ToMessageSlice(duration)
 		gt.Expect(err).NotTo(HaveOccurred())
 		gt.Expect(result).To(Equal([]proto.Message{duration}))
 	})
@@ -47,7 +47,7 @@ func TestToMessageSlice(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
-		result, err := toMessageSlice(nil)
+		result, err := ToMessageSlice(nil)
 		gt.Expect(err).NotTo(HaveOccurred())
 		gt.Expect(result).To(Equal([]proto.Message{nil}))
 	})
@@ -55,10 +55,10 @@ func TestToMessageSlice(t *testing.T) {
 	t.Run("BadTypes", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
-		_, err := toMessageSlice("bob")
+		_, err := ToMessageSlice("bob")
 		gt.Expect(err).To(MatchError("protomsg: index 0 of type string is not a proto.Message"))
 
-		_, err = toMessageSlice([]interface{}{&emptypb.Empty{}, time.Now(), "fred"})
+		_, err = ToMessageSlice([]interface{}{&emptypb.Empty{}, time.Now(), "fred"})
 		gt.Expect(err).To(MatchError("protomsg: index 1 of type time.Time is not a proto.Message"))
 	})
 }

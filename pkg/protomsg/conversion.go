@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func toMessageSlice(in ...interface{}) ([]proto.Message, error) {
+func ToMessageSlice(in ...interface{}) ([]proto.Message, error) {
 	inval := reflect.ValueOf(in)
 	if reflect.ValueOf(in[0]).Kind() == reflect.Slice && inval.Len() == 1 {
 		inval = reflect.ValueOf(in[0])

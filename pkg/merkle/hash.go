@@ -60,19 +60,16 @@ type node struct {
 func NewTree(h Hasher, leaves ...[]byte) *Tree {
 	levels := treeDepth(len(leaves))
 
-	// Allocate nodes
 	nodes := make([][]node, levels)
 	for n := range nodes {
 		// TODO(mjs): level 0 should be the same length as leaves
 		nodes[n] = make([]node, 1<<(levels-n-1))
 	}
 
-	// Leaves go in level 0
 	for i := 0; i < len(leaves); i++ {
 		nodes[0][i].hash = hashLeaf(h, leaves[i])
 	}
 
-	// Intermediate nodes
 	for level := 1; level < levels; level++ {
 		for i := range nodes[level] {
 			// TODO(mjs): Need bounds check when level 0 is the same length as leaves
@@ -167,14 +164,12 @@ func (t *Tree) dumpLevel(w io.Writer, level, index int, prefix string) {
 	p := glyphs[0]
 
 	switch {
-	// leaf
 	case level == 0:
 		if index == t.size-1 || index&1 == 1 {
 			p = glyphs[1]
 		}
 		io.WriteString(w, prefix+p[0]+" leaf: "+hex.EncodeToString(t.nodes[level][index].hash)+"\n")
 
-	// leaf promoted to node
 	case t.size <= index*(1<<level)+1<<(level-1):
 		t.dumpLevel(w, level-1, 2*index, prefix)
 
