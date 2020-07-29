@@ -4,13 +4,17 @@
 package merkle
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rand"
 	_ "crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"gopkg.in/yaml.v2"
 )
 
 func TestRoot(t *testing.T) {
@@ -38,7 +42,70 @@ func TestRoot(t *testing.T) {
 				leaves[i] = []byte(tt.leaves[i])
 			}
 			actual := Root(crypto.SHA256, leaves...)
-			gt.Expect(hex(actual)).To(Equal(tt.expected), "got %x, want: %s", actual, tt.expected)
+			gt.Expect(toHex(actual)).To(Equal(tt.expected), "got %x, want: %s", actual, tt.expected)
+
+			tree := NewTree(crypto.SHA256, leaves...)
+			gt.Expect(toHex(tree.Root())).To(Equal(tt.expected))
+		})
+	}
+}
+
+func TestHashFunc(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	h := Root(NewHashFunc(crypto.SHA224.New))
+	gt.Expect(h).To(Equal(crypto.SHA224.New().Sum(nil)))
+}
+
+func TestTreeString(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	data := randomData(8, 0)
+	for i := 0; i < len(data); i++ {
+		tree := NewTree(crypto.SHA256, data...)
+		gt.Expect(tree.String()).To(Equal(toHex(tree.Root())))
+	}
+}
+
+func TestTreeDump(t *testing.T) {
+	var tests []struct {
+		Input    []string `yaml:"input,omitempty"`
+		Expected string   `yaml:"expected,omitempty"`
+	}
+
+	gt := NewGomegaWithT(t)
+	testdata, err := ioutil.ReadFile("testdata/dumptest.yaml")
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(yaml.Unmarshal(testdata, &tests)).To(Succeed())
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%v", tt.Input), func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			var input [][]byte
+			for _, i := range tt.Input {
+				input = append(input, []byte(i))
+			}
+
+			tree := NewTree(crypto.SHA256, input...)
+			buf := bytes.NewBuffer(nil)
+			tree.Dump(buf)
+			gt.Expect(buf.String()).To(Equal(tt.Expected))
+		})
+	}
+}
+
+func TestFormat(t *testing.T) {
+	for i := 0; i < 9; i++ {
+		t.Run(fmt.Sprintf("%d elements", i), func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			data := randomData(i, 0)
+
+			tree := NewTree(crypto.SHA256, data...)
+			gt.Expect(fmt.Sprintf("%s", tree)).To(Equal(tree.String()))
+			gt.Expect(fmt.Sprintf("%q", tree)).To(Equal(tree.String()))
+			gt.Expect(fmt.Sprintf("%v", tree)).To(Equal(tree.String()))
+
+			buf := bytes.NewBuffer(nil)
+			tree.Dump(buf)
+			gt.Expect(fmt.Sprintf("%+v", tree)).To(Equal(buf.String()))
 		})
 	}
 }
@@ -46,11 +113,11 @@ func TestRoot(t *testing.T) {
 func digest(hash crypto.Hash, b []byte) string {
 	h := hash.New()
 	h.Write(b)
-	return hex(h.Sum(nil))
+	return toHex(h.Sum(nil))
 }
 
-func hex(b []byte) string {
-	return fmt.Sprintf("%x", b)
+func toHex(b []byte) string {
+	return hex.EncodeToString(b)
 }
 
 // MTH is the algorithm described in RFC6962. We use it to ensure that our
@@ -62,7 +129,7 @@ func TestAgainstMTH(t *testing.T) {
 			data := randomData(i+1, 0)
 			expected := MTH(data)
 			actual := Root(crypto.SHA256, data...)
-			gt.Expect(actual).To(Equal(expected), "index %d", i)
+			gt.Expect(actual).To(Equal(expected), "got %x want %x for index %d", actual, expected, i)
 		}
 	})
 	t.Run("WithNil", func(t *testing.T) {
@@ -76,7 +143,7 @@ func TestAgainstMTH(t *testing.T) {
 
 			expected := MTH(data)
 			actual := Root(crypto.SHA256, data...)
-			gt.Expect(actual).To(Equal(expected), "index %d", i)
+			gt.Expect(actual).To(Equal(expected), "got %x want %x for index %d", actual, expected, i)
 
 			data[i] = d
 		}
@@ -92,7 +159,7 @@ func TestAgainstMTH(t *testing.T) {
 
 			expected := MTH(data)
 			actual := Root(crypto.SHA256, data...)
-			gt.Expect(actual).To(Equal(expected), "index %d", i)
+			gt.Expect(actual).To(Equal(expected), "got %x want %x for index %d", actual, expected, i)
 
 			data[i] = d
 		}

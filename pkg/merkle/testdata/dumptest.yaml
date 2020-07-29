@@ -1,0 +1,126 @@
+# Copyright IBM Corp. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+---
+- input:
+  expected: |
+    empty: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+- input: [ "L0" ]
+  expected: |
+    root: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+- input: [ "L0", "L1" ]
+  expected: |
+    root: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+- input: [ "L0", "L1", "L2" ]
+  expected: |
+    root: 49b3ac37087cacbed8e89716b70f93b0440b87e22a573e8fefe5a4d15e827862
+     ├─ node: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     │  ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     │  └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+     └─ leaf: b20a512a48e53d216db8726dc737efe6a7e13ba4b681f9b26dcd08d1910259e3
+- input: [ "L0", "L1", "L2", "L3" ]
+  expected: |
+    root: 11170c8d45f48eb6ec89abd8dd8b6e07d153db5e70f8083841d6bb5e00f3f9f0
+     ├─ node: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     │  ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     │  └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+     └─ node: ef08b3dc633ce1cf72a84019e7f986a3a108cfb24c25e882aa6f082eb8e1ee0b
+        ├─ leaf: b20a512a48e53d216db8726dc737efe6a7e13ba4b681f9b26dcd08d1910259e3
+        └─ leaf: 5c610e9fef6cc0012ba3802aabf1a7c07564a103cc0caec27093f2089f25a890
+- input: [ "L0", "L1", "L2", "L3", "L4" ]
+  expected: |
+    root: 0f3371a238bdf07106b23d9bf71b21e0d71bb0595c46c90ca919093ae22da7ef
+     ├─ node: 11170c8d45f48eb6ec89abd8dd8b6e07d153db5e70f8083841d6bb5e00f3f9f0
+     │  ├─ node: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     │  │  ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     │  │  └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+     │  └─ node: ef08b3dc633ce1cf72a84019e7f986a3a108cfb24c25e882aa6f082eb8e1ee0b
+     │     ├─ leaf: b20a512a48e53d216db8726dc737efe6a7e13ba4b681f9b26dcd08d1910259e3
+     │     └─ leaf: 5c610e9fef6cc0012ba3802aabf1a7c07564a103cc0caec27093f2089f25a890
+     └─ leaf: 359aff21e82cbc0384827a426a09d1f4521d9cdd1b5d89dcf11d42d54110e933
+- input: [ "L0", "L1", "L2", "L3", "L4", "L5" ]
+  expected: |
+    root: f2287294adfc2d2bfb00639cfe2c55d169b193800ddfc7405d012c965df0ef89
+     ├─ node: 11170c8d45f48eb6ec89abd8dd8b6e07d153db5e70f8083841d6bb5e00f3f9f0
+     │  ├─ node: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     │  │  ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     │  │  └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+     │  └─ node: ef08b3dc633ce1cf72a84019e7f986a3a108cfb24c25e882aa6f082eb8e1ee0b
+     │     ├─ leaf: b20a512a48e53d216db8726dc737efe6a7e13ba4b681f9b26dcd08d1910259e3
+     │     └─ leaf: 5c610e9fef6cc0012ba3802aabf1a7c07564a103cc0caec27093f2089f25a890
+     └─ node: 96c531d55db22b9b7d2057afc432b10a60a2f3812b8ecb5d3fb51b114fd12ab7
+        ├─ leaf: 359aff21e82cbc0384827a426a09d1f4521d9cdd1b5d89dcf11d42d54110e933
+        └─ leaf: 0eb622af10a939accebca5157aa7896147f9e3959be91085c22d11e4d5248a8b
+- input: [ "L0", "L1", "L2", "L3", "L4", "L5", "L6" ]
+  expected: |
+    root: 9a01afc3a2f698368e6143b81124c362459916ce16f62ca7b96933fc862735ed
+     ├─ node: 11170c8d45f48eb6ec89abd8dd8b6e07d153db5e70f8083841d6bb5e00f3f9f0
+     │  ├─ node: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     │  │  ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     │  │  └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+     │  └─ node: ef08b3dc633ce1cf72a84019e7f986a3a108cfb24c25e882aa6f082eb8e1ee0b
+     │     ├─ leaf: b20a512a48e53d216db8726dc737efe6a7e13ba4b681f9b26dcd08d1910259e3
+     │     └─ leaf: 5c610e9fef6cc0012ba3802aabf1a7c07564a103cc0caec27093f2089f25a890
+     └─ node: 4a162f4dc2edfae16ff7855506f6b85aedc7f93a188714781da83bf1bc6f7f9c
+        ├─ node: 96c531d55db22b9b7d2057afc432b10a60a2f3812b8ecb5d3fb51b114fd12ab7
+        │  ├─ leaf: 359aff21e82cbc0384827a426a09d1f4521d9cdd1b5d89dcf11d42d54110e933
+        │  └─ leaf: 0eb622af10a939accebca5157aa7896147f9e3959be91085c22d11e4d5248a8b
+        └─ leaf: bf6cdfe93246ac91d0b0dbf0b52efc398ce1f514b5244d62319375d95ee5ba6c
+- input: [ "L0", "L1", "L2", "L3", "L4", "L5", "L6", "L7" ]
+  expected: |
+    root: b70774ab4b8a8159950d886804e6d29fa1a51f306db62f257d81e2320cd65e4c
+     ├─ node: 11170c8d45f48eb6ec89abd8dd8b6e07d153db5e70f8083841d6bb5e00f3f9f0
+     │  ├─ node: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     │  │  ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     │  │  └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+     │  └─ node: ef08b3dc633ce1cf72a84019e7f986a3a108cfb24c25e882aa6f082eb8e1ee0b
+     │     ├─ leaf: b20a512a48e53d216db8726dc737efe6a7e13ba4b681f9b26dcd08d1910259e3
+     │     └─ leaf: 5c610e9fef6cc0012ba3802aabf1a7c07564a103cc0caec27093f2089f25a890
+     └─ node: 12a17ed71b985a93ea075af0e989077764a6963186a26f036325c800f0408cdf
+        ├─ node: 96c531d55db22b9b7d2057afc432b10a60a2f3812b8ecb5d3fb51b114fd12ab7
+        │  ├─ leaf: 359aff21e82cbc0384827a426a09d1f4521d9cdd1b5d89dcf11d42d54110e933
+        │  └─ leaf: 0eb622af10a939accebca5157aa7896147f9e3959be91085c22d11e4d5248a8b
+        └─ node: 5d82c355e50240844b441d4f8a7dbaa6e6035f2504771f7d6055c9d5b832d139
+           ├─ leaf: bf6cdfe93246ac91d0b0dbf0b52efc398ce1f514b5244d62319375d95ee5ba6c
+           └─ leaf: a873921d2dca9b0b65f4863da7f7466fa63289203ca707f4b980a4dc7eedfbdf
+- input: [ "L0", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8" ]
+  expected: |
+    root: 312fba2f513dac800c141b1b5c18f19fec746e6177bd663ab5ad54231a1f3037
+     ├─ node: b70774ab4b8a8159950d886804e6d29fa1a51f306db62f257d81e2320cd65e4c
+     │  ├─ node: 11170c8d45f48eb6ec89abd8dd8b6e07d153db5e70f8083841d6bb5e00f3f9f0
+     │  │  ├─ node: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     │  │  │  ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     │  │  │  └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+     │  │  └─ node: ef08b3dc633ce1cf72a84019e7f986a3a108cfb24c25e882aa6f082eb8e1ee0b
+     │  │     ├─ leaf: b20a512a48e53d216db8726dc737efe6a7e13ba4b681f9b26dcd08d1910259e3
+     │  │     └─ leaf: 5c610e9fef6cc0012ba3802aabf1a7c07564a103cc0caec27093f2089f25a890
+     │  └─ node: 12a17ed71b985a93ea075af0e989077764a6963186a26f036325c800f0408cdf
+     │     ├─ node: 96c531d55db22b9b7d2057afc432b10a60a2f3812b8ecb5d3fb51b114fd12ab7
+     │     │  ├─ leaf: 359aff21e82cbc0384827a426a09d1f4521d9cdd1b5d89dcf11d42d54110e933
+     │     │  └─ leaf: 0eb622af10a939accebca5157aa7896147f9e3959be91085c22d11e4d5248a8b
+     │     └─ node: 5d82c355e50240844b441d4f8a7dbaa6e6035f2504771f7d6055c9d5b832d139
+     │        ├─ leaf: bf6cdfe93246ac91d0b0dbf0b52efc398ce1f514b5244d62319375d95ee5ba6c
+     │        └─ leaf: a873921d2dca9b0b65f4863da7f7466fa63289203ca707f4b980a4dc7eedfbdf
+     └─ leaf: 0b6655ea8aa2e629e829ecc9f49a90276a2ecd8025adae96f031776e97cda4ce
+- input: [ "L0", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9" ]
+  expected: |
+    root: 17fe5a0c5afb3833c6e9aeac09e6c2f9144b9884b66fb24bd463b9d7a5a878ad
+     ├─ node: b70774ab4b8a8159950d886804e6d29fa1a51f306db62f257d81e2320cd65e4c
+     │  ├─ node: 11170c8d45f48eb6ec89abd8dd8b6e07d153db5e70f8083841d6bb5e00f3f9f0
+     │  │  ├─ node: 926054f28bc88651ef446709206587f183c49ae5b0f1393caaeb104e54fcc50f
+     │  │  │  ├─ leaf: 12403899e10d73557e1d37c2d1c3dc1686a9512034479aa25d06f1d80fc46069
+     │  │  │  └─ leaf: 5f75c8ec4c121aa6aeeb4c9f51b0a64c5eeb18d371ecd726951c2951ea5e55ba
+     │  │  └─ node: ef08b3dc633ce1cf72a84019e7f986a3a108cfb24c25e882aa6f082eb8e1ee0b
+     │  │     ├─ leaf: b20a512a48e53d216db8726dc737efe6a7e13ba4b681f9b26dcd08d1910259e3
+     │  │     └─ leaf: 5c610e9fef6cc0012ba3802aabf1a7c07564a103cc0caec27093f2089f25a890
+     │  └─ node: 12a17ed71b985a93ea075af0e989077764a6963186a26f036325c800f0408cdf
+     │     ├─ node: 96c531d55db22b9b7d2057afc432b10a60a2f3812b8ecb5d3fb51b114fd12ab7
+     │     │  ├─ leaf: 359aff21e82cbc0384827a426a09d1f4521d9cdd1b5d89dcf11d42d54110e933
+     │     │  └─ leaf: 0eb622af10a939accebca5157aa7896147f9e3959be91085c22d11e4d5248a8b
+     │     └─ node: 5d82c355e50240844b441d4f8a7dbaa6e6035f2504771f7d6055c9d5b832d139
+     │        ├─ leaf: bf6cdfe93246ac91d0b0dbf0b52efc398ce1f514b5244d62319375d95ee5ba6c
+     │        └─ leaf: a873921d2dca9b0b65f4863da7f7466fa63289203ca707f4b980a4dc7eedfbdf
+     └─ node: d3eed4a75890d5fbffd7c7f2b5c07b8d2f621f1f44eca94209804c418cb69e2d
+        ├─ leaf: 0b6655ea8aa2e629e829ecc9f49a90276a2ecd8025adae96f031776e97cda4ce
+        └─ leaf: badaa1857c5ea88f053275f4075f1a4ee4a0114bf04f256fe2e4f0f810b62581
