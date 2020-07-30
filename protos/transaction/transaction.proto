@@ -48,11 +48,12 @@ message Parameter {
 // A Transaction modifies the ledger by consuming input states and creating
 // output states.
 message Transaction {
-  repeated StateReference inputs = 1;
-  repeated StateReference references = 2;
-  repeated State outputs = 3;
-  repeated Parameter parameters = 4;
-  repeated Party required_signers = 5;
   // Transaction salt is required and must be at least 32 bytes in length.
-  bytes salt = 6;
+  bytes salt = 1;
+
+  repeated StateReference inputs = 2;
+  repeated StateReference references = 3;
+  repeated State outputs = 4;
+  repeated Parameter parameters = 5;
+  repeated Party required_signers = 6;
 }
