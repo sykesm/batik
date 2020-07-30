@@ -89,5 +89,5 @@ message ResolvedTransaction {
 
   repeated ResolvedState inputs = 3;
   repeated ResolvedState references = 4;
-  repeated Signer signer = 5;
+  repeated Signer signers = 5;
 }
