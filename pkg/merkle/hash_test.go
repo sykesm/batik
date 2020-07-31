@@ -253,39 +253,39 @@ func largestPowerOfTwoLessThan(n int) int {
 	return k / 2
 }
 
-// This is the algorithm defined by https://tools.ietf.org/html/rfc6962#section-2.1.1
-//
-// We compare our audit paths to those produced by this algorithm.
-func PATH(m int, D [][]byte) [][]byte {
-	// Given an ordered list of n inputs to the tree, D[n] = {d(0), ...,
-	// d(n-1)}, the Merkle audit path PATH(m, D[n]) for the (m+1)th input
-	// d(m), 0 <= m < n, is defined as follows:
-	switch {
-	case m >= len(D):
-		panic(fmt.Sprintf("%d is out of range", m))
-	case m == 0 && len(D) == 1:
-		// The path for the single leaf in a tree with a one-element input list
-		// D[1] = {d(0)} is empty: PATH(0, {d(0)}) = {}
-		return [][]byte{}
-	default:
-		// For n > 1, let k be the largest power of two smaller than n.  The
-		// path for the (m+1)th element d(m) in a list of n > m elements is then
-		// defined recursively as
-		//
-		// PATH(m, D[n]) = PATH(m, D[0:k]) : MTH(D[k:n]) for m < k; and
-		//
-		// PATH(m, D[n]) = PATH(m - k, D[k:n]) : MTH(D[0:k]) for m >= k,
-		//
-		// where : is concatenation of lists and D[k1:k2] denotes the length
-		// (k2 - k1) list {d(k1), d(k1+1),..., d(k2-1)} as before.
-		n := len(D)
-		k := largestPowerOfTwoLessThan(n)
-		if m < k {
-			return append(PATH(m, D[0:k]), MTH(D[k:n]))
-		}
-		return append(PATH(m-k, D[k:n]), MTH(D[0:k]))
-	}
-}
+//// This is the algorithm defined by https://tools.ietf.org/html/rfc6962#section-2.1.1
+////
+//// We compare our audit paths to those produced by this algorithm.
+//func PATH(m int, D [][]byte) [][]byte {
+//	// Given an ordered list of n inputs to the tree, D[n] = {d(0), ...,
+//	// d(n-1)}, the Merkle audit path PATH(m, D[n]) for the (m+1)th input
+//	// d(m), 0 <= m < n, is defined as follows:
+//	switch {
+//	case m >= len(D):
+//		panic(fmt.Sprintf("%d is out of range", m))
+//	case m == 0 && len(D) == 1:
+//		// The path for the single leaf in a tree with a one-element input list
+//		// D[1] = {d(0)} is empty: PATH(0, {d(0)}) = {}
+//		return [][]byte{}
+//	default:
+//		// For n > 1, let k be the largest power of two smaller than n.  The
+//		// path for the (m+1)th element d(m) in a list of n > m elements is then
+//		// defined recursively as
+//		//
+//		// PATH(m, D[n]) = PATH(m, D[0:k]) : MTH(D[k:n]) for m < k; and
+//		//
+//		// PATH(m, D[n]) = PATH(m - k, D[k:n]) : MTH(D[0:k]) for m >= k,
+//		//
+//		// where : is concatenation of lists and D[k1:k2] denotes the length
+//		// (k2 - k1) list {d(k1), d(k1+1),..., d(k2-1)} as before.
+//		n := len(D)
+//		k := largestPowerOfTwoLessThan(n)
+//		if m < k {
+//			return append(PATH(m, D[0:k]), MTH(D[k:n]))
+//		}
+//		return append(PATH(m-k, D[k:n]), MTH(D[0:k]))
+//	}
+//}
 
 //// This is the algorithm defined by https://tools.ietf.org/html/rfc6962#section-2.1.2
 ////

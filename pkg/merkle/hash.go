@@ -20,7 +20,7 @@ const (
 	NodePrefix byte = 1 // NodePrefix is prepended to intermediate node data prior to hashing.
 )
 
-// A Hasher is responsble for creating new instances of hash.Hasher. All
+// A Hasher is responsble for creating new instances of hash.Hash. All
 // crypto.Hash implementaions from the standard library satisfy this
 // interface.
 type Hasher interface {
