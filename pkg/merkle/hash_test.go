@@ -18,34 +18,33 @@ import (
 )
 
 func TestRoot(t *testing.T) {
-	tests := []struct {
-		desc     string
+	tests := map[string]struct {
 		leaves   []string
-		expected string
+		expected []byte
 	}{
-		{"nil", nil, digest(crypto.SHA256, nil)},
-		{"empty", []string{}, digest(crypto.SHA256, nil)},
-		{"empty leaf", []string{""}, digest(crypto.SHA256, []byte{0})},
-		{"L1", []string{"L1"}, digest(crypto.SHA256, append([]byte{0}, []byte("L1")...))},
-		{"L2", []string{"L2"}, digest(crypto.SHA256, append([]byte{0}, []byte("L2")...))},
-		{"L3", []string{"L3"}, digest(crypto.SHA256, append([]byte{0}, []byte("L3")...))},
-		{"L1,L2", []string{"L1", "L2"}, "0458611336c5dfbf775a6ca6196b215413be1d4e129a3c837633276e458da501"},
-		{"L1,L2,L3", []string{"L1", "L2", "L3"}, "fb790cff1cc41df6229c8b4e399b57a4263a9532e9a5dfdff190337682ee836f"},
-		{"L1,L2,L3,L4", []string{"L1", "L2", "L3", "L4"}, "41d0c7082e1794f1133cb7cebeaedb2818a93d7f4d697c4db5d2c97a37c536aa"},
-		{"L1,L2,L3,L4,L5", []string{"L1", "L2", "L3", "L4", "L5"}, "8d5fe8e8394e4a793a9cee344558017546f5005608ad52db4e388c13dec299f9"},
+		"nil":        {nil, digest(crypto.SHA256, nil)},
+		"empty":      {[]string{}, digest(crypto.SHA256, nil)},
+		"empty leaf": {[]string{""}, digest(crypto.SHA256, []byte{0})},
+		"L1":         {[]string{"L1"}, digest(crypto.SHA256, append([]byte{0}, []byte("L1")...))},
+		"L2":         {[]string{"L2"}, digest(crypto.SHA256, append([]byte{0}, []byte("L2")...))},
+		"L3":         {[]string{"L3"}, digest(crypto.SHA256, append([]byte{0}, []byte("L3")...))},
+		"2 leaves":   {[]string{"L1", "L2"}, fromHex(t, "0458611336c5dfbf775a6ca6196b215413be1d4e129a3c837633276e458da501")},
+		"3 leaves":   {[]string{"L1", "L2", "L3"}, fromHex(t, "fb790cff1cc41df6229c8b4e399b57a4263a9532e9a5dfdff190337682ee836f")},
+		"4 leaves":   {[]string{"L1", "L2", "L3", "L4"}, fromHex(t, "41d0c7082e1794f1133cb7cebeaedb2818a93d7f4d697c4db5d2c97a37c536aa")},
+		"5 leaves":   {[]string{"L1", "L2", "L3", "L4", "L5"}, fromHex(t, "8d5fe8e8394e4a793a9cee344558017546f5005608ad52db4e388c13dec299f9")},
 	}
-	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
+	for desc, tt := range tests {
+		t.Run(desc, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 			leaves := make([][]byte, len(tt.leaves))
 			for i := 0; i < len(tt.leaves); i++ {
 				leaves[i] = []byte(tt.leaves[i])
 			}
 			actual := Root(crypto.SHA256, leaves...)
-			gt.Expect(toHex(actual)).To(Equal(tt.expected), "got %x, want: %s", actual, tt.expected)
+			gt.Expect(actual).To(Equal(tt.expected), "got %x, want: %s", actual, tt.expected)
 
 			tree := NewTree(crypto.SHA256, leaves...)
-			gt.Expect(toHex(tree.Root())).To(Equal(tt.expected))
+			gt.Expect(tree.Root()).To(Equal(tt.expected))
 		})
 	}
 }
@@ -110,14 +109,22 @@ func TestFormat(t *testing.T) {
 	}
 }
 
-func digest(hash crypto.Hash, b []byte) string {
+func digest(hash crypto.Hash, b []byte) []byte {
 	h := hash.New()
 	h.Write(b)
-	return toHex(h.Sum(nil))
+	return h.Sum(nil)
 }
 
 func toHex(b []byte) string {
 	return hex.EncodeToString(b)
+}
+
+func fromHex(t *testing.T, s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		t.Fatalf("failed to decode %q as hex string", s)
+	}
+	return b
 }
 
 // MTH is the algorithm described in RFC6962. We use it to ensure that our

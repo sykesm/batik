@@ -1,0 +1,60 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+option go_package = "github.com/sykesm/batik/pkg/transaction/internal/testprotos/mutated";
+
+package mutated;
+
+message Party {
+  bytes credential = 1;
+}
+
+message StateInfo {
+  repeated Party owners = 1;
+  string kind = 2;
+}
+
+message State {
+  StateInfo info = 1;
+  bytes state = 2;
+}
+
+message StateReference {
+  bytes txid = 1;
+  uint64 output_index = 2;
+}
+
+message Parameter {
+  string name = 1;
+  bytes value = 2;
+}
+
+// Transaction message without salt.
+message NoSaltTransaction {
+  repeated StateReference inputs = 2;
+  repeated StateReference references = 3;
+  repeated State outputs = 4;
+  repeated Parameter parameters = 5;
+  repeated Party required_signers = 6;
+}
+
+// Transaction message with removed field.
+message RemovedFieldTransaction {
+  bytes salt = 1;
+  repeated StateReference inputs = 2;
+  repeated StateReference references = 3;
+  repeated State outputs = 4;
+  repeated Party required_signers = 6;
+}
+
+message ExtraFieldTransaction {
+  bytes salt = 1;
+  repeated StateReference inputs = 2;
+  repeated StateReference references = 3;
+  repeated State outputs = 4;
+  repeated Parameter parameters = 5;
+  repeated Party required_signers = 6;
+  repeated Party something_new = 7;
+}
