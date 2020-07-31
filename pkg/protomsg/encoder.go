@@ -77,8 +77,8 @@ var useGoProto bool
 // additional runtime checks that are necessary. This comes at a cost.
 //
 // The "slow" encoding relies on reflection and is about an order of magnitude
-// slower than than the optimized implementation. This means that we should
-// only use this implementation when a persistent, stable encoding is requried.
+// slower than the optimized implementation. This means that we should only use
+// this implementation when a persistent, stable encoding is requried.
 //
 // Additional optimzations can be implemented as necessary. In particualr, we
 // can implement custom marshaling for our wire types that does not rely on
@@ -86,7 +86,7 @@ var useGoProto bool
 // implementation for as long as it remains stable. This requires some
 // additional test infrascture to validate the constraints hold.
 func MarshalDeterministic(m proto.Message) ([]byte, error) {
-	if m == nil || !m.ProtoReflect().IsValid() || useGoProto {
+	if useGoProto || m == nil || !m.ProtoReflect().IsValid() {
 		if err := ValidateMessage(m); err != nil {
 			return nil, err
 		}
