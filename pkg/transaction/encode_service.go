@@ -1,3 +1,6 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package transaction
 
 import (
@@ -8,9 +11,13 @@ import (
 	"github.com/sykesm/batik/pkg/protomsg"
 )
 
+// EncodeService implements the EncodeTransactionAPI gRPC interface.
 type EncodeService struct{}
 
-func (e *EncodeService) EncodedTransaction(ctx context.Context, req *tb.EncodedTransactionRequest) (*tb.EncodedTransactionResponse, error) {
+// EncodeTransaction encodes a transaction via deterministic marshal and returns
+// the encoded bytes as well as a hash over the transaction represented as a merkle
+// root and generated via SHA256 as the internal hashing function.
+func (e *EncodeService) EncodeTransaction(ctx context.Context, req *tb.EncodeTransactionRequest) (*tb.EncodeTransactionResponse, error) {
 	tx := req.Transaction
 
 	id, err := ID(crypto.SHA256, tx)
@@ -23,7 +30,7 @@ func (e *EncodeService) EncodedTransaction(ctx context.Context, req *tb.EncodedT
 		return nil, err
 	}
 
-	return &tb.EncodedTransactionResponse{
+	return &tb.EncodeTransactionResponse{
 		Txid:               id,
 		EncodedTransaction: encodedTx,
 	}, nil

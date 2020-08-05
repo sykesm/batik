@@ -32,8 +32,8 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-// EncodedTransactionRequest is a TODO and FIXME comment.
-type EncodedTransactionRequest struct {
+// EncodeTransactionRequest contains a Transaction.
+type EncodeTransactionRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -41,8 +41,8 @@ type EncodedTransactionRequest struct {
 	Transaction *Transaction `protobuf:"bytes,1,opt,name=transaction,proto3" json:"transaction,omitempty"`
 }
 
-func (x *EncodedTransactionRequest) Reset() {
-	*x = EncodedTransactionRequest{}
+func (x *EncodeTransactionRequest) Reset() {
+	*x = EncodeTransactionRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_transaction_encode_transaction_api_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -50,13 +50,13 @@ func (x *EncodedTransactionRequest) Reset() {
 	}
 }
 
-func (x *EncodedTransactionRequest) String() string {
+func (x *EncodeTransactionRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EncodedTransactionRequest) ProtoMessage() {}
+func (*EncodeTransactionRequest) ProtoMessage() {}
 
-func (x *EncodedTransactionRequest) ProtoReflect() protoreflect.Message {
+func (x *EncodeTransactionRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_transaction_encode_transaction_api_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -68,20 +68,21 @@ func (x *EncodedTransactionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EncodedTransactionRequest.ProtoReflect.Descriptor instead.
-func (*EncodedTransactionRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use EncodeTransactionRequest.ProtoReflect.Descriptor instead.
+func (*EncodeTransactionRequest) Descriptor() ([]byte, []int) {
 	return file_transaction_encode_transaction_api_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *EncodedTransactionRequest) GetTransaction() *Transaction {
+func (x *EncodeTransactionRequest) GetTransaction() *Transaction {
 	if x != nil {
 		return x.Transaction
 	}
 	return nil
 }
 
-// EncodedTransactionResponse is a TODO and FIXME comment.
-type EncodedTransactionResponse struct {
+// EncodeTransactionResponse contains the transaction ID and encoded bytes representing
+// the transaction passed in the EncodeTransactionRequest.
+type EncodeTransactionResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -90,8 +91,8 @@ type EncodedTransactionResponse struct {
 	EncodedTransaction []byte `protobuf:"bytes,2,opt,name=encoded_transaction,json=encodedTransaction,proto3" json:"encoded_transaction,omitempty"`
 }
 
-func (x *EncodedTransactionResponse) Reset() {
-	*x = EncodedTransactionResponse{}
+func (x *EncodeTransactionResponse) Reset() {
+	*x = EncodeTransactionResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_transaction_encode_transaction_api_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -99,13 +100,13 @@ func (x *EncodedTransactionResponse) Reset() {
 	}
 }
 
-func (x *EncodedTransactionResponse) String() string {
+func (x *EncodeTransactionResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EncodedTransactionResponse) ProtoMessage() {}
+func (*EncodeTransactionResponse) ProtoMessage() {}
 
-func (x *EncodedTransactionResponse) ProtoReflect() protoreflect.Message {
+func (x *EncodeTransactionResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_transaction_encode_transaction_api_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -117,19 +118,19 @@ func (x *EncodedTransactionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EncodedTransactionResponse.ProtoReflect.Descriptor instead.
-func (*EncodedTransactionResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use EncodeTransactionResponse.ProtoReflect.Descriptor instead.
+func (*EncodeTransactionResponse) Descriptor() ([]byte, []int) {
 	return file_transaction_encode_transaction_api_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *EncodedTransactionResponse) GetTxid() []byte {
+func (x *EncodeTransactionResponse) GetTxid() []byte {
 	if x != nil {
 		return x.Txid
 	}
 	return nil
 }
 
-func (x *EncodedTransactionResponse) GetEncodedTransaction() []byte {
+func (x *EncodeTransactionResponse) GetEncodedTransaction() []byte {
 	if x != nil {
 		return x.EncodedTransaction
 	}
@@ -144,30 +145,30 @@ var file_transaction_encode_transaction_api_proto_rawDesc = []byte{
 	0x5f, 0x61, 0x70, 0x69, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0b, 0x74, 0x72, 0x61, 0x6e,
 	0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x1d, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63,
 	0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x57, 0x0a, 0x19, 0x45, 0x6e, 0x63, 0x6f, 0x64, 0x65,
-	0x64, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x12, 0x3a, 0x0a, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73,
-	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x52, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x22,
-	0x61, 0x0a, 0x1a, 0x45, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61,
-	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x12, 0x0a,
-	0x04, 0x74, 0x78, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x74, 0x78, 0x69,
-	0x64, 0x12, 0x2f, 0x0a, 0x13, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x5f, 0x74, 0x72, 0x61,
-	0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x12,
-	0x65, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x32, 0x7d, 0x0a, 0x14, 0x45, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x54, 0x72, 0x61, 0x6e,
-	0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x41, 0x50, 0x49, 0x12, 0x65, 0x0a, 0x12, 0x45, 0x6e,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x56, 0x0a, 0x18, 0x45, 0x6e, 0x63, 0x6f, 0x64, 0x65,
+	0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x3a, 0x0a, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61,
+	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x52, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x60,
+	0x0a, 0x19, 0x45, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x74,
+	0x78, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x74, 0x78, 0x69, 0x64, 0x12,
+	0x2f, 0x0a, 0x13, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x5f, 0x74, 0x72, 0x61, 0x6e, 0x73,
+	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x12, 0x65, 0x6e,
 	0x63, 0x6f, 0x64, 0x65, 0x64, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e,
-	0x12, 0x26, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x45,
-	0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f,
-	0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73,
-	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x45, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x54, 0x72,
-	0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x42, 0x2f, 0x5a, 0x2d, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x69, 0x62, 0x6d, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x62, 0x61, 0x74, 0x69, 0x6b, 0x2f, 0x62, 0x61, 0x74, 0x69, 0x6b, 0x2f,
-	0x70, 0x6b, 0x67, 0x2f, 0x70, 0x62, 0x2f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x32, 0x7a, 0x0a, 0x14, 0x45, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61,
+	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x41, 0x50, 0x49, 0x12, 0x62, 0x0a, 0x11, 0x45, 0x6e, 0x63, 0x6f,
+	0x64, 0x65, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x25, 0x2e,
+	0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x45, 0x6e, 0x63, 0x6f,
+	0x64, 0x65, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
+	0x6f, 0x6e, 0x2e, 0x45, 0x6e, 0x63, 0x6f, 0x64, 0x65, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63,
+	0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x2f, 0x5a, 0x2d,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x69, 0x62, 0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x62,
+	0x61, 0x74, 0x69, 0x6b, 0x2f, 0x62, 0x61, 0x74, 0x69, 0x6b, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x70,
+	0x62, 0x2f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -184,14 +185,14 @@ func file_transaction_encode_transaction_api_proto_rawDescGZIP() []byte {
 
 var file_transaction_encode_transaction_api_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_transaction_encode_transaction_api_proto_goTypes = []interface{}{
-	(*EncodedTransactionRequest)(nil),  // 0: transaction.EncodedTransactionRequest
-	(*EncodedTransactionResponse)(nil), // 1: transaction.EncodedTransactionResponse
-	(*Transaction)(nil),                // 2: transaction.Transaction
+	(*EncodeTransactionRequest)(nil),  // 0: transaction.EncodeTransactionRequest
+	(*EncodeTransactionResponse)(nil), // 1: transaction.EncodeTransactionResponse
+	(*Transaction)(nil),               // 2: transaction.Transaction
 }
 var file_transaction_encode_transaction_api_proto_depIdxs = []int32{
-	2, // 0: transaction.EncodedTransactionRequest.transaction:type_name -> transaction.Transaction
-	0, // 1: transaction.EncodeTransactionAPI.EncodedTransaction:input_type -> transaction.EncodedTransactionRequest
-	1, // 2: transaction.EncodeTransactionAPI.EncodedTransaction:output_type -> transaction.EncodedTransactionResponse
+	2, // 0: transaction.EncodeTransactionRequest.transaction:type_name -> transaction.Transaction
+	0, // 1: transaction.EncodeTransactionAPI.EncodeTransaction:input_type -> transaction.EncodeTransactionRequest
+	1, // 2: transaction.EncodeTransactionAPI.EncodeTransaction:output_type -> transaction.EncodeTransactionResponse
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -207,7 +208,7 @@ func file_transaction_encode_transaction_api_proto_init() {
 	file_transaction_transaction_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_transaction_encode_transaction_api_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EncodedTransactionRequest); i {
+			switch v := v.(*EncodeTransactionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -219,7 +220,7 @@ func file_transaction_encode_transaction_api_proto_init() {
 			}
 		}
 		file_transaction_encode_transaction_api_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EncodedTransactionResponse); i {
+			switch v := v.(*EncodeTransactionResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -263,8 +264,10 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type EncodeTransactionAPIClient interface {
-	// EncodedTransaction is a TODO and FIXME comment.
-	EncodedTransaction(ctx context.Context, in *EncodedTransactionRequest, opts ...grpc.CallOption) (*EncodedTransactionResponse, error)
+	// EncodeTransaction encodes a transaction via deterministic marshal and returns
+	// the encoded bytes as well as a hash over the transaction represented as a merkle
+	// root and generated via SHA256 as the internal hashing function.
+	EncodeTransaction(ctx context.Context, in *EncodeTransactionRequest, opts ...grpc.CallOption) (*EncodeTransactionResponse, error)
 }
 
 type encodeTransactionAPIClient struct {
@@ -275,9 +278,9 @@ func NewEncodeTransactionAPIClient(cc grpc.ClientConnInterface) EncodeTransactio
 	return &encodeTransactionAPIClient{cc}
 }
 
-func (c *encodeTransactionAPIClient) EncodedTransaction(ctx context.Context, in *EncodedTransactionRequest, opts ...grpc.CallOption) (*EncodedTransactionResponse, error) {
-	out := new(EncodedTransactionResponse)
-	err := c.cc.Invoke(ctx, "/transaction.EncodeTransactionAPI/EncodedTransaction", in, out, opts...)
+func (c *encodeTransactionAPIClient) EncodeTransaction(ctx context.Context, in *EncodeTransactionRequest, opts ...grpc.CallOption) (*EncodeTransactionResponse, error) {
+	out := new(EncodeTransactionResponse)
+	err := c.cc.Invoke(ctx, "/transaction.EncodeTransactionAPI/EncodeTransaction", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -286,36 +289,38 @@ func (c *encodeTransactionAPIClient) EncodedTransaction(ctx context.Context, in 
 
 // EncodeTransactionAPIServer is the server API for EncodeTransactionAPI service.
 type EncodeTransactionAPIServer interface {
-	// EncodedTransaction is a TODO and FIXME comment.
-	EncodedTransaction(context.Context, *EncodedTransactionRequest) (*EncodedTransactionResponse, error)
+	// EncodeTransaction encodes a transaction via deterministic marshal and returns
+	// the encoded bytes as well as a hash over the transaction represented as a merkle
+	// root and generated via SHA256 as the internal hashing function.
+	EncodeTransaction(context.Context, *EncodeTransactionRequest) (*EncodeTransactionResponse, error)
 }
 
 // UnimplementedEncodeTransactionAPIServer can be embedded to have forward compatible implementations.
 type UnimplementedEncodeTransactionAPIServer struct {
 }
 
-func (*UnimplementedEncodeTransactionAPIServer) EncodedTransaction(context.Context, *EncodedTransactionRequest) (*EncodedTransactionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EncodedTransaction not implemented")
+func (*UnimplementedEncodeTransactionAPIServer) EncodeTransaction(context.Context, *EncodeTransactionRequest) (*EncodeTransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EncodeTransaction not implemented")
 }
 
 func RegisterEncodeTransactionAPIServer(s *grpc.Server, srv EncodeTransactionAPIServer) {
 	s.RegisterService(&_EncodeTransactionAPI_serviceDesc, srv)
 }
 
-func _EncodeTransactionAPI_EncodedTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EncodedTransactionRequest)
+func _EncodeTransactionAPI_EncodeTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EncodeTransactionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(EncodeTransactionAPIServer).EncodedTransaction(ctx, in)
+		return srv.(EncodeTransactionAPIServer).EncodeTransaction(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/transaction.EncodeTransactionAPI/EncodedTransaction",
+		FullMethod: "/transaction.EncodeTransactionAPI/EncodeTransaction",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EncodeTransactionAPIServer).EncodedTransaction(ctx, req.(*EncodedTransactionRequest))
+		return srv.(EncodeTransactionAPIServer).EncodeTransaction(ctx, req.(*EncodeTransactionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -325,8 +330,8 @@ var _EncodeTransactionAPI_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*EncodeTransactionAPIServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "EncodedTransaction",
-			Handler:    _EncodeTransactionAPI_EncodedTransaction_Handler,
+			MethodName: "EncodeTransaction",
+			Handler:    _EncodeTransactionAPI_EncodeTransaction_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

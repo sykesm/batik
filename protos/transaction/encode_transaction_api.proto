@@ -12,16 +12,19 @@ import "transaction/transaction.proto";
 // EncodeTransactionAPI applies canonical transaction encoding and returns the
 // encoded transaction and transaction ID.
 service EncodeTransactionAPI {
-  // EncodedTransaction is a TODO and FIXME comment.
-  rpc EncodedTransaction(EncodedTransactionRequest) returns (EncodedTransactionResponse);
+  // EncodeTransaction encodes a transaction via deterministic marshal and returns
+  // the encoded bytes as well as a hash over the transaction represented as a merkle
+  // root and generated via SHA256 as the internal hashing function.
+  rpc EncodeTransaction(EncodeTransactionRequest) returns (EncodeTransactionResponse);
 };
 
-// EncodedTransactionRequest is a TODO and FIXME comment.
-message EncodedTransactionRequest {
+// EncodeTransactionRequest contains a Transaction.
+message EncodeTransactionRequest {
   Transaction transaction = 1;
 }
-// EncodedTransactionResponse is a TODO and FIXME comment.
-message EncodedTransactionResponse {
+// EncodeTransactionResponse contains the transaction ID and encoded bytes representing
+// the transaction passed in the EncodeTransactionRequest.
+message EncodeTransactionResponse {
   bytes txid = 1;
   bytes encoded_transaction = 2;
 }

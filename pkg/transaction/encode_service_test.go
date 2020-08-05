@@ -1,3 +1,6 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package transaction
 
 import (
@@ -14,15 +17,15 @@ func TestEncodeService(t *testing.T) {
 
 	testTx := newTestTransaction()
 
-	req := &tb.EncodedTransactionRequest{
+	req := &tb.EncodeTransactionRequest{
 		Transaction: testTx,
 	}
 
 	encodeSvc := &EncodeService{}
-	response, err := encodeSvc.EncodedTransaction(context.Background(), req)
+	resp, err := encodeSvc.EncodeTransaction(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(response.Txid).To(Equal(fromHex(t, "53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f")))
+	gt.Expect(resp.Txid).To(Equal(fromHex(t, "53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f")))
 
 	expectedEncoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(testTx)
-	gt.Expect(response.EncodedTransaction).To(Equal(expectedEncoded))
+	gt.Expect(resp.EncodedTransaction).To(Equal(expectedEncoded))
 }
