@@ -14,7 +14,9 @@ import (
 
 	cli "github.com/urfave/cli/v2"
 	"github.com/sykesm/batik/pkg/buildinfo"
+	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/repl"
+	"github.com/sykesm/batik/pkg/transaction"
 	"google.golang.org/grpc"
 )
 
@@ -157,6 +159,9 @@ func startServer(address string) error {
 		return err
 	}
 	server := grpc.NewServer()
+
+	encodeTxSvc := &transaction.EncodeService{}
+	tb.RegisterEncodeTransactionAPIServer(server, encodeTxSvc)
 
 	return server.Serve(listener)
 }

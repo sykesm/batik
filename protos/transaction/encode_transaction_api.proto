@@ -1,0 +1,27 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+option go_package = "github.com/sykesm/batik/pkg/pb/transaction";
+
+package transaction;
+
+import "transaction/transaction.proto";
+
+// EncodeTransactionAPI applies canonical transaction encoding and returns the
+// encoded transaction and transaction ID.
+service EncodeTransactionAPI {
+  // EncodedTransaction is a TODO and FIXME comment.
+  rpc EncodedTransaction(EncodedTransactionRequest) returns (EncodedTransactionResponse);
+};
+
+// EncodedTransactionRequest is a TODO and FIXME comment.
+message EncodedTransactionRequest {
+  Transaction transaction = 1;
+}
+// EncodedTransactionResponse is a TODO and FIXME comment.
+message EncodedTransactionResponse {
+  bytes txid = 1;
+  bytes encoded_transaction = 2;
+}
