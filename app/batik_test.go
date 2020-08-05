@@ -21,5 +21,7 @@ func TestBatik(t *testing.T) {
 	gt.Expect(app.Copyright).To(MatchRegexp("© Copyright IBM Corporation [\\d]{4}. All rights reserved."))
 
 	gt.Expect(app.Flags).To(BeEmpty())
-	gt.Expect(app.Commands).To(BeEmpty())
+	gt.Expect(app.Commands).NotTo(BeEmpty())
+	gt.Expect(app.Commands[0].Name).To(Equal("start"))
+	gt.Expect(app.Commands[1].Name).To(Equal("status"))
 }
