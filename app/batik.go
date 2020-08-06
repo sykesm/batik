@@ -14,6 +14,7 @@ import (
 
 	cli "github.com/urfave/cli/v2"
 	"github.com/sykesm/batik/pkg/buildinfo"
+	"github.com/sykesm/batik/pkg/config"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/repl"
 	"github.com/sykesm/batik/pkg/transaction"
@@ -25,6 +26,9 @@ var statusCommand = &cli.Command{
 	Description: "check status of server",
 	Action: func(ctx *cli.Context) error {
 		address := ctx.String("address")
+		if address == "" {
+			address = ctx.App.Metadata["config"].(config.BatikConfig).Server.Address
+		}
 		if err := checkStatus(address); err != nil {
 			return cli.Exit(fmt.Sprintf("Server not running at %s", address), 1)
 
@@ -40,7 +44,7 @@ var statusCommand = &cli.Command{
 	},
 }
 
-func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
+func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer, cfg config.BatikConfig) *cli.App {
 	app := cli.NewApp()
 	app.Copyright = fmt.Sprintf("© Copyright IBM Corporation %04d. All rights reserved.", buildinfo.Built().Year())
 	app.Name = "batik"
@@ -54,12 +58,19 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		fmt.Fprintf(c.App.ErrWriter, "%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, name)
 		os.Exit(3)
 	}
+	app.Metadata = map[string]interface{}{
+		"config": cfg,
+	}
+
 	app.Commands = []*cli.Command{
 		{
 			Name:        "start",
 			Description: "start the grpc server",
 			Action: func(ctx *cli.Context) error {
 				address := ctx.String("address")
+				if address == "" {
+					address = ctx.App.Metadata["config"].(config.BatikConfig).Server.Address
+				}
 				if err := startServer(address); err != nil {
 					return cli.Exit(err.Error(), 2)
 				}
@@ -68,10 +79,9 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			},
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "address",
-					Aliases:  []string{"a"},
-					Usage:    "Listen address for the grpc server",
-					Required: true,
+					Name:    "address",
+					Aliases: []string{"a"},
+					Usage:   "Listen address for the grpc server",
 				},
 			},
 		},
