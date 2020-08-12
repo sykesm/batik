@@ -9,6 +9,7 @@ require (
 	github.com/golang/protobuf v1.4.1
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
+	github.com/onsi/ginkgo v1.7.0
 	github.com/onsi/gomega v1.9.0
 	github.com/peterh/liner v1.2.0
 	github.com/pkg/errors v0.9.1

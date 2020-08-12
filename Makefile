@@ -37,6 +37,10 @@ unit-test unit-tests:
 linting:
 	@scripts/run-linting
 
+.PHONY: integration-test integration-tests
+integration-test integration-tests:
+	@scripts/run-integration-tests
+
 # go tool->path mapping
 gotool.protoc-gen-go := github.com/golang/protobuf/protoc-gen-go
 gotool.prototool := github.com/uber/prototool/cmd/prototool

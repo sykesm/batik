@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Copyright IBM Corp. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+set -euo pipefail
+
+main() {
+    local batik_dir package_name test_dirs
+
+    batik_dir="$(cd "$(dirname "$0")/.." && pwd)"
+    cd "$batik_dir"
+
+    package_name="github.com/sykesm/batik"
+
+    test_dirs=$(go list ./... | grep integration/ | sed s,"${package_name}",.,g)
+
+    >&2 printf "Running the following test suites:\n\n%s\n\nStarting tests...\n\n" "$(echo "${test_dirs[@]}" | tr -s ' ' '\n')"
+    time ginkgo -keepGoing --slowSpecThreshold 60 "${test_dirs[@]}"
+    echo
+}
+
+main
