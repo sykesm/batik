@@ -10,6 +10,7 @@ go 1.14
 replace github.com/fullstorydev/grpcurl => github.com/fullstorydev/grpcurl v1.5.1
 
 require (
+	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/uber/prototool v1.9.0
 	google.golang.org/protobuf v1.25.0
 )

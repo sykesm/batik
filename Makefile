@@ -44,7 +44,8 @@ integration-test integration-tests:
 # go tool->path mapping
 gotool.protoc-gen-go := github.com/golang/protobuf/protoc-gen-go
 gotool.prototool := github.com/uber/prototool/cmd/prototool
-GOTOOLS = protoc-gen-go prototool
+gotool.ginkgo := github.com/onsi/ginkgo/ginkgo
+GOTOOLS = protoc-gen-go prototool ginkgo
 
 .PHONY: gotools
 gotools: $(patsubst %,$(GOTOOLS_BINDIR)/%, $(GOTOOLS))
