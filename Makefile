@@ -27,7 +27,7 @@ batik:
 		-o dist/$@ \
 		github.com/sykesm/batik/cmd/batik
 
-checks: gotools linting unit-test
+checks: gotools linting unit-test integration-test
 
 .PHONY: unit-test unit-tests
 unit-test unit-tests:
