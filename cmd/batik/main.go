@@ -12,7 +12,6 @@ import (
 	cli "github.com/urfave/cli/v2"
 	"github.com/sykesm/batik/app"
 	"github.com/sykesm/batik/pkg/buildinfo"
-	"github.com/sykesm/batik/pkg/config"
 )
 
 func main() {
@@ -24,13 +23,7 @@ func main() {
 		fmt.Printf("Built:      %s\n", c.App.Compiled.Format(time.ANSIC))
 	}
 
-	cfgPath := os.Getenv("BATIK_CFG_DIR")
-	cfg, err := config.NewBatikConfig(cfgPath)
-	if err != nil {
-		errorExit(2, "failed loading batik config: %s", err)
-	}
-
-	app := app.Batik(os.Args, os.Stdin, os.Stdout, os.Stderr, cfg)
+	app := app.Batik(os.Args, os.Stdin, os.Stdout, os.Stderr)
 
 	if err := app.Run(os.Args); err != nil {
 		errorExit(2, "command failed: %s", err)

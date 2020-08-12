@@ -44,7 +44,7 @@ var statusCommand = &cli.Command{
 	},
 }
 
-func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer, cfg config.BatikConfig) *cli.App {
+func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
 	app := cli.NewApp()
 	app.Copyright = fmt.Sprintf("© Copyright IBM Corporation %04d. All rights reserved.", buildinfo.Built().Year())
 	app.Name = "batik"
@@ -58,10 +58,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer, cfg con
 		fmt.Fprintf(c.App.ErrWriter, "%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, name)
 		os.Exit(3)
 	}
-	app.Metadata = map[string]interface{}{
-		"config": cfg,
-	}
-
 	app.Commands = []*cli.Command{
 		{
 			Name:        "start",
@@ -82,10 +78,36 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer, cfg con
 					Name:    "address",
 					Aliases: []string{"a"},
 					Usage:   "Listen address for the grpc server",
+					EnvVars: []string{"BATIK_ADDRESS"},
 				},
 			},
 		},
 		statusCommand,
+	}
+
+	app.Flags = []cli.Flag{
+		&cli.StringFlag{
+			Name:    "config",
+			Aliases: []string{"c"},
+			Usage:   "Path to yaml file to load configuration parameters from",
+			EnvVars: []string{"BATIK_CFG_PATH"},
+		},
+	}
+
+	app.Before = func(c *cli.Context) error {
+		// Load config file
+		cfgPath := c.String("config")
+
+		cfg, err := config.NewBatikConfig(cfgPath)
+		if err != nil {
+			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), 3)
+		}
+
+		app.Metadata = map[string]interface{}{
+			"config": cfg,
+		}
+
+		return nil
 	}
 
 	// setup flags for the ledger
