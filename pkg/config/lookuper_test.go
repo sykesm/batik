@@ -9,19 +9,18 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestEnvMap_Getenv(t *testing.T) {
+func TestEnvMap_Lookup(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	envMap := EnvMap{
 		"key": "value",
 	}
 
-	v, err := envMap.Getenv("key")
+	v, err := envMap.Lookup("key")
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(v).To(Equal("value"))
 
-	v, err = envMap.Getenv("key2")
+	v, err = envMap.Lookup("key2")
 	gt.Expect(err).To(MatchError("$key2 is not defined"))
 	gt.Expect(v).To(Equal(""))
-
 }

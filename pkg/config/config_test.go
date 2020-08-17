@@ -11,6 +11,12 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+type fakeLookuper struct{}
+
+func (f fakeLookuper) Lookup(key string) (string, error) {
+	return "", nil
+}
+
 func TestNewBatikConfig(t *testing.T) {
 	tests := []struct {
 		testName       string
@@ -49,6 +55,19 @@ func TestNewBatikConfig(t *testing.T) {
 			expectedConfig: BatikConfig{
 				Server: Server{
 					Address: "127.0.0.1:9003",
+				},
+			},
+		},
+		{
+			testName: "load env vars override",
+			cfgPath:  "",
+			envMap: EnvMap{
+				"HOME":          filepath.Join("testdata", "home"),
+				"BATIK_ADDRESS": "127.0.0.1:9004",
+			},
+			expectedConfig: BatikConfig{
+				Server: Server{
+					Address: "127.0.0.1:9004",
 				},
 			},
 		},
@@ -125,10 +144,10 @@ func TestNewBatikConfig_Failures(t *testing.T) {
 		})
 	}
 
-	t.Run("multiple EnvMaps", func(t *testing.T) {
+	t.Run("unsupported lookuper", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
-		_, err := NewBatikConfig("", EnvMap{}, EnvMap{})
-		gt.Expect(err).To(MatchError("expected at most 1 optional EnvMap"))
+		_, err := NewBatikConfig("", fakeLookuper{})
+		gt.Expect(err).To(MatchError("unsupported lookuper of type: config.fakeLookuper"))
 	})
 }

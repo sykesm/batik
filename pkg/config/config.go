@@ -36,8 +36,12 @@ type Server struct {
 //   3. $HOME/.config/batik/batik.yaml
 // If a config file still does not already exist at any of the above paths, configuration
 // parameters will need to be passed via command line flags or environment variables.
-func NewBatikConfig(cfgPath string, m ...EnvMap) (BatikConfig, error) {
+func NewBatikConfig(cfgPath string, l Lookuper) (BatikConfig, error) {
 	batikConfig := BatikConfig{}
+
+	if l == nil {
+		return BatikConfig{}, errors.New("empty lookuper")
+	}
 
 	if cfgPath == "" {
 		// Config paths to check in order if they exist:
@@ -48,8 +52,8 @@ func NewBatikConfig(cfgPath string, m ...EnvMap) (BatikConfig, error) {
 			".",
 		}
 
-		switch len(m) {
-		case 0:
+		switch l.(type) {
+		case OsEnv:
 			if usrCfgDir, err := os.UserConfigDir(); err == nil {
 				cfgPaths = append(cfgPaths, filepath.Join(usrCfgDir, "batik"))
 			}
@@ -57,41 +61,44 @@ func NewBatikConfig(cfgPath string, m ...EnvMap) (BatikConfig, error) {
 			if usrHomeDir, err := os.UserHomeDir(); err == nil {
 				cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
 			}
-		case 1:
-			if usrCfgDir, err := m[0].Getenv("XDG_CONFIG_HOME"); err == nil {
+		case EnvMap:
+			if usrCfgDir, err := l.Lookup("XDG_CONFIG_HOME"); err == nil {
 				cfgPaths = append(cfgPaths, filepath.Join(usrCfgDir, "batik"))
 			}
 
-			if usrHomeDir, err := m[0].Getenv("HOME"); err == nil {
+			if usrHomeDir, err := l.Lookup("HOME"); err == nil {
 				cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
 			}
 		default:
-			return BatikConfig{}, errors.New("expected at most 1 optional EnvMap")
+			return BatikConfig{}, fmt.Errorf("unsupported lookuper of type: %T", l)
 		}
 
 		for _, p := range cfgPaths {
 			path := filepath.Join(p, "batik.yaml")
-			// fmt.Printf("Checking if config exists at %s\n", path)
 			_, err := os.Stat(path)
 			if err == nil {
-				// fmt.Printf("Found config at %s\n", path)
 				cfgPath = path
 				break
 			}
-			// fmt.Printf("No config found at %s: %s\n", path, err)
 		}
 	}
 
 	if cfgPath != "" {
+		fmt.Printf("Loading %s\n", cfgPath)
 		if err := readFile(&batikConfig, cfgPath); err != nil {
 			return BatikConfig{}, fmt.Errorf("read file: %s", err)
 		}
 	}
 
-	// TODO: Parse env and post-decode defaults
-	// if err := readEnv(&batikConfig); err != nil {
-	// 	return BatikConfig{}, fmt.Errorf("read env: %s", err)
-	// }
+	d := Decoder{
+		lookuper:   l,
+		defaultTag: "example",
+		parseTag:   "env",
+	}
+
+	if err := d.Parse(&batikConfig); err != nil {
+		return BatikConfig{}, fmt.Errorf("decode: %s", err)
+	}
 
 	return batikConfig, nil
 }
@@ -110,11 +117,3 @@ func readFile(cfg *BatikConfig, cfgPath string) error {
 
 	return nil
 }
-
-// func readEnv(cfg *BatikConfig) error {
-// 	if err := env.Parse(cfg); err != nil {
-// 		return err
-// 	}
-//
-// 	return nil
-// }

@@ -98,7 +98,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		// Load config file
 		cfgPath := c.String("config")
 
-		cfg, err := config.NewBatikConfig(cfgPath)
+		cfg, err := config.NewBatikConfig(cfgPath, config.OsEnv{})
 		if err != nil {
 			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), 3)
 		}
