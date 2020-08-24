@@ -25,7 +25,7 @@ import (
 	"github.com/sykesm/batik/pkg/transaction/internal/testprotos/mutated"
 )
 
-func TestNonce(t *testing.T) {
+func TestSalt(t *testing.T) {
 	tests := []struct {
 		salt []byte
 		fn   uint32
@@ -49,7 +49,7 @@ func TestNonce(t *testing.T) {
 			binary.BigEndian.PutUint32(b, tt.idx)
 			hash.Write(b)
 
-			gt.Expect(nonce(crypto.SHA256, tt.salt, tt.fn, tt.idx)).To(Equal(hash.Sum(nil)))
+			gt.Expect(salt(crypto.SHA256, tt.salt, tt.fn, tt.idx)).To(Equal(hash.Sum(nil)))
 		})
 	}
 }
@@ -159,11 +159,11 @@ func reflectTransactionID(h merkle.Hasher, tx proto.Message) ([]byte, error) {
 	}
 	sort.Slice(fds, func(i, j int) bool { return fds[i].Number() < fds[j].Number() })
 
-	// Assert that field number 1 is a byte slice and use it as the salt.
+	// Assert that field number 1 is a byte slice and use it as the seed.
 	if fds[0].Number() != 1 {
 		return nil, errors.New("transaction field number 1 must be a byte slice to use as a salt")
 	}
-	salt := m.Get(fds[0]).Interface().([]byte)
+	seed := m.Get(fds[0]).Interface().([]byte)
 
 	// Iterate over the fields (except the salt). Each element should be a list.
 	// For each element of the list, mashaled to the nonce for the field and
@@ -172,13 +172,13 @@ func reflectTransactionID(h merkle.Hasher, tx proto.Message) ([]byte, error) {
 	for _, fd := range fds[1:] {
 		var listLeaves [][]byte
 		for i, l := 0, m.Get(fd).List(); i < l.Len(); i++ {
-			nonce := nonce(h, salt, uint32(fd.Number()), uint32(i))
+			s := salt(h, seed, uint32(fd.Number()), uint32(i))
 			msg := l.Get(i).Message().Interface()
 			encoded, err := protomsg.MarshalDeterministic(msg)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marhsal message %#v: %w", msg, err)
 			}
-			listLeaves = append(listLeaves, append(nonce, encoded...))
+			listLeaves = append(listLeaves, append(s, encoded...))
 		}
 		txLeaves = append(txLeaves, merkle.Root(h, listLeaves...))
 	}
