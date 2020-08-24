@@ -592,12 +592,12 @@ func TestInvalidTypes(t *testing.T) {
 		{
 			testName:    "invalid duration",
 			envMap:      EnvMap{"DURATION": "should-be-a-valid-duration"},
-			expectedErr: "decode: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration should-be-a-valid-duration",
+			expectedErr: "decode: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration \"should-be-a-valid-duration\"",
 		},
 		{
 			testName:    "invalid duration slice",
 			envMap:      EnvMap{"DURATIONS": "1s,contains-an-invalid-duration,3s"},
-			expectedErr: "decode: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration contains-an-invalid-duration",
+			expectedErr: "decode: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration \"contains-an-invalid-duration\"",
 		},
 	}
 
@@ -787,7 +787,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 		defaultTag: "example",
 	}
 	err := decoder.Parse(&cfg)
-	gt.Expect(err).To(MatchError("decode: parse error on field \"Unmarshaler\" of type \"config.unmarshaler\": time: invalid duration invalid"))
+	gt.Expect(err).To(MatchError("decode: parse error on field \"Unmarshaler\" of type \"config.unmarshaler\": time: invalid duration \"invalid\""))
 }
 
 func TestTextUnmarshalersError(t *testing.T) {
@@ -809,7 +809,7 @@ func TestTextUnmarshalersError(t *testing.T) {
 	}
 
 	err := decoder.Parse(&cfg)
-	gt.Expect(err).To(MatchError("decode: parse error on field \"Unmarshalers\" of type \"[]config.unmarshaler\": time: invalid duration invalid"))
+	gt.Expect(err).To(MatchError("decode: parse error on field \"Unmarshalers\" of type \"[]config.unmarshaler\": time: invalid duration \"invalid\""))
 }
 
 func TestParseURL(t *testing.T) {
