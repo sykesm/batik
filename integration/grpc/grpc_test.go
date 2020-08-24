@@ -13,30 +13,32 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
+
+	tb "github.com/sykesm/batik/pkg/pb/transaction"
 )
 
 var _ = Describe("Grpc", func() {
 	var (
-		cmd     *exec.Cmd
 		session *gexec.Session
 		address string
 	)
 
 	BeforeEach(func() {
-		var err error
-
 		address = fmt.Sprintf("127.0.0.1:%d", StartPort())
+		cmd := exec.Command(batikPath, "start", "-a", address)
 
-		cmd = exec.Command(batikPath, "start", "-a", address)
+		var err error
 		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).To(BeNil())
+		Eventually(session, testTimeout).Should(gbytes.Say("Starting server at " + address))
 	})
 
-	It("starts a grpc server", func() {
-		Eventually(session, testTimeout).Should(gbytes.Say(fmt.Sprintf("Starting server at %s", address)))
+	AfterEach(func() {
+		if session != nil {
+			session.Kill().Wait(testTimeout)
+		}
 	})
 
 	Describe("Encode transaction api", func() {
@@ -47,18 +49,11 @@ var _ = Describe("Grpc", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			encodeTransactionClient := tb.NewEncodeTransactionAPIClient(clientConn)
-
-			req := &tb.EncodeTransactionRequest{
+			resp, err := encodeTransactionClient.EncodeTransaction(context.Background(), &tb.EncodeTransactionRequest{
 				Transaction: testTx,
-			}
-
-			resp, err := encodeTransactionClient.EncodeTransaction(context.Background(), req)
+			})
 			Expect(err).NotTo(HaveOccurred())
-
-			expectedTxID, err := fromHex("53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f")
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(resp.Txid).To(Equal(expectedTxID))
+			Expect(hex.EncodeToString(resp.Txid)).To(Equal("53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f"))
 
 			expectedEncoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(testTx)
 			Expect(resp.EncodedTransaction).To(Equal(expectedEncoded))
