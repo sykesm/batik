@@ -1,0 +1,63 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+option go_package = "github.com/sykesm/batik/pkg/pb/store";
+
+package store;
+
+import "transaction/transaction.proto";
+import "transaction/resolved.proto";
+
+// StoreAPI provides methods for interacting with a backing store to
+// retrieve and store transactions and states.
+service StoreAPI {
+  // GetTransaction retrieves the associated transaction corresponding to the
+  // txid passed in the GetTransactionRequest.
+  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
+  // PutTransaction first verifies that the transaction can be hashed to the
+  // provided txid and then stores the transaction in the backing store.
+  rpc PutTransaction(PutTransactionRequest) returns (PutTransactionResponse);
+
+  // GetState retrieves the associated ResolvedState corresponding to the state reference
+  // passed in the GetStateRequest from the backing store indexed by a txid and
+  // output index that the State was originally created at in the transaction output
+  // list.
+  rpc GetState(GetStateRequest) returns (GetStateResponse);
+};
+
+// GetTransactionRequest contains a hashed transaction id.
+message GetTransactionRequest {
+  bytes txid = 1;
+}
+
+// GetTransactionResponse contains the transaction retrieved from the backing store
+// indexed by the txid that it hashes to.
+message GetTransactionResponse {
+  transaction.Transaction transaction = 1;
+}
+
+// PutTransactionRequest contains a transaction and the hash over the transaction as a
+// transaction id.
+message PutTransactionRequest {
+  bytes txid = 1;
+  transaction.Transaction transaction = 2;
+}
+
+// PutTransactionResponse is an empty response returned on attempting to store
+// a transaction in the backing store.
+message PutTransactionResponse {}
+
+// GetStateRequest contains a state reference denoted by a txid and output index that can
+// be resolved to a State existing in the backing store.
+message GetStateRequest {
+  transaction.StateReference state_ref = 1;
+}
+
+// GetStateResponse contains a resolved state retrieved from the backing store indexed
+// by the state reference that points to the transaction and output index where the State
+// was originally created at.
+message GetStateResponse {
+  transaction.ResolvedState state = 1;
+}
