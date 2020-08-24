@@ -3,7 +3,7 @@
 
 module tools
 
-go 1.15
+go 1.14
 
 // https://github.com/uber/prototool/issues/559
 // https://github.com/fullstorydev/grpcurl/pull/145
