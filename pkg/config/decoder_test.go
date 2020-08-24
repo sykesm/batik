@@ -532,72 +532,72 @@ func TestInvalidTypes(t *testing.T) {
 		{
 			testName:    "invalid int",
 			envMap:      EnvMap{"INT": "should-be-an-int"},
-			expectedErr: "decode: parse error on field \"Int\" of type \"int\": strconv.ParseInt: parsing \"should-be-an-int\": invalid syntax",
+			expectedErr: `decode: parse error on field "Int" of type "int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax`,
 		},
 		{
 			testName:    "invalid uint",
 			envMap:      EnvMap{"UINT": "-44"},
-			expectedErr: "decode: parse error on field \"Uint\" of type \"uint\": strconv.ParseUint: parsing \"-44\": invalid syntax",
+			expectedErr: `decode: parse error on field "Uint" of type "uint": strconv.ParseUint: parsing "-44": invalid syntax`,
 		},
 		{
 			testName:    "invalid float32",
 			envMap:      EnvMap{"FLOAT32": "AAA"},
-			expectedErr: "decode: parse error on field \"Float32\" of type \"float32\": strconv.ParseFloat: parsing \"AAA\": invalid syntax",
+			expectedErr: `decode: parse error on field "Float32" of type "float32": strconv.ParseFloat: parsing "AAA": invalid syntax`,
 		},
 		{
 			testName:    "invalid float64",
 			envMap:      EnvMap{"FLOAT64": "AAA"},
-			expectedErr: "decode: parse error on field \"Float64\" of type \"float64\": strconv.ParseFloat: parsing \"AAA\": invalid syntax",
+			expectedErr: `decode: parse error on field "Float64" of type "float64": strconv.ParseFloat: parsing "AAA": invalid syntax`,
 		},
 		{
 			testName:    "invalid uint64",
 			envMap:      EnvMap{"UINT64": "AAA"},
-			expectedErr: "decode: parse error on field \"Uint64\" of type \"uint64\": strconv.ParseUint: parsing \"AAA\": invalid syntax",
+			expectedErr: `decode: parse error on field "Uint64" of type "uint64": strconv.ParseUint: parsing "AAA": invalid syntax`,
 		},
 		{
 			testName:    "invalid int64",
 			envMap:      EnvMap{"INT64": "AAA"},
-			expectedErr: "decode: parse error on field \"Int64\" of type \"int64\": strconv.ParseInt: parsing \"AAA\": invalid syntax",
+			expectedErr: `decode: parse error on field "Int64" of type "int64": strconv.ParseInt: parsing "AAA": invalid syntax`,
 		},
 		{
 			testName:    "invalid int64 slice",
 			envMap:      EnvMap{"INT64S": "A,2,3"},
-			expectedErr: "decode: parse error on field \"Int64s\" of type \"[]int64\": strconv.ParseInt: parsing \"A\": invalid syntax",
+			expectedErr: `decode: parse error on field "Int64s" of type "\[\]int64": strconv.ParseInt: parsing "A": invalid syntax`,
 		},
 		{
 			testName:    "invalid uint64 slice",
 			envMap:      EnvMap{"UINT64S": "A,2,3"},
-			expectedErr: "decode: parse error on field \"Uint64s\" of type \"[]uint64\": strconv.ParseUint: parsing \"A\": invalid syntax",
+			expectedErr: `decode: parse error on field "Uint64s" of type "\[\]uint64": strconv.ParseUint: parsing "A": invalid syntax`,
 		},
 		{
 			testName:    "invalid float32 slice",
 			envMap:      EnvMap{"FLOAT32S": "A,2.0,3.0"},
-			expectedErr: "decode: parse error on field \"Float32s\" of type \"[]float32\": strconv.ParseFloat: parsing \"A\": invalid syntax",
+			expectedErr: `decode: parse error on field "Float32s" of type "\[\]float32": strconv.ParseFloat: parsing "A": invalid syntax`,
 		},
 		{
 			testName:    "invalid float64 slice",
 			envMap:      EnvMap{"FLOAT64S": "A,2.0,3.0"},
-			expectedErr: "decode: parse error on field \"Float64s\" of type \"[]float64\": strconv.ParseFloat: parsing \"A\": invalid syntax",
+			expectedErr: `decode: parse error on field "Float64s" of type "\[\]float64": strconv.ParseFloat: parsing "A": invalid syntax`,
 		},
 		{
 			testName:    "invalid bool",
 			envMap:      EnvMap{"BOOL": "should-be-a-bool"},
-			expectedErr: "decode: parse error on field \"Bool\" of type \"bool\": strconv.ParseBool: parsing \"should-be-a-bool\": invalid syntax",
+			expectedErr: `decode: parse error on field "Bool" of type "bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax`,
 		},
 		{
 			testName:    "invalid bool slice",
 			envMap:      EnvMap{"BOOLS": "t,f,TRUE,faaaalse"},
-			expectedErr: "decode: parse error on field \"Bools\" of type \"[]bool\": strconv.ParseBool: parsing \"faaaalse\": invalid syntax",
+			expectedErr: `decode: parse error on field "Bools" of type "\[\]bool": strconv.ParseBool: parsing "faaaalse": invalid syntax`,
 		},
 		{
 			testName:    "invalid duration",
 			envMap:      EnvMap{"DURATION": "should-be-a-valid-duration"},
-			expectedErr: "decode: parse error on field \"Duration\" of type \"time.Duration\": unable to parse duration: time: invalid duration \"should-be-a-valid-duration\"",
+			expectedErr: `decode: parse error on field "Duration" of type "time.Duration": unable to parse duration: time: invalid duration "?should-be-a-valid-duration"?`,
 		},
 		{
 			testName:    "invalid duration slice",
 			envMap:      EnvMap{"DURATIONS": "1s,contains-an-invalid-duration,3s"},
-			expectedErr: "decode: parse error on field \"Durations\" of type \"[]time.Duration\": unable to parse duration: time: invalid duration \"contains-an-invalid-duration\"",
+			expectedErr: `decode: parse error on field "Durations" of type "\[\]time.Duration": unable to parse duration: time: invalid duration "?contains-an-invalid-duration"?`,
 		},
 	}
 
@@ -614,7 +614,7 @@ func TestInvalidTypes(t *testing.T) {
 			}
 
 			err := decoder.Parse(&cfg)
-			gt.Expect(err.Error()).To(Equal(tt.expectedErr))
+			gt.Expect(err).To(MatchError(MatchRegexp(tt.expectedErr)))
 		})
 	}
 }
@@ -787,7 +787,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 		defaultTag: "example",
 	}
 	err := decoder.Parse(&cfg)
-	gt.Expect(err).To(MatchError("decode: parse error on field \"Unmarshaler\" of type \"config.unmarshaler\": time: invalid duration \"invalid\""))
+	gt.Expect(err).To(MatchError(MatchRegexp(`decode: parse error on field "Unmarshaler" of type "config.unmarshaler": time: invalid duration "?invalid"?`)))
 }
 
 func TestTextUnmarshalersError(t *testing.T) {
@@ -809,7 +809,7 @@ func TestTextUnmarshalersError(t *testing.T) {
 	}
 
 	err := decoder.Parse(&cfg)
-	gt.Expect(err).To(MatchError("decode: parse error on field \"Unmarshalers\" of type \"[]config.unmarshaler\": time: invalid duration \"invalid\""))
+	gt.Expect(err).To(MatchError(MatchRegexp(`decode: parse error on field "Unmarshalers" of type "\[\]config.unmarshaler": time: invalid duration "?invalid"?`)))
 }
 
 func TestParseURL(t *testing.T) {

@@ -11,10 +11,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+
 	"github.com/sykesm/batik/integration"
 )
 
-const testTimeout = 1 * time.Second
+const testTimeout = 10 * time.Second
 
 var (
 	batikPath string
