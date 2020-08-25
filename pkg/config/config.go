@@ -42,26 +42,26 @@ func Load(cfgPath string, l Lookuper, out interface{}) error {
 			".",
 		}
 
-		switch l.(type) {
-		case OsEnv:
-			if usrCfgDir, err := os.UserConfigDir(); err == nil {
-				cfgPaths = append(cfgPaths, filepath.Join(usrCfgDir, "batik"))
-			}
+		// switch l.(type) {
+		// case OsEnv:
+		// 	if usrCfgDir, err := os.UserConfigDir(); err == nil {
+		// 		cfgPaths = append(cfgPaths, filepath.Join(usrCfgDir, "batik"))
+		// 	}
 
-			if usrHomeDir, err := os.UserHomeDir(); err == nil {
-				cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
-			}
-		case EnvMap:
-			if usrCfgDir, err := l.Lookup("XDG_CONFIG_HOME"); err == nil {
-				cfgPaths = append(cfgPaths, filepath.Join(usrCfgDir, "batik"))
-			}
+		// 	if usrHomeDir, err := os.UserHomeDir(); err == nil {
+		// 		cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
+		// 	}
+		// case EnvMap:
+		// 	if usrCfgDir, err := l.Lookup("XDG_CONFIG_HOME"); err == nil {
+		// 		cfgPaths = append(cfgPaths, filepath.Join(usrCfgDir, "batik"))
+		// 	}
 
-			if usrHomeDir, err := l.Lookup("HOME"); err == nil {
-				cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
-			}
-		default:
-			return fmt.Errorf("unsupported lookuper of type: %T", l)
-		}
+		// 	if usrHomeDir, err := l.Lookup("HOME"); err == nil {
+		// 		cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
+		// 	}
+		// default:
+		// 	return fmt.Errorf("unsupported lookuper of type: %T", l)
+		// }
 
 		for _, p := range cfgPaths {
 			path := filepath.Join(p, "batik.yaml")

@@ -9,18 +9,20 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestEnvMap_Lookup(t *testing.T) {
+func TestMapLookuper(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	envMap := EnvMap{
-		"key": "value",
-	}
+	ml := MapLookuper(nil)
+	v, ok := ml.Lookup("key1")
+	gt.Expect(ok).To(BeFalse())
+	gt.Expect(v).To(BeEmpty())
 
-	v, err := envMap.Lookup("key")
-	gt.Expect(err).NotTo(HaveOccurred())
+	ml = MapLookuper(map[string]string{"key": "value"})
+	v, ok = ml.Lookup("key")
+	gt.Expect(ok).To(BeTrue())
 	gt.Expect(v).To(Equal("value"))
 
-	v, err = envMap.Lookup("key2")
-	gt.Expect(err).To(MatchError("$key2 is not defined"))
-	gt.Expect(v).To(Equal(""))
+	v, ok = ml.Lookup("missing")
+	gt.Expect(ok).To(BeFalse())
+	gt.Expect(v).To(BeEmpty())
 }

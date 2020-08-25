@@ -138,11 +138,11 @@ func (d Decoder) doParse(ref reflect.Value) error {
 		}
 		refTypeField := refType.Field(i)
 		parseTagFound := true
-		value, err := d.get(refTypeField)
+		value, ok, err := d.get(refTypeField)
 		if err != nil {
-			if _, ok := err.(*lookupError); !ok {
-				return err
-			}
+			return err
+		}
+		if !ok {
 			value = refTypeField.Tag.Get(d.defaultTag)
 			parseTagFound = false
 		}
@@ -165,7 +165,7 @@ func (d Decoder) doParse(ref reflect.Value) error {
 	return nil
 }
 
-func (d Decoder) get(field reflect.StructField) (val string, err error) {
+func (d Decoder) get(field reflect.StructField) (val string, found bool, err error) {
 	key, opts := parseKeyAndOptions(field.Tag.Get(d.parseTag))
 
 	for _, opt := range opts {
@@ -173,11 +173,12 @@ func (d Decoder) get(field reflect.StructField) (val string, err error) {
 		case "":
 			break
 		default:
-			return "", fmt.Errorf("decode: tag option %q not supported", opt)
+			return "", false, fmt.Errorf("decode: tag option %q not supported", opt)
 		}
 	}
 
-	return d.lookuper.Lookup(key)
+	val, ok := d.lookuper.Lookup(key)
+	return val, ok, nil
 }
 
 func (d Decoder) set(field reflect.Value, sf reflect.StructField, value string) error {

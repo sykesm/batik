@@ -4,50 +4,39 @@
 package config
 
 import (
-	"fmt"
 	"os"
 )
 
-func newLookupError(key string) error {
-	return &lookupError{
-		key: key,
-	}
-}
-
-type lookupError struct {
-	key string
-}
-
-func (e *lookupError) Error() string {
-	return fmt.Sprintf("$%s is not defined", e.key)
-}
-
+// A Lookuper is used to lookup the value of a variable from the process
+// environment. When a value is found, implementations must return the value
+// and true. If a value is not found, implementaions must return the empty
+// string and false.
+//
+// The semantics implied by this interface are consistent with the behavior of
+// os.LookupEnv from the standard library.
 type Lookuper interface {
-	Lookup(key string) (string, error)
+	Lookup(name string) (string, bool)
 }
 
-type EnvMap map[string]string
-
-var _ Lookuper = (*EnvMap)(nil)
-
-func (m EnvMap) Lookup(key string) (string, error) {
-	v, ok := m[key]
-	if !ok {
-		return "", newLookupError(key)
-	}
-
-	return v, nil
+// EnvironLookuper uses os.LookupEnv to resolve environment variables.
+func EnvironLookuper() Lookuper {
+	return &environLookuper{}
 }
 
-type OsEnv struct{}
+type environLookuper struct{}
 
-var _ Lookuper = (*OsEnv)(nil)
+func (*environLookuper) Lookup(name string) (string, bool) {
+	return os.LookupEnv(name)
+}
 
-func (o OsEnv) Lookup(key string) (string, error) {
-	v, exists := os.LookupEnv(key)
-	if !exists {
-		return "", newLookupError(key)
-	}
+// MapLookuper uses the provided map to resolve environment variables.
+func MapLookuper(m map[string]string) Lookuper {
+	return mapLookuper(m)
+}
 
-	return v, nil
+type mapLookuper map[string]string
+
+func (m mapLookuper) Lookup(name string) (string, bool) {
+	val, ok := m[name]
+	return val, ok
 }

@@ -157,7 +157,7 @@ func TestParse(t *testing.T) {
 		return strings.Join(ss, ",")
 	}
 
-	envMap := make(EnvMap)
+	envMap := map[string]string{}
 	var str1 = "str1"
 	var str2 = "str2"
 	envMap["STRING"] = str1
@@ -255,7 +255,7 @@ func TestParse(t *testing.T) {
 	var cfg = Config{}
 
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -375,13 +375,13 @@ func TestParsesEnvInner(t *testing.T) {
 		unexported:  &InnerStruct{},
 	}
 
-	envMap := EnvMap{
+	envMap := map[string]string{
 		"innervar": "someinnervalue",
 		"innernum": "8",
 	}
 
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -402,12 +402,12 @@ func TestParsesEnvInnerFails(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
+	envMap := map[string]string{
 		"NUMBER": "not-a-number",
 	}
 
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -419,12 +419,12 @@ func TestParsesEnvInnerFails(t *testing.T) {
 func TestParsesEnvInnerNil(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	envMap := EnvMap{
+	envMap := map[string]string{
 		"innervar": "someinnervalue",
 	}
 
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -437,12 +437,12 @@ func TestParsesEnvInnerNil(t *testing.T) {
 func TestParsesEnvInnerInvalid(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	envMap := EnvMap{
+	envMap := map[string]string{
 		"innernum": "-547",
 	}
 
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -457,12 +457,12 @@ func TestParsesEnvInnerInvalid(t *testing.T) {
 func TestParsesEnvNested(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	envMap := EnvMap{
+	envMap := map[string]string{
 		"nestedvar": "somenestedvalue",
 	}
 
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -479,7 +479,7 @@ func TestEmptyVars(t *testing.T) {
 	var cfg Config
 
 	decoder := Decoder{
-		lookuper:   EnvMap{},
+		lookuper:   MapLookuper(nil),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -503,7 +503,7 @@ func TestPassAnInvalidPtr(t *testing.T) {
 	var thisShouldBreak int
 
 	decoder := Decoder{
-		lookuper: EnvMap{},
+		lookuper: MapLookuper(nil),
 	}
 
 	err := decoder.Parse(&thisShouldBreak)
@@ -516,7 +516,7 @@ func TestPassReference(t *testing.T) {
 	var cfg Config
 
 	decoder := Decoder{
-		lookuper: EnvMap{},
+		lookuper: MapLookuper(nil),
 	}
 
 	err := decoder.Parse(cfg)
@@ -526,77 +526,77 @@ func TestPassReference(t *testing.T) {
 func TestInvalidTypes(t *testing.T) {
 	tests := []struct {
 		testName    string
-		envMap      EnvMap
+		envMap      map[string]string
 		expectedErr string
 	}{
 		{
 			testName:    "invalid int",
-			envMap:      EnvMap{"INT": "should-be-an-int"},
+			envMap:      map[string]string{"INT": "should-be-an-int"},
 			expectedErr: `decode: parse error on field "Int" of type "int": strconv.ParseInt: parsing "should-be-an-int": invalid syntax`,
 		},
 		{
 			testName:    "invalid uint",
-			envMap:      EnvMap{"UINT": "-44"},
+			envMap:      map[string]string{"UINT": "-44"},
 			expectedErr: `decode: parse error on field "Uint" of type "uint": strconv.ParseUint: parsing "-44": invalid syntax`,
 		},
 		{
 			testName:    "invalid float32",
-			envMap:      EnvMap{"FLOAT32": "AAA"},
+			envMap:      map[string]string{"FLOAT32": "AAA"},
 			expectedErr: `decode: parse error on field "Float32" of type "float32": strconv.ParseFloat: parsing "AAA": invalid syntax`,
 		},
 		{
 			testName:    "invalid float64",
-			envMap:      EnvMap{"FLOAT64": "AAA"},
+			envMap:      map[string]string{"FLOAT64": "AAA"},
 			expectedErr: `decode: parse error on field "Float64" of type "float64": strconv.ParseFloat: parsing "AAA": invalid syntax`,
 		},
 		{
 			testName:    "invalid uint64",
-			envMap:      EnvMap{"UINT64": "AAA"},
+			envMap:      map[string]string{"UINT64": "AAA"},
 			expectedErr: `decode: parse error on field "Uint64" of type "uint64": strconv.ParseUint: parsing "AAA": invalid syntax`,
 		},
 		{
 			testName:    "invalid int64",
-			envMap:      EnvMap{"INT64": "AAA"},
+			envMap:      map[string]string{"INT64": "AAA"},
 			expectedErr: `decode: parse error on field "Int64" of type "int64": strconv.ParseInt: parsing "AAA": invalid syntax`,
 		},
 		{
 			testName:    "invalid int64 slice",
-			envMap:      EnvMap{"INT64S": "A,2,3"},
+			envMap:      map[string]string{"INT64S": "A,2,3"},
 			expectedErr: `decode: parse error on field "Int64s" of type "\[\]int64": strconv.ParseInt: parsing "A": invalid syntax`,
 		},
 		{
 			testName:    "invalid uint64 slice",
-			envMap:      EnvMap{"UINT64S": "A,2,3"},
+			envMap:      map[string]string{"UINT64S": "A,2,3"},
 			expectedErr: `decode: parse error on field "Uint64s" of type "\[\]uint64": strconv.ParseUint: parsing "A": invalid syntax`,
 		},
 		{
 			testName:    "invalid float32 slice",
-			envMap:      EnvMap{"FLOAT32S": "A,2.0,3.0"},
+			envMap:      map[string]string{"FLOAT32S": "A,2.0,3.0"},
 			expectedErr: `decode: parse error on field "Float32s" of type "\[\]float32": strconv.ParseFloat: parsing "A": invalid syntax`,
 		},
 		{
 			testName:    "invalid float64 slice",
-			envMap:      EnvMap{"FLOAT64S": "A,2.0,3.0"},
+			envMap:      map[string]string{"FLOAT64S": "A,2.0,3.0"},
 			expectedErr: `decode: parse error on field "Float64s" of type "\[\]float64": strconv.ParseFloat: parsing "A": invalid syntax`,
 		},
 		{
 			testName:    "invalid bool",
-			envMap:      EnvMap{"BOOL": "should-be-a-bool"},
+			envMap:      map[string]string{"BOOL": "should-be-a-bool"},
 			expectedErr: `decode: parse error on field "Bool" of type "bool": strconv.ParseBool: parsing "should-be-a-bool": invalid syntax`,
 		},
 		{
 			testName:    "invalid bool slice",
-			envMap:      EnvMap{"BOOLS": "t,f,TRUE,faaaalse"},
+			envMap:      map[string]string{"BOOLS": "t,f,TRUE,faaaalse"},
 			expectedErr: `decode: parse error on field "Bools" of type "\[\]bool": strconv.ParseBool: parsing "faaaalse": invalid syntax`,
 		},
 		{
 			testName:    "invalid duration",
-			envMap:      EnvMap{"DURATION": "should-be-a-valid-duration"},
+			envMap:      map[string]string{"DURATION": "should-be-a-valid-duration"},
 			expectedErr: `decode: parse error on field "Duration" of type "time.Duration": unable to parse duration: time: invalid duration "?should-be-a-valid-duration"?`,
 		},
 		{
 			testName:    "invalid duration slice",
-			envMap:      EnvMap{"DURATIONS": "1s,contains-an-invalid-duration,3s"},
+			envMap:      map[string]string{"DURATIONS": "1s,contains-an-invalid-duration,3s"},
 			expectedErr: `decode: parse error on field "Durations" of type "\[\]time.Duration": unable to parse duration: time: invalid duration "?contains-an-invalid-duration"?`,
 		},
 	}
@@ -608,7 +608,7 @@ func TestInvalidTypes(t *testing.T) {
 			var cfg Config
 
 			decoder := Decoder{
-				lookuper:   tt.envMap,
+				lookuper:   MapLookuper(tt.envMap),
 				parseTag:   "env",
 				defaultTag: "example",
 			}
@@ -625,7 +625,7 @@ func TestParseStructWithoutEnvTag(t *testing.T) {
 	cfg := Config{}
 
 	decoder := Decoder{
-		lookuper:   EnvMap{},
+		lookuper:   MapLookuper(nil),
 		defaultTag: "example",
 	}
 
@@ -642,12 +642,8 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"BLAH": "a",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"BLAH": "a"}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -664,12 +660,8 @@ func TestUnsupportedSliceType(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"WONTWORK": "1,2,3",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"WONTWORK": "1,2,3"}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -690,12 +682,8 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"CONST_": "42",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"CONST_": "42"}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -714,12 +702,8 @@ func TestUnsupportedStructType(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"FOO": "foo",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"FOO": "foo"}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -737,11 +721,8 @@ func TestEmptyOption(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"VAR": "",
-	}
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"VAR": ""}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -760,7 +741,7 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 	var cfg config
 
 	decoder := Decoder{
-		lookuper:   EnvMap{},
+		lookuper:   MapLookuper(nil),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -777,12 +758,8 @@ func TestTextUnmarshalerError(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"UNMARSHALER": "invalid",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"UNMARSHALER": "invalid"}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -798,12 +775,8 @@ func TestTextUnmarshalersError(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"UNMARSHALERS": "1s,invalid",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"UNMARSHALERS": "1s,invalid"}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -821,7 +794,7 @@ func TestParseURL(t *testing.T) {
 	var cfg config
 
 	decoder := Decoder{
-		lookuper:   EnvMap{},
+		lookuper:   MapLookuper(nil),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -838,12 +811,8 @@ func TestParseURLFailure(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"EXAMPLE_URL_2": "nope://s s/",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"EXAMPLE_URL_2": "nope://s s/"}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -861,12 +830,8 @@ func TestIgnoresUnexported(t *testing.T) {
 	}
 	var cfg unexportedConfig
 
-	envMap := EnvMap{
-		"HOME": "/tmp/fakehome",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper:   MapLookuper(map[string]string{"HOME": "/tmp/fakehome"}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
@@ -907,13 +872,11 @@ func TestPrecedenceUnmarshalText(t *testing.T) {
 	}
 	var cfg config
 
-	envMap := EnvMap{
-		"LOG_LEVEL":  "debug",
-		"LOG_LEVELS": "debug,info",
-	}
-
 	decoder := Decoder{
-		lookuper:   envMap,
+		lookuper: MapLookuper(map[string]string{
+			"LOG_LEVEL":  "debug",
+			"LOG_LEVELS": "debug,info",
+		}),
 		parseTag:   "env",
 		defaultTag: "example",
 	}
