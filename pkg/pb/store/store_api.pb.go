@@ -5,14 +5,13 @@
 // versions:
 // 	protoc-gen-go v1.25.0
 // 	protoc        v3.12.4
-// source: store/store.proto
+// source: store/store_api.proto
 
 package store
 
 import (
 	context "context"
 	proto "github.com/golang/protobuf/proto"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	transaction "github.com/sykesm/batik/pkg/pb/transaction"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -34,6 +33,7 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
+// GetTransactionRequest contains a hashed transaction id.
 type GetTransactionRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -45,7 +45,7 @@ type GetTransactionRequest struct {
 func (x *GetTransactionRequest) Reset() {
 	*x = GetTransactionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_store_proto_msgTypes[0]
+		mi := &file_store_store_api_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -58,7 +58,7 @@ func (x *GetTransactionRequest) String() string {
 func (*GetTransactionRequest) ProtoMessage() {}
 
 func (x *GetTransactionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_store_store_proto_msgTypes[0]
+	mi := &file_store_store_api_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -71,7 +71,7 @@ func (x *GetTransactionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTransactionRequest.ProtoReflect.Descriptor instead.
 func (*GetTransactionRequest) Descriptor() ([]byte, []int) {
-	return file_store_store_proto_rawDescGZIP(), []int{0}
+	return file_store_store_api_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetTransactionRequest) GetTxid() []byte {
@@ -81,6 +81,8 @@ func (x *GetTransactionRequest) GetTxid() []byte {
 	return nil
 }
 
+// GetTransactionResponse contains the transaction retrieved from the backing store
+// indexed by the txid that it hashes to.
 type GetTransactionResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -92,7 +94,7 @@ type GetTransactionResponse struct {
 func (x *GetTransactionResponse) Reset() {
 	*x = GetTransactionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_store_proto_msgTypes[1]
+		mi := &file_store_store_api_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -105,7 +107,7 @@ func (x *GetTransactionResponse) String() string {
 func (*GetTransactionResponse) ProtoMessage() {}
 
 func (x *GetTransactionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_store_store_proto_msgTypes[1]
+	mi := &file_store_store_api_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -118,7 +120,7 @@ func (x *GetTransactionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTransactionResponse.ProtoReflect.Descriptor instead.
 func (*GetTransactionResponse) Descriptor() ([]byte, []int) {
-	return file_store_store_proto_rawDescGZIP(), []int{1}
+	return file_store_store_api_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetTransactionResponse) GetTransaction() *transaction.Transaction {
@@ -128,6 +130,8 @@ func (x *GetTransactionResponse) GetTransaction() *transaction.Transaction {
 	return nil
 }
 
+// PutTransactionRequest contains a transaction and the hash over the transaction as a
+// transaction id.
 type PutTransactionRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -140,7 +144,7 @@ type PutTransactionRequest struct {
 func (x *PutTransactionRequest) Reset() {
 	*x = PutTransactionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_store_proto_msgTypes[2]
+		mi := &file_store_store_api_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -153,7 +157,7 @@ func (x *PutTransactionRequest) String() string {
 func (*PutTransactionRequest) ProtoMessage() {}
 
 func (x *PutTransactionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_store_store_proto_msgTypes[2]
+	mi := &file_store_store_api_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +170,7 @@ func (x *PutTransactionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutTransactionRequest.ProtoReflect.Descriptor instead.
 func (*PutTransactionRequest) Descriptor() ([]byte, []int) {
-	return file_store_store_proto_rawDescGZIP(), []int{2}
+	return file_store_store_api_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PutTransactionRequest) GetTxid() []byte {
@@ -183,19 +187,60 @@ func (x *PutTransactionRequest) GetTransaction() *transaction.Transaction {
 	return nil
 }
 
+// PutTransactionResponse is an empty response returned on attempting to store
+// a transaction in the backing store.
+type PutTransactionResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *PutTransactionResponse) Reset() {
+	*x = PutTransactionResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_store_api_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PutTransactionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PutTransactionResponse) ProtoMessage() {}
+
+func (x *PutTransactionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_store_store_api_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PutTransactionResponse.ProtoReflect.Descriptor instead.
+func (*PutTransactionResponse) Descriptor() ([]byte, []int) {
+	return file_store_store_api_proto_rawDescGZIP(), []int{3}
+}
+
+// GetStateRequest contains a state reference denoted by a txid and output index that can
+// be resolved to a State existing in the backing store.
 type GetStateRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Txid        []byte `protobuf:"bytes,1,opt,name=txid,proto3" json:"txid,omitempty"`
-	OutputIndex uint64 `protobuf:"varint,2,opt,name=output_index,json=outputIndex,proto3" json:"output_index,omitempty"`
+	StateRef *transaction.StateReference `protobuf:"bytes,1,opt,name=state_ref,json=stateRef,proto3" json:"state_ref,omitempty"`
 }
 
 func (x *GetStateRequest) Reset() {
 	*x = GetStateRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_store_proto_msgTypes[3]
+		mi := &file_store_store_api_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -208,7 +253,7 @@ func (x *GetStateRequest) String() string {
 func (*GetStateRequest) ProtoMessage() {}
 
 func (x *GetStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_store_store_proto_msgTypes[3]
+	mi := &file_store_store_api_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -221,35 +266,31 @@ func (x *GetStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStateRequest.ProtoReflect.Descriptor instead.
 func (*GetStateRequest) Descriptor() ([]byte, []int) {
-	return file_store_store_proto_rawDescGZIP(), []int{3}
+	return file_store_store_api_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetStateRequest) GetTxid() []byte {
+func (x *GetStateRequest) GetStateRef() *transaction.StateReference {
 	if x != nil {
-		return x.Txid
+		return x.StateRef
 	}
 	return nil
 }
 
-func (x *GetStateRequest) GetOutputIndex() uint64 {
-	if x != nil {
-		return x.OutputIndex
-	}
-	return 0
-}
-
+// GetStateResponse contains a resolved state retrieved from the backing store indexed
+// by the state reference that points to the transaction and output index where the State
+// was originally created at.
 type GetStateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	State *transaction.State `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	State *transaction.ResolvedState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
 }
 
 func (x *GetStateResponse) Reset() {
 	*x = GetStateResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_store_proto_msgTypes[4]
+		mi := &file_store_store_api_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -262,7 +303,7 @@ func (x *GetStateResponse) String() string {
 func (*GetStateResponse) ProtoMessage() {}
 
 func (x *GetStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_store_store_proto_msgTypes[4]
+	mi := &file_store_store_api_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -275,192 +316,119 @@ func (x *GetStateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStateResponse.ProtoReflect.Descriptor instead.
 func (*GetStateResponse) Descriptor() ([]byte, []int) {
-	return file_store_store_proto_rawDescGZIP(), []int{4}
+	return file_store_store_api_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *GetStateResponse) GetState() *transaction.State {
+func (x *GetStateResponse) GetState() *transaction.ResolvedState {
 	if x != nil {
 		return x.State
 	}
 	return nil
 }
 
-type PutStateRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
+var File_store_store_api_proto protoreflect.FileDescriptor
 
-	Txid        []byte             `protobuf:"bytes,1,opt,name=txid,proto3" json:"txid,omitempty"`
-	OutputIndex uint64             `protobuf:"varint,2,opt,name=output_index,json=outputIndex,proto3" json:"output_index,omitempty"`
-	State       *transaction.State `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty"`
-}
-
-func (x *PutStateRequest) Reset() {
-	*x = PutStateRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_store_store_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *PutStateRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PutStateRequest) ProtoMessage() {}
-
-func (x *PutStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_store_store_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PutStateRequest.ProtoReflect.Descriptor instead.
-func (*PutStateRequest) Descriptor() ([]byte, []int) {
-	return file_store_store_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *PutStateRequest) GetTxid() []byte {
-	if x != nil {
-		return x.Txid
-	}
-	return nil
-}
-
-func (x *PutStateRequest) GetOutputIndex() uint64 {
-	if x != nil {
-		return x.OutputIndex
-	}
-	return 0
-}
-
-func (x *PutStateRequest) GetState() *transaction.State {
-	if x != nil {
-		return x.State
-	}
-	return nil
-}
-
-var File_store_store_proto protoreflect.FileDescriptor
-
-var file_store_store_proto_rawDesc = []byte{
-	0x0a, 0x11, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x12, 0x05, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x1a, 0x1d, 0x74, 0x72, 0x61, 0x6e,
-	0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
-	0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
-	0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x65, 0x6d, 0x70, 0x74, 0x79,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x2b, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x54, 0x72, 0x61,
-	0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
-	0x12, 0x0a, 0x04, 0x74, 0x78, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x74,
-	0x78, 0x69, 0x64, 0x22, 0x54, 0x0a, 0x16, 0x47, 0x65, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61,
-	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x3a, 0x0a,
-	0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x18, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e,
-	0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0b, 0x74, 0x72,
-	0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x67, 0x0a, 0x15, 0x50, 0x75, 0x74,
+var file_store_store_api_proto_rawDesc = []byte{
+	0x0a, 0x15, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x5f, 0x61, 0x70,
+	0x69, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x05, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x1a, 0x1d,
+	0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x74, 0x72, 0x61, 0x6e,
+	0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1a, 0x74,
+	0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x72, 0x65, 0x73, 0x6f, 0x6c,
+	0x76, 0x65, 0x64, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x2b, 0x0a, 0x15, 0x47, 0x65, 0x74,
 	0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65,
 	0x73, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x78, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c,
-	0x52, 0x04, 0x74, 0x78, 0x69, 0x64, 0x12, 0x3a, 0x0a, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61,
-	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x74, 0x72,
-	0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61,
-	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x22, 0x48, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65,
+	0x52, 0x04, 0x74, 0x78, 0x69, 0x64, 0x22, 0x54, 0x0a, 0x16, 0x47, 0x65, 0x74, 0x54, 0x72, 0x61,
+	0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x3a, 0x0a, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x2e, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52,
+	0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x67, 0x0a, 0x15,
+	0x50, 0x75, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65,
 	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x78, 0x69, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x0c, 0x52, 0x04, 0x74, 0x78, 0x69, 0x64, 0x12, 0x21, 0x0a, 0x0c, 0x6f, 0x75, 0x74,
-	0x70, 0x75, 0x74, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52,
-	0x0b, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x22, 0x3c, 0x0a, 0x10,
+	0x01, 0x28, 0x0c, 0x52, 0x04, 0x74, 0x78, 0x69, 0x64, 0x12, 0x3a, 0x0a, 0x0b, 0x74, 0x72, 0x61,
+	0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18,
+	0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x54, 0x72, 0x61,
+	0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61,
+	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x18, 0x0a, 0x16, 0x50, 0x75, 0x74, 0x54, 0x72, 0x61, 0x6e,
+	0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x4b, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x38, 0x0a, 0x09, 0x73, 0x74, 0x61, 0x74, 0x65, 0x5f, 0x72, 0x65, 0x66, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
+	0x69, 0x6f, 0x6e, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x66, 0x65, 0x72, 0x65, 0x6e,
+	0x63, 0x65, 0x52, 0x08, 0x73, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x66, 0x22, 0x44, 0x0a, 0x10,
 	0x47, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x12, 0x28, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x12, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x53, 0x74,
-	0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0x72, 0x0a, 0x0f, 0x50, 0x75,
-	0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x12, 0x0a,
-	0x04, 0x74, 0x78, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x74, 0x78, 0x69,
-	0x64, 0x12, 0x21, 0x0a, 0x0c, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x5f, 0x69, 0x6e, 0x64, 0x65,
-	0x78, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x49,
-	0x6e, 0x64, 0x65, 0x78, 0x12, 0x28, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f,
-	0x6e, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x32, 0x9a,
-	0x02, 0x0a, 0x08, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x41, 0x50, 0x49, 0x12, 0x4d, 0x0a, 0x0e, 0x47,
-	0x65, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1c, 0x2e,
-	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63,
-	0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1d, 0x2e, 0x73, 0x74,
-	0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
-	0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x46, 0x0a, 0x0e, 0x50, 0x75,
-	0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1c, 0x2e, 0x73,
-	0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x75, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74,
-	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f,
-	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70,
-	0x74, 0x79, 0x12, 0x3b, 0x0a, 0x08, 0x47, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x16,
-	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x17, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47,
-	0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x3a, 0x0a, 0x08, 0x50, 0x75, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x16, 0x2e, 0x73, 0x74,
-	0x6f, 0x72, 0x65, 0x2e, 0x50, 0x75, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x42, 0x29, 0x5a, 0x27, 0x67,
-	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x69, 0x62, 0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x62, 0x61,
-	0x74, 0x69, 0x6b, 0x2f, 0x62, 0x61, 0x74, 0x69, 0x6b, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x70, 0x62,
-	0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x12, 0x30, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x1a, 0x2e, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x52, 0x65,
+	0x73, 0x6f, 0x6c, 0x76, 0x65, 0x64, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61,
+	0x74, 0x65, 0x32, 0xe5, 0x01, 0x0a, 0x08, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x41, 0x50, 0x49, 0x12,
+	0x4d, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f,
+	0x6e, 0x12, 0x1c, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x72, 0x61,
+	0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x1d, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73,
+	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4d,
+	0x0a, 0x0e, 0x50, 0x75, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e,
+	0x12, 0x1c, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x75, 0x74, 0x54, 0x72, 0x61, 0x6e,
+	0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1d,
+	0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x50, 0x75, 0x74, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x61,
+	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x3b, 0x0a,
+	0x08, 0x47, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x16, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x17, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x74, 0x61,
+	0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x29, 0x5a, 0x27, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x2e, 0x69, 0x62, 0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x62, 0x61, 0x74,
+	0x69, 0x6b, 0x2f, 0x62, 0x61, 0x74, 0x69, 0x6b, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x70, 0x62, 0x2f,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_store_store_proto_rawDescOnce sync.Once
-	file_store_store_proto_rawDescData = file_store_store_proto_rawDesc
+	file_store_store_api_proto_rawDescOnce sync.Once
+	file_store_store_api_proto_rawDescData = file_store_store_api_proto_rawDesc
 )
 
-func file_store_store_proto_rawDescGZIP() []byte {
-	file_store_store_proto_rawDescOnce.Do(func() {
-		file_store_store_proto_rawDescData = protoimpl.X.CompressGZIP(file_store_store_proto_rawDescData)
+func file_store_store_api_proto_rawDescGZIP() []byte {
+	file_store_store_api_proto_rawDescOnce.Do(func() {
+		file_store_store_api_proto_rawDescData = protoimpl.X.CompressGZIP(file_store_store_api_proto_rawDescData)
 	})
-	return file_store_store_proto_rawDescData
+	return file_store_store_api_proto_rawDescData
 }
 
-var file_store_store_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_store_store_proto_goTypes = []interface{}{
-	(*GetTransactionRequest)(nil),   // 0: store.GetTransactionRequest
-	(*GetTransactionResponse)(nil),  // 1: store.GetTransactionResponse
-	(*PutTransactionRequest)(nil),   // 2: store.PutTransactionRequest
-	(*GetStateRequest)(nil),         // 3: store.GetStateRequest
-	(*GetStateResponse)(nil),        // 4: store.GetStateResponse
-	(*PutStateRequest)(nil),         // 5: store.PutStateRequest
-	(*transaction.Transaction)(nil), // 6: transaction.Transaction
-	(*transaction.State)(nil),       // 7: transaction.State
-	(*empty.Empty)(nil),             // 8: google.protobuf.Empty
+var file_store_store_api_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_store_store_api_proto_goTypes = []interface{}{
+	(*GetTransactionRequest)(nil),      // 0: store.GetTransactionRequest
+	(*GetTransactionResponse)(nil),     // 1: store.GetTransactionResponse
+	(*PutTransactionRequest)(nil),      // 2: store.PutTransactionRequest
+	(*PutTransactionResponse)(nil),     // 3: store.PutTransactionResponse
+	(*GetStateRequest)(nil),            // 4: store.GetStateRequest
+	(*GetStateResponse)(nil),           // 5: store.GetStateResponse
+	(*transaction.Transaction)(nil),    // 6: transaction.Transaction
+	(*transaction.StateReference)(nil), // 7: transaction.StateReference
+	(*transaction.ResolvedState)(nil),  // 8: transaction.ResolvedState
 }
-var file_store_store_proto_depIdxs = []int32{
+var file_store_store_api_proto_depIdxs = []int32{
 	6, // 0: store.GetTransactionResponse.transaction:type_name -> transaction.Transaction
 	6, // 1: store.PutTransactionRequest.transaction:type_name -> transaction.Transaction
-	7, // 2: store.GetStateResponse.state:type_name -> transaction.State
-	7, // 3: store.PutStateRequest.state:type_name -> transaction.State
+	7, // 2: store.GetStateRequest.state_ref:type_name -> transaction.StateReference
+	8, // 3: store.GetStateResponse.state:type_name -> transaction.ResolvedState
 	0, // 4: store.StoreAPI.GetTransaction:input_type -> store.GetTransactionRequest
 	2, // 5: store.StoreAPI.PutTransaction:input_type -> store.PutTransactionRequest
-	3, // 6: store.StoreAPI.GetState:input_type -> store.GetStateRequest
-	5, // 7: store.StoreAPI.PutState:input_type -> store.PutStateRequest
-	1, // 8: store.StoreAPI.GetTransaction:output_type -> store.GetTransactionResponse
-	8, // 9: store.StoreAPI.PutTransaction:output_type -> google.protobuf.Empty
-	4, // 10: store.StoreAPI.GetState:output_type -> store.GetStateResponse
-	8, // 11: store.StoreAPI.PutState:output_type -> google.protobuf.Empty
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
+	4, // 6: store.StoreAPI.GetState:input_type -> store.GetStateRequest
+	1, // 7: store.StoreAPI.GetTransaction:output_type -> store.GetTransactionResponse
+	3, // 8: store.StoreAPI.PutTransaction:output_type -> store.PutTransactionResponse
+	5, // 9: store.StoreAPI.GetState:output_type -> store.GetStateResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
 }
 
-func init() { file_store_store_proto_init() }
-func file_store_store_proto_init() {
-	if File_store_store_proto != nil {
+func init() { file_store_store_api_proto_init() }
+func file_store_store_api_proto_init() {
+	if File_store_store_api_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_store_store_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_store_store_api_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTransactionRequest); i {
 			case 0:
 				return &v.state
@@ -472,7 +440,7 @@ func file_store_store_proto_init() {
 				return nil
 			}
 		}
-		file_store_store_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_store_store_api_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetTransactionResponse); i {
 			case 0:
 				return &v.state
@@ -484,7 +452,7 @@ func file_store_store_proto_init() {
 				return nil
 			}
 		}
-		file_store_store_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_store_store_api_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PutTransactionRequest); i {
 			case 0:
 				return &v.state
@@ -496,7 +464,19 @@ func file_store_store_proto_init() {
 				return nil
 			}
 		}
-		file_store_store_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_store_store_api_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*PutTransactionResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_store_api_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetStateRequest); i {
 			case 0:
 				return &v.state
@@ -508,20 +488,8 @@ func file_store_store_proto_init() {
 				return nil
 			}
 		}
-		file_store_store_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_store_store_api_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetStateResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_store_store_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PutStateRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -537,20 +505,20 @@ func file_store_store_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_store_store_proto_rawDesc,
+			RawDescriptor: file_store_store_api_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_store_store_proto_goTypes,
-		DependencyIndexes: file_store_store_proto_depIdxs,
-		MessageInfos:      file_store_store_proto_msgTypes,
+		GoTypes:           file_store_store_api_proto_goTypes,
+		DependencyIndexes: file_store_store_api_proto_depIdxs,
+		MessageInfos:      file_store_store_api_proto_msgTypes,
 	}.Build()
-	File_store_store_proto = out.File
-	file_store_store_proto_rawDesc = nil
-	file_store_store_proto_goTypes = nil
-	file_store_store_proto_depIdxs = nil
+	File_store_store_api_proto = out.File
+	file_store_store_api_proto_rawDesc = nil
+	file_store_store_api_proto_goTypes = nil
+	file_store_store_api_proto_depIdxs = nil
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -565,10 +533,17 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type StoreAPIClient interface {
+	// GetTransaction retrieves the associated transaction corresponding to the
+	// txid passed in the GetTransactionRequest.
 	GetTransaction(ctx context.Context, in *GetTransactionRequest, opts ...grpc.CallOption) (*GetTransactionResponse, error)
-	PutTransaction(ctx context.Context, in *PutTransactionRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	// PutTransaction first verifies that the transaction can be hashed to the
+	// provided txid and then stores the transaction in the backing store.
+	PutTransaction(ctx context.Context, in *PutTransactionRequest, opts ...grpc.CallOption) (*PutTransactionResponse, error)
+	// GetState retrieves the associated ResolvedState corresponding to the state reference
+	// passed in the GetStateRequest from the backing store indexed by a txid and
+	// output index that the State was originally created at in the transaction output
+	// list.
 	GetState(ctx context.Context, in *GetStateRequest, opts ...grpc.CallOption) (*GetStateResponse, error)
-	PutState(ctx context.Context, in *PutStateRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
 type storeAPIClient struct {
@@ -588,8 +563,8 @@ func (c *storeAPIClient) GetTransaction(ctx context.Context, in *GetTransactionR
 	return out, nil
 }
 
-func (c *storeAPIClient) PutTransaction(ctx context.Context, in *PutTransactionRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *storeAPIClient) PutTransaction(ctx context.Context, in *PutTransactionRequest, opts ...grpc.CallOption) (*PutTransactionResponse, error) {
+	out := new(PutTransactionResponse)
 	err := c.cc.Invoke(ctx, "/store.StoreAPI/PutTransaction", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -606,21 +581,19 @@ func (c *storeAPIClient) GetState(ctx context.Context, in *GetStateRequest, opts
 	return out, nil
 }
 
-func (c *storeAPIClient) PutState(ctx context.Context, in *PutStateRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
-	err := c.cc.Invoke(ctx, "/store.StoreAPI/PutState", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // StoreAPIServer is the server API for StoreAPI service.
 type StoreAPIServer interface {
+	// GetTransaction retrieves the associated transaction corresponding to the
+	// txid passed in the GetTransactionRequest.
 	GetTransaction(context.Context, *GetTransactionRequest) (*GetTransactionResponse, error)
-	PutTransaction(context.Context, *PutTransactionRequest) (*empty.Empty, error)
+	// PutTransaction first verifies that the transaction can be hashed to the
+	// provided txid and then stores the transaction in the backing store.
+	PutTransaction(context.Context, *PutTransactionRequest) (*PutTransactionResponse, error)
+	// GetState retrieves the associated ResolvedState corresponding to the state reference
+	// passed in the GetStateRequest from the backing store indexed by a txid and
+	// output index that the State was originally created at in the transaction output
+	// list.
 	GetState(context.Context, *GetStateRequest) (*GetStateResponse, error)
-	PutState(context.Context, *PutStateRequest) (*empty.Empty, error)
 }
 
 // UnimplementedStoreAPIServer can be embedded to have forward compatible implementations.
@@ -630,14 +603,11 @@ type UnimplementedStoreAPIServer struct {
 func (*UnimplementedStoreAPIServer) GetTransaction(context.Context, *GetTransactionRequest) (*GetTransactionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTransaction not implemented")
 }
-func (*UnimplementedStoreAPIServer) PutTransaction(context.Context, *PutTransactionRequest) (*empty.Empty, error) {
+func (*UnimplementedStoreAPIServer) PutTransaction(context.Context, *PutTransactionRequest) (*PutTransactionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PutTransaction not implemented")
 }
 func (*UnimplementedStoreAPIServer) GetState(context.Context, *GetStateRequest) (*GetStateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetState not implemented")
-}
-func (*UnimplementedStoreAPIServer) PutState(context.Context, *PutStateRequest) (*empty.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method PutState not implemented")
 }
 
 func RegisterStoreAPIServer(s *grpc.Server, srv StoreAPIServer) {
@@ -698,24 +668,6 @@ func _StoreAPI_GetState_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreAPI_PutState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PutStateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StoreAPIServer).PutState(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/store.StoreAPI/PutState",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreAPIServer).PutState(ctx, req.(*PutStateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 var _StoreAPI_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "store.StoreAPI",
 	HandlerType: (*StoreAPIServer)(nil),
@@ -732,11 +684,7 @@ var _StoreAPI_serviceDesc = grpc.ServiceDesc{
 			MethodName: "GetState",
 			Handler:    _StoreAPI_GetState_Handler,
 		},
-		{
-			MethodName: "PutState",
-			Handler:    _StoreAPI_PutState_Handler,
-		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "store/store.proto",
+	Metadata: "store/store_api.proto",
 }

@@ -11,8 +11,10 @@ import (
 	"github.com/sykesm/batik/pkg/protomsg"
 )
 
-// EncodeService implements the EncodeTransactionAPI gRPC interface.
+// EncodeService implements the EncodeTransactionAPIServer gRPC interface.
 type EncodeService struct{}
+
+var _ tb.EncodeTransactionAPIServer = (*EncodeService)(nil)
 
 // EncodeTransaction encodes a transaction via deterministic marshal and returns
 // the encoded bytes as well as a hash over the transaction represented as a merkle
