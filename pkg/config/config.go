@@ -12,35 +12,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// BatikConfig contains the configuration properties for a Batik instance.
-type BatikConfig struct {
-	// Server contains the batik grpc server configuration properties.
-	Server Server `yaml:"server"`
-}
-
-// Server contains configuration properties for a Batik gRPC server.
-type Server struct {
-	// Address configures the listen address for the gRPC server.
-	Address string `yaml:"address" example:"127.0.0.1:9053" env:"BATIK_ADDRESS"`
-}
-
-// NewBatikConfig returns a new Batik configuration based on reading configuration
-// from the following sources in order:
+// Load populates configuration by searching configuration sources and assigns the
+// discovered values into the object referenced by out.
+//
+// The configuration sources are examined in the following order:
 //   1. batik.yaml config file
 //   2. environment variable overrides
+//
 // If a path is specified but not found, it will return an error.
 // If a path is not specified, it will attempt to load the configuration yaml from
 // one of the following sources in order should one exist at that location:
 //   1. $(pwd)/batik.yaml
 //   2. os specific $XDG_CONFIG_HOME/batik/batik.yaml
 //   3. $HOME/.config/batik/batik.yaml
+//
 // If a config file still does not already exist at any of the above paths, configuration
 // parameters will need to be passed via command line flags or environment variables.
-func NewBatikConfig(cfgPath string, l Lookuper) (BatikConfig, error) {
-	batikConfig := BatikConfig{}
-
+func Load(cfgPath string, l Lookuper, out interface{}) error {
 	if l == nil {
-		return BatikConfig{}, errors.New("empty lookuper")
+		return errors.New("empty lookuper")
 	}
 
 	if cfgPath == "" {
@@ -70,7 +60,7 @@ func NewBatikConfig(cfgPath string, l Lookuper) (BatikConfig, error) {
 				cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
 			}
 		default:
-			return BatikConfig{}, fmt.Errorf("unsupported lookuper of type: %T", l)
+			return fmt.Errorf("unsupported lookuper of type: %T", l)
 		}
 
 		for _, p := range cfgPaths {
@@ -85,8 +75,8 @@ func NewBatikConfig(cfgPath string, l Lookuper) (BatikConfig, error) {
 
 	if cfgPath != "" {
 		fmt.Printf("Loading %s\n", cfgPath)
-		if err := readFile(&batikConfig, cfgPath); err != nil {
-			return BatikConfig{}, fmt.Errorf("read file: %s", err)
+		if err := readFile(cfgPath, out); err != nil {
+			return fmt.Errorf("read file: %s", err)
 		}
 	}
 
@@ -96,14 +86,14 @@ func NewBatikConfig(cfgPath string, l Lookuper) (BatikConfig, error) {
 		parseTag:   "env",
 	}
 
-	if err := d.Parse(&batikConfig); err != nil {
-		return BatikConfig{}, fmt.Errorf("decode: %s", err)
+	if err := d.Parse(out); err != nil {
+		return fmt.Errorf("decode: %+w", err)
 	}
 
-	return batikConfig, nil
+	return nil
 }
 
-func readFile(cfg *BatikConfig, cfgPath string) error {
+func readFile(cfgPath string, cfg interface{}) error {
 	f, err := os.Open(cfgPath)
 	if err != nil {
 		return err

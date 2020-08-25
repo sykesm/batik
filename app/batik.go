@@ -13,12 +13,13 @@ import (
 	"text/tabwriter"
 
 	cli "github.com/urfave/cli/v2"
+	"google.golang.org/grpc"
+
 	"github.com/sykesm/batik/pkg/buildinfo"
 	"github.com/sykesm/batik/pkg/config"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/repl"
 	"github.com/sykesm/batik/pkg/transaction"
-	"google.golang.org/grpc"
 )
 
 var statusCommand = &cli.Command{
@@ -27,7 +28,7 @@ var statusCommand = &cli.Command{
 	Action: func(ctx *cli.Context) error {
 		address := ctx.String("address")
 		if address == "" {
-			address = ctx.App.Metadata["config"].(config.BatikConfig).Server.Address
+			address = ctx.App.Metadata["config"].(Config).Server.Address
 		}
 		if err := checkStatus(address); err != nil {
 			return cli.Exit(fmt.Sprintf("Server not running at %s", address), 1)
@@ -65,7 +66,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			Action: func(ctx *cli.Context) error {
 				address := ctx.String("address")
 				if address == "" {
-					address = ctx.App.Metadata["config"].(config.BatikConfig).Server.Address
+					address = ctx.App.Metadata["config"].(Config).Server.Address
 				}
 				if err := startServer(address); err != nil {
 					return cli.Exit(err.Error(), 2)
@@ -98,7 +99,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		// Load config file
 		cfgPath := c.String("config")
 
-		cfg, err := config.NewBatikConfig(cfgPath, config.OsEnv{})
+		var cfg Config
+		err := config.Load(cfgPath, config.OsEnv{}, &cfg)
 		if err != nil {
 			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), 3)
 		}

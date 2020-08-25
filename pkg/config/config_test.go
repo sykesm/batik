@@ -11,13 +11,25 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+// BatikConfig contains the configuration properties for a Batik instance.
+type BatikConfig struct {
+	// Server contains the batik grpc server configuration properties.
+	Server Server `yaml:"server"`
+}
+
+// Server contains configuration properties for a Batik gRPC server.
+type Server struct {
+	// Address configures the listen address for the gRPC server.
+	Address string `yaml:"address" example:"127.0.0.1:9053" env:"BATIK_ADDRESS"`
+}
+
 type fakeLookuper struct{}
 
 func (f fakeLookuper) Lookup(key string) (string, error) {
 	return "", nil
 }
 
-func TestNewBatikConfig(t *testing.T) {
+func TestLoad(t *testing.T) {
 	tests := []struct {
 		testName       string
 		cfgPath        string
@@ -77,7 +89,8 @@ func TestNewBatikConfig(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			batikConfig, err := NewBatikConfig(tt.cfgPath, tt.envMap)
+			var batikConfig BatikConfig
+			err := Load(tt.cfgPath, tt.envMap, &batikConfig)
 			gt.Expect(err).NotTo(HaveOccurred())
 			gt.Expect(batikConfig).To(Equal(tt.expectedConfig))
 		})
@@ -104,13 +117,14 @@ func TestNewBatikConfig(t *testing.T) {
 			},
 		}
 
-		batikConfig, err := NewBatikConfig("", EnvMap{})
+		var batikConfig BatikConfig
+		err = Load("", EnvMap{}, &batikConfig)
 		gt.Expect(err).NotTo(HaveOccurred())
 		gt.Expect(batikConfig).To(Equal(expectedConfig))
 	})
 }
 
-func TestNewBatikConfig_Failures(t *testing.T) {
+func TestLoadFailures(t *testing.T) {
 	tests := []struct {
 		testName    string
 		cfgPath     string
@@ -139,7 +153,8 @@ func TestNewBatikConfig_Failures(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			_, err := NewBatikConfig(tt.cfgPath, tt.envMap)
+			var batikConfig BatikConfig
+			err := Load(tt.cfgPath, tt.envMap, &batikConfig)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
@@ -147,7 +162,9 @@ func TestNewBatikConfig_Failures(t *testing.T) {
 	t.Run("unsupported lookuper", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
-		_, err := NewBatikConfig("", fakeLookuper{})
+		var batikConfig BatikConfig
+		err := Load("", fakeLookuper{}, &batikConfig)
+
 		gt.Expect(err).To(MatchError("unsupported lookuper of type: config.fakeLookuper"))
 	})
 }
