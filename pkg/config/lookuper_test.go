@@ -32,13 +32,21 @@ func TestMapLookuper(t *testing.T) {
 
 func TestEnvironLookuper(t *testing.T) {
 	testEnviron := []string{
-		"ENV_KEY_ONE=environment_value_one",
-		"ENV_KEY_TWO=$value_two",
+		"LOOKUPTEST_KEY_ONE=environment_value_one",
+		"lookuptest_key_two=value_two",
 	}
 
-	if os.Getenv("BATIK_WANT_HELPER_PROCESS") != "1" {
+	if os.Getenv("LOOKUPTEST_WANT_HELPER_PROCESS") != "1" {
+		// Explicitly filter any environment starting with LOOKUPTEST or lookuptest
+		env := os.Environ()[:0]
+		for _, e := range env {
+			if !strings.HasPrefix(e, "LOOKUPTEST_") && !strings.HasPrefix(e, "lookuptest_") {
+				env = append(env, e)
+			}
+		}
+
 		cmd := exec.Command(os.Args[0], "-test.run=TestEnvironLookuper")
-		cmd.Env = append(os.Environ(), "BATIK_WANT_HELPER_PROCESS=1")
+		cmd.Env = append(env, "LOOKUPTEST_WANT_HELPER_PROCESS=1")
 		cmd.Env = append(cmd.Env, testEnviron...)
 		out, err := cmd.CombinedOutput()
 		NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred(), string(out))
@@ -58,4 +66,9 @@ func TestEnvironLookuper(t *testing.T) {
 			gt.Expect(v).To(Equal(val))
 		})
 	}
+
+	t.Run("lookupenv_missing", func(t *testing.T) {
+		_, ok := EnvironLookuper().Lookup("lookupenv_missing")
+		NewGomegaWithT(t).Expect(ok).To(BeFalse())
+	})
 }
