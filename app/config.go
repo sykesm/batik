@@ -12,5 +12,5 @@ type Config struct {
 // Server contains configuration properties for a Batik gRPC server.
 type Server struct {
 	// Address configures the listen address for the gRPC server.
-	Address string `yaml:"address" example:"127.0.0.1:9053" env:"BATIK_ADDRESS"`
+	Address string `yaml:"address" default:"127.0.0.1:9053" env:"BATIK_ADDRESS"`
 }

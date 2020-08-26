@@ -114,7 +114,7 @@ type Config struct {
 	URLs    []url.URL  `env:"URLS"`
 	URLPtrs []*url.URL `env:"URLS"`
 
-	StringWithDefault string `env:"DATABASE_URL" example:"postgres://localhost:5432/db"`
+	StringWithDefault string `env:"DATABASE_URL" default:"postgres://localhost:5432/db"`
 
 	NonDefined struct {
 		String string `env:"NONDEFINED_STR"`
@@ -257,7 +257,7 @@ func TestParse(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 	err = decoder.Parse(&cfg)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -383,7 +383,7 @@ func TestParsesEnvInner(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -409,7 +409,7 @@ func TestParsesEnvInnerFails(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -426,7 +426,7 @@ func TestParsesEnvInnerNil(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	cfg := ParentStruct{}
@@ -444,7 +444,7 @@ func TestParsesEnvInnerInvalid(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	cfg := ParentStruct{
@@ -464,7 +464,7 @@ func TestParsesEnvNested(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(envMap),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	var cfg ForNestedStruct
@@ -481,7 +481,7 @@ func TestEmptyVars(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(nil),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -610,7 +610,7 @@ func TestInvalidTypes(t *testing.T) {
 			decoder := Decoder{
 				lookuper:   MapLookuper(tt.envMap),
 				parseTag:   "env",
-				defaultTag: "example",
+				defaultTag: "default",
 			}
 
 			err := decoder.Parse(&cfg)
@@ -626,7 +626,7 @@ func TestParseStructWithoutEnvTag(t *testing.T) {
 
 	decoder := Decoder{
 		lookuper:   MapLookuper(nil),
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -645,7 +645,7 @@ func TestParseStructWithInvalidFieldKind(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"BLAH": "a"}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -663,7 +663,7 @@ func TestUnsupportedSliceType(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"WONTWORK": "1,2,3"}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -685,7 +685,7 @@ func TestCustomParserBasicUnsupported(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"CONST_": "42"}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -705,7 +705,7 @@ func TestUnsupportedStructType(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"FOO": "foo"}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -724,7 +724,7 @@ func TestEmptyOption(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"VAR": ""}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -743,7 +743,7 @@ func TestErrorOptionNotRecognized(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(nil),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -761,7 +761,7 @@ func TestTextUnmarshalerError(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"UNMARSHALER": "invalid"}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 	err := decoder.Parse(&cfg)
 	gt.Expect(err).To(MatchError(MatchRegexp(`decode: parse error on field "Unmarshaler" of type "config.unmarshaler": time: invalid duration "?invalid"?`)))
@@ -778,7 +778,7 @@ func TestTextUnmarshalersError(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"UNMARSHALERS": "1s,invalid"}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -789,14 +789,14 @@ func TestParseURL(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	type config struct {
-		ExampleURL url.URL `env:"EXAMPLE_URL" example:"https://google.com"`
+		ExampleURL url.URL `env:"EXAMPLE_URL" default:"https://google.com"`
 	}
 	var cfg config
 
 	decoder := Decoder{
 		lookuper:   MapLookuper(nil),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 	err := decoder.Parse(&cfg)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -814,7 +814,7 @@ func TestParseURLFailure(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"EXAMPLE_URL_2": "nope://s s/"}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -833,7 +833,7 @@ func TestIgnoresUnexported(t *testing.T) {
 	decoder := Decoder{
 		lookuper:   MapLookuper(map[string]string{"HOME": "/tmp/fakehome"}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)
@@ -878,7 +878,7 @@ func TestPrecedenceUnmarshalText(t *testing.T) {
 			"LOG_LEVELS": "debug,info",
 		}),
 		parseTag:   "env",
-		defaultTag: "example",
+		defaultTag: "default",
 	}
 
 	err := decoder.Parse(&cfg)

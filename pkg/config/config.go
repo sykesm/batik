@@ -57,7 +57,7 @@ func Load(cfgPath string, l Lookuper, out interface{}) error {
 
 	d := Decoder{
 		lookuper:   l,
-		defaultTag: "example",
+		defaultTag: "default",
 		parseTag:   "env",
 	}
 
