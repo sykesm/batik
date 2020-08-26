@@ -46,30 +46,6 @@ func TestLoad(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	testName: "load yaml from $HOME/.config/batik.yaml",
-		// 	cfgPath:  "",
-		// 	envMap: map[string]string{
-		// 		"HOME": filepath.Join("testdata", "home"),
-		// 	},
-		// 	expectedConfig: BatikConfig{
-		// 		Server: Server{
-		// 			Address: "127.0.0.1:9002",
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	testName: "load yaml from $XDG_CONFIG_HOME/batik/batik.yaml",
-		// 	cfgPath:  "",
-		// 	envMap: map[string]string{
-		// 		"XDG_CONFIG_HOME": filepath.Join("testdata", "xdg_home"),
-		// 	},
-		// 	expectedConfig: BatikConfig{
-		// 		Server: Server{
-		// 			Address: "127.0.0.1:9003",
-		// 		},
-		// 	},
-		// },
 		{
 			testName: "load env vars override",
 			cfgPath:  "",

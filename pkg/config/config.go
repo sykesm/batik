@@ -34,36 +34,12 @@ func Load(cfgPath string, l Lookuper, out interface{}) error {
 	}
 
 	if cfgPath == "" {
-		// Config paths to check in order if they exist:
-		//	1. cwd
-		//	2. $XDG_CONFIG_HOME/batik/
-		//	3. $HOME/.config/batik/
-		cfgPaths := []string{
-			".",
+		paths, err := SearchPath("batik")
+		if err != nil {
+			return err
 		}
 
-		// switch l.(type) {
-		// case OsEnv:
-		// 	if usrCfgDir, err := os.UserConfigDir(); err == nil {
-		// 		cfgPaths = append(cfgPaths, filepath.Join(usrCfgDir, "batik"))
-		// 	}
-
-		// 	if usrHomeDir, err := os.UserHomeDir(); err == nil {
-		// 		cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
-		// 	}
-		// case EnvMap:
-		// 	if usrCfgDir, err := l.Lookup("XDG_CONFIG_HOME"); err == nil {
-		// 		cfgPaths = append(cfgPaths, filepath.Join(usrCfgDir, "batik"))
-		// 	}
-
-		// 	if usrHomeDir, err := l.Lookup("HOME"); err == nil {
-		// 		cfgPaths = append(cfgPaths, filepath.Join(usrHomeDir, ".config", "batik"))
-		// 	}
-		// default:
-		// 	return fmt.Errorf("unsupported lookuper of type: %T", l)
-		// }
-
-		for _, p := range cfgPaths {
+		for _, p := range paths {
 			path := filepath.Join(p, "batik.yaml")
 			_, err := os.Stat(path)
 			if err == nil {
