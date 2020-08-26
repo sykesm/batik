@@ -6,7 +6,6 @@ package app
 import (
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -44,7 +43,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	app.EnableBashCompletion = true
 	app.CommandNotFound = func(c *cli.Context, name string) {
 		fmt.Fprintf(c.App.ErrWriter, "%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, name)
-		os.Exit(3)
 	}
 	app.Commands = []*cli.Command{
 		{
@@ -112,11 +110,11 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	app.Action = func(c *cli.Context) error {
 		if c.Args().Present() {
 			arg := c.Args().First()
-			if c.App.CommandNotFound != nil {
-				c.App.CommandNotFound(c, arg)
-			} else {
+			if c.App.CommandNotFound == nil {
 				return cli.Exit(fmt.Sprintf("%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, arg), 3)
 			}
+			c.App.CommandNotFound(c, arg)
+			return cli.Exit("", 3)
 		}
 
 		sa, err := shellApp()

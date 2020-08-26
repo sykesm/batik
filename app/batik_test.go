@@ -9,15 +9,16 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	cli "github.com/urfave/cli/v2"
 )
 
-func TestBatik(t *testing.T) {
+func TestBatikWiring(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	in := bytes.NewBuffer(nil)
-	out := bytes.NewBuffer(nil)
-	err := bytes.NewBuffer(nil)
-	app := Batik(nil, ioutil.NopCloser(in), out, err)
+	stdin := bytes.NewBuffer(nil)
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
 	gt.Expect(app.Copyright).To(MatchRegexp("© Copyright IBM Corporation [\\d]{4}. All rights reserved."))
 
 	gt.Expect(app.Flags).NotTo(BeEmpty())
@@ -25,4 +26,20 @@ func TestBatik(t *testing.T) {
 	gt.Expect(app.Commands).NotTo(BeEmpty())
 	gt.Expect(app.Commands[0].Name).To(Equal("start"))
 	gt.Expect(app.Commands[1].Name).To(Equal("status"))
+}
+
+func TestBatikCommandNotFound(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	stdin := bytes.NewBuffer(nil)
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+
+	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
+	app.ExitErrHandler = func(c *cli.Context, err error) {}
+	err := app.Run([]string{"batik", "bogus-command"})
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(3))
+	gt.Expect(stdout.String()).To(BeEmpty())
+	gt.Expect(stderr.String()).To(ContainSubstring("bogus-command"))
 }
