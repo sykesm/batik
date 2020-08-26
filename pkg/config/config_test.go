@@ -23,12 +23,6 @@ type Server struct {
 	Address string `yaml:"address" example:"127.0.0.1:9053" env:"BATIK_ADDRESS"`
 }
 
-type fakeLookuper struct{}
-
-func (f fakeLookuper) Lookup(key string) (string, error) {
-	return "", nil
-}
-
 func TestLoad(t *testing.T) {
 	tests := []struct {
 		testName       string
