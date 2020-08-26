@@ -4,6 +4,9 @@
 package config
 
 import (
+	"os"
+	"os/exec"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -25,4 +28,34 @@ func TestMapLookuper(t *testing.T) {
 	v, ok = ml.Lookup("missing")
 	gt.Expect(ok).To(BeFalse())
 	gt.Expect(v).To(BeEmpty())
+}
+
+func TestEnvironLookuper(t *testing.T) {
+	testEnviron := []string{
+		"ENV_KEY_ONE=environment_value_one",
+		"ENV_KEY_TWO=$value_two",
+	}
+
+	if os.Getenv("BATIK_WANT_HELPER_PROCESS") != "1" {
+		cmd := exec.Command(os.Args[0], "-test.run=TestEnvironLookuper")
+		cmd.Env = append(os.Environ(), "BATIK_WANT_HELPER_PROCESS=1")
+		cmd.Env = append(cmd.Env, testEnviron...)
+		out, err := cmd.CombinedOutput()
+		NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred(), string(out))
+		return
+	}
+
+	for _, kv := range testEnviron {
+		t.Run(kv, func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+
+			tokens := strings.SplitN(kv, "=", 2)
+			gt.Expect(tokens).To(HaveLen(2))
+			key, val := tokens[0], tokens[1]
+
+			v, ok := EnvironLookuper().Lookup(key)
+			gt.Expect(ok).To(BeTrue())
+			gt.Expect(v).To(Equal(val))
+		})
+	}
 }

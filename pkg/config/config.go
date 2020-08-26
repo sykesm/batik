@@ -74,7 +74,6 @@ func Load(cfgPath string, l Lookuper, out interface{}) error {
 	}
 
 	if cfgPath != "" {
-		fmt.Printf("Loading %s\n", cfgPath)
 		if err := readFile(cfgPath, out); err != nil {
 			return fmt.Errorf("read file: %s", err)
 		}
