@@ -50,7 +50,6 @@ func TestLoad(t *testing.T) {
 			testName: "load env vars override",
 			cfgPath:  "",
 			envMap: map[string]string{
-				"HOME":          filepath.Join("testdata", "home"),
 				"BATIK_ADDRESS": "127.0.0.1:9004",
 			},
 			expectedConfig: BatikConfig{
@@ -108,19 +107,15 @@ func TestLoadFailures(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			testName: "nonexistent dir",
-			cfgPath:  filepath.Join("dne", "batik.yaml"),
-			envMap: map[string]string{
-				"HOME": filepath.Join("testdata", "home"),
-			},
+			testName:    "nonexistent dir",
+			cfgPath:     filepath.Join("dne", "batik.yaml"),
+			envMap:      map[string]string{},
 			expectedErr: "read file: open dne/batik.yaml: no such file or directory",
 		},
 		{
-			testName: "invalid yaml",
-			cfgPath:  filepath.Join("testdata", "invalid.yaml"),
-			envMap: map[string]string{
-				"HOME": filepath.Join("testdata", "home"),
-			},
+			testName:    "invalid yaml",
+			cfgPath:     filepath.Join("testdata", "invalid.yaml"),
+			envMap:      map[string]string{},
 			expectedErr: "read file: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!seq into config.BatikConfig",
 		},
 	}
