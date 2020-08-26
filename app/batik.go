@@ -117,7 +117,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit("", 3)
 		}
 
-		sa, err := shellApp()
+		server := c.App.Metadata["server"].(*BatikServer)
+		sa, err := shellApp(server)
 		if err != nil {
 			return cli.Exit(err, 3)
 		}
@@ -133,7 +134,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	return app
 }
 
-func shellApp() (*cli.App, error) {
+func shellApp(server *BatikServer) (*cli.App, error) {
 	app := cli.NewApp()
 	app.Name = "batik"
 	app.HideVersion = true
@@ -151,6 +152,9 @@ func shellApp() (*cli.App, error) {
 			},
 		},
 		statusCommand,
+	}
+	app.Metadata = map[string]interface{}{
+		"server": server,
 	}
 
 	sort.Sort(cli.CommandsByName(app.Commands))
