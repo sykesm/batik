@@ -5,8 +5,10 @@ package grpc
 
 import (
 	"context"
+	"crypto"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -16,18 +18,28 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
+	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	"github.com/sykesm/batik/pkg/tested"
+	"github.com/sykesm/batik/pkg/transaction"
 )
 
 var _ = Describe("Grpc", func() {
 	var (
 		session *gexec.Session
 		address string
+		cleanup func()
 	)
 
 	BeforeEach(func() {
 		address = fmt.Sprintf("127.0.0.1:%d", StartPort())
+
+		var dbPath string
+		dbPath, cleanup = tested.TempDir(GinkgoT(), "", "level")
+
 		cmd := exec.Command(batikPath, "start", "-a", address)
+		cmd.Env = os.Environ()
+		cmd.Env = append(cmd.Env, "DB_PATH="+dbPath)
 
 		var err error
 		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -39,6 +51,8 @@ var _ = Describe("Grpc", func() {
 		if session != nil {
 			session.Kill().Wait(testTimeout)
 		}
+
+		cleanup()
 	})
 
 	Describe("Encode transaction api", func() {
@@ -57,6 +71,122 @@ var _ = Describe("Grpc", func() {
 
 			expectedEncoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(testTx)
 			Expect(resp.EncodedTransaction).To(Equal(expectedEncoded))
+		})
+	})
+
+	Describe("Store service api", func() {
+		var (
+			storeServiceClient sb.StoreAPIClient
+			testTx             *tb.Transaction
+			txid               []byte
+		)
+
+		BeforeEach(func() {
+			clientConn, err := grpc.Dial(address, grpc.WithInsecure())
+			Expect(err).NotTo(HaveOccurred())
+
+			storeServiceClient = sb.NewStoreAPIClient(clientConn)
+
+			testTx = newTestTransaction()
+			txid, err = transaction.ID(crypto.SHA256, testTx)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Describe("GetTransaction", func() {
+			var req *sb.GetTransactionRequest
+
+			BeforeEach(func() {
+				req = &sb.GetTransactionRequest{
+					Txid: txid,
+				}
+			})
+
+			When("the transaction does not exist", func() {
+				It("returns an error", func() {
+					resp, err := storeServiceClient.GetTransaction(context.Background(), req)
+					Expect(err).To(MatchError(MatchRegexp("leveldb: not found")))
+					Expect(resp).To(BeNil())
+				})
+			})
+
+			When("the transaction exists", func() {
+				BeforeEach(func() {
+					putReq := &sb.PutTransactionRequest{
+						Txid:        txid,
+						Transaction: testTx,
+					}
+
+					_, err := storeServiceClient.PutTransaction(context.Background(), putReq)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("retrieves a transaction from the store", func() {
+					resp, err := storeServiceClient.GetTransaction(context.Background(), req)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(proto.Equal(resp.Transaction, testTx)).To(BeTrue())
+				})
+			})
+		})
+
+		Describe("PutTransaction", func() {
+			var req *sb.PutTransactionRequest
+
+			BeforeEach(func() {
+				req = &sb.PutTransactionRequest{
+					Txid:        txid,
+					Transaction: testTx,
+				}
+			})
+
+			// TODO: this test is too similar to the retrieval one, maybe rewrite this and the retrieval one
+			// to store and retrieve from the db directly somehow
+			It("stores a transaction in the store", func() {
+				_, err := storeServiceClient.PutTransaction(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+
+				getReq := &sb.GetTransactionRequest{
+					Txid: txid,
+				}
+				resp, err := storeServiceClient.GetTransaction(context.Background(), getReq)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(proto.Equal(resp.Transaction, testTx)).To(BeTrue())
+			})
+
+			When("the txid does not match the hashed transaction", func() {
+				BeforeEach(func() {
+					req.Txid = []byte("invalid key")
+				})
+
+				It("returns an error", func() {
+					_, err := storeServiceClient.PutTransaction(context.Background(), req)
+					Expect(err).To(MatchError("rpc error: code = Unknown desc = request txid [696e76616c6964206b6579] does not match hashed tx: [53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f]"))
+				})
+			})
+		})
+
+		Describe("GetState", func() {
+			var req *sb.GetStateRequest
+
+			BeforeEach(func() {
+				req = &sb.GetStateRequest{
+					StateRef: &tb.StateReference{
+						Txid:        txid,
+						OutputIndex: 0,
+					},
+				}
+			})
+
+			When("the state does not exist", func() {
+				It("returns an error", func() {
+					resp, err := storeServiceClient.GetState(context.Background(), req)
+					Expect(err).To(MatchError(MatchRegexp("leveldb: not found")))
+					Expect(resp).To(BeNil())
+				})
+			})
+
+			// TODO
+			XWhen("the state exists", func() {
+			})
 		})
 	})
 })

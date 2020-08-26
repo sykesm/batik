@@ -33,7 +33,7 @@ func NewServer(config Config) (*BatikServer, error) {
 		server:  grpc.NewServer(),
 	}
 
-	if err := server.initializeDB(""); err != nil {
+	if err := server.initializeDB(config.Server.DBPath); err != nil {
 		return nil, err
 	}
 
