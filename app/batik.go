@@ -6,42 +6,29 @@ package app
 import (
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
 	cli "github.com/urfave/cli/v2"
-	"google.golang.org/grpc"
 
 	"github.com/sykesm/batik/pkg/buildinfo"
 	"github.com/sykesm/batik/pkg/config"
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/repl"
-	"github.com/sykesm/batik/pkg/transaction"
 )
 
 var statusCommand = &cli.Command{
 	Name:        "status",
 	Description: "check status of server",
 	Action: func(ctx *cli.Context) error {
-		address := ctx.String("address")
-		if address == "" {
-			address = ctx.App.Metadata["config"].(Config).Server.Address
-		}
-		if err := checkStatus(address); err != nil {
-			return cli.Exit(fmt.Sprintf("Server not running at %s", address), 1)
+		server := ctx.App.Metadata["server"].(*BatikServer)
+
+		if err := server.Status(); err != nil {
+			return cli.Exit(fmt.Sprintf("Server not running at %s", server.address), 1)
 
 		}
 		return cli.Exit("Server running", 0)
-	},
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:    "address",
-			Aliases: []string{"a"},
-			Usage:   "Listen address for the grpc server",
-		},
 	},
 }
 
@@ -64,15 +51,18 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			Name:        "start",
 			Description: "start the grpc server",
 			Action: func(ctx *cli.Context) error {
-				address := ctx.String("address")
-				if address == "" {
-					address = ctx.App.Metadata["config"].(Config).Server.Address
+				server := ctx.App.Metadata["server"].(*BatikServer)
+				if server == nil {
+					return cli.Exit("server does not exist", 2)
 				}
-				if err := startServer(address); err != nil {
+				if ctx.String("address") != "" {
+					server.address = ctx.String("address")
+				}
+				if err := server.Start(); err != nil {
 					return cli.Exit(err.Error(), 2)
 				}
 
-				return cli.Exit("Server started", 0)
+				return cli.Exit("Server stopped", 0)
 			},
 			Flags: []cli.Flag{
 				&cli.StringFlag{
@@ -105,8 +95,14 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), 3)
 		}
 
+		server, err := NewServer(cfg)
+		if err != nil {
+			return cli.Exit(fmt.Sprintf("failed to create server: %s", err), 2)
+		}
+
 		app.Metadata = map[string]interface{}{
 			"config": cfg,
+			"server": server,
 		}
 
 		return nil
@@ -184,33 +180,4 @@ func shellApp() (*cli.App, error) {
 	app.CustomAppHelpTemplate = s.String()
 
 	return app, nil
-}
-
-func startServer(address string) error {
-	fmt.Printf("Starting server at %s\n", address)
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		return err
-	}
-	server := grpc.NewServer()
-
-	encodeTxSvc := &transaction.EncodeService{}
-	tb.RegisterEncodeTransactionAPIServer(server, encodeTxSvc)
-
-	return server.Serve(listener)
-}
-
-func checkStatus(address string) error {
-	fmt.Printf("Checking status of server at %s\n", address)
-
-	//create GRPC client conn
-	clientConn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-	defer clientConn.Close()
-
-	//TODO add client healthcheck to verify grpc server status
-
-	return nil
 }

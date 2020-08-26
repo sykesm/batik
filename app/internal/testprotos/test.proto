@@ -1,0 +1,12 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+option go_package = "github.com/sykesm/batik/app/internal/testprotos";
+
+message Empty {}
+
+service TestService {
+  rpc EmptyCall(Empty) returns (Empty);
+}

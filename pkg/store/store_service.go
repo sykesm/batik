@@ -9,6 +9,7 @@ import (
 	"crypto"
 	"fmt"
 	"strconv"
+	"sync"
 
 	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
@@ -19,6 +20,7 @@ import (
 
 // StoreService implements the StoreAPIServer gRPC interface.
 type StoreService struct {
+	sync.RWMutex
 	Db *LevelDBKV
 }
 
@@ -27,6 +29,9 @@ var _ sb.StoreAPIServer = (*StoreService)(nil)
 // GetTransaction retrieves the associated transaction corresponding to the
 // txid passed in the GetTransactionRequest.
 func (s *StoreService) GetTransaction(ctx context.Context, req *sb.GetTransactionRequest) (*sb.GetTransactionResponse, error) {
+	s.Lock()
+	defer s.Unlock()
+
 	tx := &tb.Transaction{}
 
 	key := transactionKey(req.Txid)
@@ -47,6 +52,9 @@ func (s *StoreService) GetTransaction(ctx context.Context, req *sb.GetTransactio
 // PutTransaction first verifies that the transaction can be hashed to the
 // provided txid and then stores the transaction in the backing store.
 func (s *StoreService) PutTransaction(ctx context.Context, req *sb.PutTransactionRequest) (*sb.PutTransactionResponse, error) {
+	s.Lock()
+	defer s.Unlock()
+
 	id, err := transaction.ID(crypto.SHA256, req.Transaction)
 	if err != nil {
 		return nil, err
@@ -74,6 +82,9 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *sb.PutTransactio
 // output index that the State was originally created at in the transaction output
 // list.
 func (s *StoreService) GetState(ctx context.Context, req *sb.GetStateRequest) (*sb.GetStateResponse, error) {
+	s.Lock()
+	defer s.Unlock()
+
 	state := &tb.ResolvedState{}
 
 	key := stateKey(req.StateRef)
