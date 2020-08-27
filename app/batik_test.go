@@ -21,8 +21,11 @@ func TestBatikWiring(t *testing.T) {
 	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
 	gt.Expect(app.Copyright).To(MatchRegexp("© Copyright IBM Corporation [\\d]{4}. All rights reserved."))
 
+	// Global flags
 	gt.Expect(app.Flags).NotTo(BeEmpty())
 	gt.Expect(app.Flags[0].Names()[0]).To(Equal("config"))
+
+	// Command implementations
 	gt.Expect(app.Commands).NotTo(BeEmpty())
 	gt.Expect(app.Commands[0].Name).To(Equal("start"))
 	gt.Expect(app.Commands[1].Name).To(Equal("status"))

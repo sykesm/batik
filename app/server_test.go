@@ -10,8 +10,9 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/sykesm/batik/app/internal/testprotos"
 	"google.golang.org/grpc"
+
+	"github.com/sykesm/batik/app/internal/testprotos"
 )
 
 type emptyServiceServer struct{}
@@ -48,11 +49,8 @@ func TestNewServer(t *testing.T) {
 
 	testAddress := "127.0.0.1:9053"
 	srv, err := NewServer(Config{
-		Server: Server{
-			Address: testAddress,
-		},
-	},
-	)
+		Server: Server{Address: testAddress},
+	})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	// resolve the address

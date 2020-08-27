@@ -17,20 +17,6 @@ import (
 	"github.com/sykesm/batik/pkg/repl"
 )
 
-var statusCommand = &cli.Command{
-	Name:        "status",
-	Description: "check status of server",
-	Action: func(ctx *cli.Context) error {
-		server := ctx.App.Metadata["server"].(*BatikServer)
-
-		if err := server.Status(); err != nil {
-			return cli.Exit(fmt.Sprintf("Server not running at %s", server.address), 1)
-
-		}
-		return cli.Exit("Server running", 0)
-	},
-}
-
 func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
 	app := cli.NewApp()
 	app.Copyright = fmt.Sprintf("© Copyright IBM Corporation %04d. All rights reserved.", buildinfo.Built().Year())
@@ -45,33 +31,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		fmt.Fprintf(c.App.ErrWriter, "%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, name)
 	}
 	app.Commands = []*cli.Command{
-		{
-			Name:        "start",
-			Description: "start the grpc server",
-			Action: func(ctx *cli.Context) error {
-				server := ctx.App.Metadata["server"].(*BatikServer)
-				if server == nil {
-					return cli.Exit("server does not exist", 2)
-				}
-				if ctx.String("address") != "" {
-					server.address = ctx.String("address")
-				}
-				if err := server.Start(); err != nil {
-					return cli.Exit(err.Error(), 2)
-				}
-
-				return cli.Exit("Server stopped", 0)
-			},
-			Flags: []cli.Flag{
-				&cli.StringFlag{
-					Name:    "address",
-					Aliases: []string{"a"},
-					Usage:   "Listen address for the grpc server",
-					EnvVars: []string{"BATIK_ADDRESS"},
-				},
-			},
-		},
-		statusCommand,
+		startCommand(),
+		statusCommand(),
 	}
 
 	app.Flags = []cli.Flag{
@@ -151,7 +112,8 @@ func shellApp(server *BatikServer) (*cli.App, error) {
 				return cli.Exit(repl.ErrExit, 0)
 			},
 		},
-		statusCommand,
+		startCommand(),
+		statusCommand(),
 	}
 	app.Metadata = map[string]interface{}{
 		"server": server,
