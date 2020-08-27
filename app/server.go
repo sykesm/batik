@@ -11,11 +11,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"google.golang.org/grpc"
+
 	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
-	"google.golang.org/grpc"
 )
 
 // BatikServer is a gRPC server that provides services for interacting
@@ -110,7 +111,7 @@ func (s *BatikServer) Status() error {
 	fmt.Printf("Checking status of server at %s\n", s.address)
 
 	// create GRPC client conn
-	clientConn, err := grpc.Dial(s.address, grpc.WithInsecure())
+	clientConn, err := grpc.Dial(s.address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return err
 	}

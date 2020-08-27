@@ -67,6 +67,6 @@ func TestNewServer(t *testing.T) {
 	defer srv.Stop()
 
 	// invoke the EmptyCall service
-	_, err = invokeEmptyCall(testAddress, grpc.WithInsecure())
+	_, err = invokeEmptyCall(testAddress, grpc.WithInsecure(), grpc.WithBlock())
 	gt.Expect(err).NotTo(HaveOccurred())
 }

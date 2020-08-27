@@ -45,6 +45,7 @@ var _ = Describe("Grpc", func() {
 		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).To(BeNil())
 		Eventually(session, testTimeout).Should(gbytes.Say("Starting server at " + address))
+		Eventually(session, testTimeout).Should(gbytes.Say("Server started"))
 	})
 
 	AfterEach(func() {
@@ -59,7 +60,7 @@ var _ = Describe("Grpc", func() {
 		It("encodes a transaction", func() {
 			testTx := newTestTransaction()
 
-			clientConn, err := grpc.Dial(address, grpc.WithInsecure())
+			clientConn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 			Expect(err).NotTo(HaveOccurred())
 
 			encodeTransactionClient := tb.NewEncodeTransactionAPIClient(clientConn)
@@ -82,7 +83,7 @@ var _ = Describe("Grpc", func() {
 		)
 
 		BeforeEach(func() {
-			clientConn, err := grpc.Dial(address, grpc.WithInsecure())
+			clientConn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 			Expect(err).NotTo(HaveOccurred())
 
 			storeServiceClient = sb.NewStoreAPIClient(clientConn)
