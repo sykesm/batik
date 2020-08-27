@@ -41,7 +41,7 @@ func TestRun(t *testing.T) {
 		{"empty", "", "", ""},
 		{"echo", "echo arg1 arg2 arg3", "[arg1 arg2 arg3]", ""},
 		{"echo-unterminated", `"arg1'`, "", "scanner: double quoted string not terminated\n"},
-		{"fail", "fail", "", "command failed: bummer..."},
+		{"fail", "fail", "", "command failed: bummer...\n"},
 	}
 
 	for _, tt := range tests {

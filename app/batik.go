@@ -67,13 +67,12 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit("", exitCommandNotFound)
 		}
 
-		server := c.App.Metadata["server"].(*BatikServer)
-		sa, err := shellApp(server)
+		sa, err := shellApp(c)
 		if err != nil {
 			return cli.Exit(err, exitShellSetupFailed)
 		}
-		repl := repl.New(sa)
-		return repl.Run(c.Context)
+
+		return repl.New(sa).Run(c.Context)
 	}
 
 	// Sort the flags and commands to make it easier to find things.
@@ -84,7 +83,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	return app
 }
 
-func shellApp(server *BatikServer) (*cli.App, error) {
+func shellApp(ctx *cli.Context) (*cli.App, error) {
 	app := cli.NewApp()
 	app.Name = "batik"
 	app.HideVersion = true
@@ -92,20 +91,21 @@ func shellApp(server *BatikServer) (*cli.App, error) {
 	app.CommandNotFound = func(c *cli.Context, name string) {
 		fmt.Fprintf(c.App.ErrWriter, "Unknown command: %s\n", name)
 	}
+	app.ExitErrHandler = func(c *cli.Context, err error) {}
+	app.Metadata = map[string]interface{}{
+		"config": ctx.App.Metadata["config"],
+	}
 
 	app.Commands = []*cli.Command{
 		{
 			Name:        "exit",
 			Description: "exit the shell",
 			Action: func(ctx *cli.Context) error {
-				return cli.Exit(repl.ErrExit, exitOkay)
+				return repl.ErrExit
 			},
 		},
 		startCommand(),
 		statusCommand(),
-	}
-	app.Metadata = map[string]interface{}{
-		"server": server,
 	}
 
 	sort.Sort(cli.CommandsByName(app.Commands))
@@ -115,8 +115,7 @@ func shellApp(server *BatikServer) (*cli.App, error) {
 	s.WriteString("Commands:\n")
 	w := tabwriter.NewWriter(&s, 0, 0, 1, ' ', 0)
 	for _, c := range app.VisibleCommands() {
-		_, err := fmt.Fprintf(w, "    %s %s\t%s\n", c.Name, c.Usage, c.Description)
-		if err != nil {
+		if _, err := fmt.Fprintf(w, "    %s %s\t%s\n", c.Name, c.Usage, c.Description); err != nil {
 			return nil, err
 		}
 	}

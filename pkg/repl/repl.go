@@ -23,6 +23,7 @@ type exitError string
 const ErrExit = exitError("exit")
 
 func (ee exitError) Error() string { return string(ee) }
+func (ee exitError) ExitCode() int { return 0 }
 
 // A REPL implements an interactive Read, Evaluate, Print Loop for a cli.App.
 type REPL struct {
@@ -190,7 +191,7 @@ func (r *REPL) Run(ctx context.Context) error {
 			return nil
 		}
 		if err != nil {
-			fmt.Fprintf(r.app.ErrWriter, "command failed: %s", err.Error())
+			fmt.Fprintf(r.app.ErrWriter, "command failed: %s\n", err.Error())
 		}
 	}
 }
