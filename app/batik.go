@@ -63,9 +63,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	app.Action = func(c *cli.Context) error {
 		if c.Args().Present() {
 			arg := c.Args().First()
-			if c.App.CommandNotFound == nil {
-				return cli.Exit(fmt.Sprintf("%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, arg), exitCommandNotFound)
-			}
 			c.App.CommandNotFound(c, arg)
 			return cli.Exit("", exitCommandNotFound)
 		}

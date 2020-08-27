@@ -46,7 +46,7 @@ func TestBatikCommandNotFound(t *testing.T) {
 	gt.Expect(err).To(HaveOccurred())
 	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(2))
 	gt.Expect(stdout.String()).To(BeEmpty())
-	gt.Expect(stderr.String()).To(ContainSubstring("bogus-command"))
+	gt.Expect(stderr.String()).To(Equal("batik: 'bogus-command' is not a batik command. See `batik --help`.\n"))
 }
 
 func TestBatikConfigNotFound(t *testing.T) {
