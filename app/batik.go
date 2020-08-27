@@ -30,11 +30,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	app.CommandNotFound = func(c *cli.Context, name string) {
 		fmt.Fprintf(c.App.ErrWriter, "%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, name)
 	}
-	app.Commands = []*cli.Command{
-		startCommand(),
-		statusCommand(),
-	}
-
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
 			Name:    "config",
@@ -43,25 +38,22 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			EnvVars: []string{"BATIK_CFG_PATH"},
 		},
 	}
+	app.Commands = []*cli.Command{
+		startCommand(),
+		statusCommand(),
+	}
 
 	app.Before = func(c *cli.Context) error {
-		// Load config file
-		cfgPath := c.String("config")
+		configPath := c.String("config")
 
 		var cfg Config
-		err := config.Load(cfgPath, config.EnvironLookuper(), &cfg)
+		err := config.Load(configPath, config.EnvironLookuper(), &cfg)
 		if err != nil {
-			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), 3)
-		}
-
-		server, err := NewServer(cfg)
-		if err != nil {
-			return cli.Exit(fmt.Sprintf("failed to create server: %s", err), 2)
+			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), exitConfigLoadFailed)
 		}
 
 		app.Metadata = map[string]interface{}{
 			"config": cfg,
-			"server": server,
 		}
 
 		return nil
@@ -72,16 +64,16 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		if c.Args().Present() {
 			arg := c.Args().First()
 			if c.App.CommandNotFound == nil {
-				return cli.Exit(fmt.Sprintf("%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, arg), 3)
+				return cli.Exit(fmt.Sprintf("%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, arg), exitCommandNotFound)
 			}
 			c.App.CommandNotFound(c, arg)
-			return cli.Exit("", 3)
+			return cli.Exit("", exitCommandNotFound)
 		}
 
 		server := c.App.Metadata["server"].(*BatikServer)
 		sa, err := shellApp(server)
 		if err != nil {
-			return cli.Exit(err, 3)
+			return cli.Exit(err, exitShellSetupFailed)
 		}
 		repl := repl.New(sa)
 		return repl.Run(c.Context)
@@ -109,7 +101,7 @@ func shellApp(server *BatikServer) (*cli.App, error) {
 			Name:        "exit",
 			Description: "exit the shell",
 			Action: func(ctx *cli.Context) error {
-				return cli.Exit(repl.ErrExit, 0)
+				return cli.Exit(repl.ErrExit, exitOkay)
 			},
 		},
 		startCommand(),
@@ -125,18 +117,12 @@ func shellApp(server *BatikServer) (*cli.App, error) {
 	s := strings.Builder{}
 	s.WriteString("Commands:\n")
 	w := tabwriter.NewWriter(&s, 0, 0, 1, ' ', 0)
-
 	for _, c := range app.VisibleCommands() {
-		_, err := fmt.Fprintf(w,
-			"    %s %s\t%s\n",
-			c.Name, c.Usage,
-			c.Description,
-		)
+		_, err := fmt.Fprintf(w, "    %s %s\t%s\n", c.Name, c.Usage, c.Description)
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	if err := w.Flush(); err != nil {
 		return nil, err
 	}

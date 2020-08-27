@@ -4,6 +4,8 @@
 package app
 
 import (
+	"fmt"
+
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -19,18 +21,22 @@ func startCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
-			server := ctx.App.Metadata["server"].(*BatikServer)
-			if server == nil {
-				return cli.Exit("server does not exist", 2)
-			}
+			config := ctx.App.Metadata["config"].(Config)
 			if ctx.String("address") != "" {
-				server.address = ctx.String("address")
-			}
-			if err := server.Start(); err != nil {
-				return cli.Exit(err.Error(), 2)
+				config.Server.Address = ctx.String("address")
 			}
 
-			return cli.Exit("Server stopped", 0)
+			server, err := NewServer(config, ctx.App.Writer, ctx.App.ErrWriter)
+			if err != nil {
+				return cli.Exit(fmt.Sprintf("failed to create server: %s", err), exitServerCreateFailed)
+			}
+
+			if err := server.Start(); err != nil {
+				return cli.Exit(err.Error(), exitServerStartFailed)
+			}
+
+			fmt.Fprintln(ctx.App.ErrWriter, "Server stopped")
+			return nil
 		},
 	}
 }

@@ -5,6 +5,7 @@ package app
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -40,9 +41,29 @@ func TestBatikCommandNotFound(t *testing.T) {
 
 	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
 	app.ExitErrHandler = func(c *cli.Context, err error) {}
+
 	err := app.Run([]string{"batik", "bogus-command"})
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(2))
+	gt.Expect(stdout.String()).To(BeEmpty())
+	gt.Expect(stderr.String()).To(ContainSubstring("bogus-command"))
+}
+
+func TestBatikConfigNotFound(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	stdin := bytes.NewBuffer(nil)
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+
+	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
+	app.ExitErrHandler = func(c *cli.Context, err error) {
+		fmt.Fprintf(c.App.ErrWriter, "%+v\n", err)
+	}
+
+	err := app.Run([]string{"batik", "--config", "missing-file.txt"})
 	gt.Expect(err).To(HaveOccurred())
 	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(3))
 	gt.Expect(stdout.String()).To(BeEmpty())
-	gt.Expect(stderr.String()).To(ContainSubstring("bogus-command"))
+	gt.Expect(stderr.String()).To(MatchRegexp("failed loading batik config:.*missing-file.txt"))
 }

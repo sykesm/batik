@@ -5,6 +5,7 @@ package app
 
 import (
 	"context"
+	"io/ioutil"
 	"net"
 	"testing"
 	"time"
@@ -48,9 +49,13 @@ func TestNewServer(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	testAddress := "127.0.0.1:9053"
-	srv, err := NewServer(Config{
-		Server: Server{Address: testAddress},
-	})
+	srv, err := NewServer(
+		Config{
+			Server: Server{Address: testAddress},
+		},
+		ioutil.Discard,
+		ioutil.Discard,
+	)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	// resolve the address

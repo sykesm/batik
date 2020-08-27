@@ -6,6 +6,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -25,13 +26,20 @@ type BatikServer struct {
 	address string
 	server  *grpc.Server
 
+	stdout io.Writer
+	stderr io.Writer
+
 	db *store.LevelDBKV
 }
 
-func NewServer(config Config) (*BatikServer, error) {
+// TODO(mjs): Replace stdout and stderr with loggers.
+
+func NewServer(config Config, stdout, stderr io.Writer) (*BatikServer, error) {
 	server := &BatikServer{
 		address: config.Server.Address,
 		server:  grpc.NewServer(),
+		stdout:  stdout,
+		stderr:  stderr,
 	}
 
 	if err := server.initializeDB(config.DBPath); err != nil {
@@ -76,14 +84,14 @@ func (s *BatikServer) registerServices() error {
 }
 
 func (s *BatikServer) Start() error {
-	fmt.Printf("Starting server at %s\n", s.address)
+	fmt.Fprintf(s.stdout, "Starting server at %s\n", s.address)
 	listener, err := net.Listen("tcp", s.address)
 	if err != nil {
 		return err
 	}
 	serve := make(chan error)
 
-	handleSignals(map[os.Signal]func(){
+	s.handleSignals(map[os.Signal]func(){
 		syscall.SIGINT:  func() { s.server.GracefulStop(); serve <- nil },
 		syscall.SIGTERM: func() { s.server.GracefulStop(); serve <- nil },
 	})
@@ -96,19 +104,19 @@ func (s *BatikServer) Start() error {
 		serve <- grpcErr
 	}()
 
-	fmt.Println("Server started")
+	fmt.Fprintln(s.stdout, "Server started")
 
 	// Block until grpc server exits
 	return <-serve
 }
 
 func (s *BatikServer) Stop() {
-	fmt.Println("Stopping server")
+	fmt.Fprintln(s.stdout, "Stopping server")
 	s.server.GracefulStop()
 }
 
 func (s *BatikServer) Status() error {
-	fmt.Printf("Checking status of server at %s\n", s.address)
+	fmt.Fprintf(s.stdout, "Checking status of server at %s\n", s.address)
 
 	// create GRPC client conn
 	clientConn, err := grpc.Dial(s.address, grpc.WithInsecure(), grpc.WithBlock())
@@ -122,7 +130,7 @@ func (s *BatikServer) Status() error {
 	return nil
 }
 
-func handleSignals(handlers map[os.Signal]func()) {
+func (s *BatikServer) handleSignals(handlers map[os.Signal]func()) {
 	var signals []os.Signal
 	for sig := range handlers {
 		signals = append(signals, sig)
@@ -133,7 +141,7 @@ func handleSignals(handlers map[os.Signal]func()) {
 
 	go func() {
 		for sig := range signalChan {
-			fmt.Printf("\nReceived signal: %d (%s)\n", sig, sig)
+			fmt.Fprintf(s.stderr, "\nReceived signal: %d (%s)\n", sig, sig)
 			handlers[sig]()
 		}
 	}()
