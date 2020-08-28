@@ -43,6 +43,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		statusCommand(),
 	}
 
+	app.Metadata = make(map[string]interface{})
+
 	app.Before = func(c *cli.Context) error {
 		configPath := c.String("config")
 
@@ -52,9 +54,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), exitConfigLoadFailed)
 		}
 
-		app.Metadata = map[string]interface{}{
-			"config": cfg,
-		}
+		SetConfig(c, cfg)
 
 		return nil
 	}
@@ -92,7 +92,7 @@ func shellApp(ctx *cli.Context) (*cli.App, error) {
 	}
 	app.ExitErrHandler = func(c *cli.Context, err error) {}
 	app.Metadata = map[string]interface{}{
-		"config": ctx.App.Metadata["config"],
+		"config": GetConfig(ctx),
 	}
 
 	app.Commands = []*cli.Command{

@@ -21,7 +21,7 @@ func startCommand(interactive bool) *cli.Command {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
-			config := ctx.App.Metadata["config"].(Config)
+			config := GetConfig(ctx)
 			if ctx.String("address") != "" {
 				config.Server.Address = ctx.String("address")
 			}
