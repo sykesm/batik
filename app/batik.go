@@ -72,7 +72,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit(err, exitShellSetupFailed)
 		}
 
-		return repl.New(sa).Run(c.Context)
+		return repl.New(sa, repl.WithStdin(stdin), repl.WithStdout(stdout), repl.WithStderr(stderr)).Run(c.Context)
 	}
 
 	// Sort the flags and commands to make it easier to find things.
@@ -87,7 +87,6 @@ func shellApp(ctx *cli.Context) (*cli.App, error) {
 	app := cli.NewApp()
 	app.Name = "batik"
 	app.HideVersion = true
-	app.UsageText = "command [arguments...]"
 	app.CommandNotFound = func(c *cli.Context, name string) {
 		fmt.Fprintf(c.App.ErrWriter, "Unknown command: %s\n", name)
 	}

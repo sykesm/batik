@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -66,4 +67,36 @@ func TestBatikConfigNotFound(t *testing.T) {
 	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(3))
 	gt.Expect(stdout.String()).To(BeEmpty())
 	gt.Expect(stderr.String()).To(MatchRegexp("failed loading batik config:.*missing-file.txt"))
+}
+
+func TestBatikInteractive(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	app := cli.NewApp()
+	ctx := cli.NewContext(app, nil, nil)
+	sa, err := shellApp(ctx)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	tests := []struct {
+		command string
+		stdout  string
+		stderr  string
+	}{
+		{command: "", stdout: "", stderr: ""},
+		{command: "exit", stdout: "", stderr: ""},
+		{command: "help", stdout: sa.CustomAppHelpTemplate, stderr: ""},
+		{command: "unknown-command", stdout: "", stderr: "Unknown command: unknown-command\n"},
+	}
+	for _, tt := range tests {
+		gt := NewGomegaWithT(t)
+
+		stdin := strings.NewReader(tt.command + "\n")
+		stdout := bytes.NewBuffer(nil)
+		stderr := bytes.NewBuffer(nil)
+
+		app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
+		err := app.Run([]string{"batik"})
+		gt.Expect(err).NotTo(HaveOccurred())
+		gt.Expect(stdout.String()).To(Equal(tt.stdout))
+		gt.Expect(stderr.String()).To(Equal(tt.stderr))
+	}
 }
