@@ -39,7 +39,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		},
 	}
 	app.Commands = []*cli.Command{
-		startCommand(),
+		startCommand(false),
 		statusCommand(),
 	}
 
@@ -104,7 +104,7 @@ func shellApp(ctx *cli.Context) (*cli.App, error) {
 				return repl.ErrExit
 			},
 		},
-		startCommand(),
+		startCommand(true),
 		statusCommand(),
 	}
 

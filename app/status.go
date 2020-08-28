@@ -16,7 +16,8 @@ func statusCommand() *cli.Command {
 		Action: func(ctx *cli.Context) error {
 			server := ctx.App.Metadata["server"]
 			if server == nil {
-				return cli.Exit("Server not running", 0)
+				fmt.Fprintln(ctx.App.Writer, "Server not running")
+				return nil
 			}
 
 			bs := server.(*BatikServer)
@@ -24,7 +25,8 @@ func statusCommand() *cli.Command {
 				return cli.Exit(fmt.Sprintf("Server not responding at %s", bs.address), 1)
 			}
 
-			return cli.Exit("Server running", 0)
+			fmt.Fprintln(ctx.App.Writer, "Server running")
+			return nil
 		},
 	}
 }

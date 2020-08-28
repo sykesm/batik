@@ -9,7 +9,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
-func startCommand() *cli.Command {
+func startCommand(interactive bool) *cli.Command {
 	return &cli.Command{
 		Name:        "start",
 		Description: "start the grpc server",
@@ -30,13 +30,24 @@ func startCommand() *cli.Command {
 			if err != nil {
 				return cli.Exit(fmt.Sprintf("failed to create server: %s", err), exitServerCreateFailed)
 			}
+			ctx.App.Metadata["server"] = server
 
-			if err := server.Start(); err != nil {
-				return cli.Exit(err.Error(), exitServerStartFailed)
+			start := func() error {
+				if err := server.Start(); err != nil {
+					return cli.Exit(err.Error(), exitServerStartFailed)
+				}
+
+				fmt.Fprintln(ctx.App.ErrWriter, "Server stopped")
+				return nil
 			}
 
-			fmt.Fprintln(ctx.App.ErrWriter, "Server stopped")
-			return nil
+			// TODO: The server needs work to enable us to start, wait for ready, and then
+			// return.
+			if interactive {
+				go start()
+				return nil
+			}
+			return start()
 		},
 	}
 }
