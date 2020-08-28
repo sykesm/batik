@@ -76,32 +76,52 @@ func TestBatikInteractive(t *testing.T) {
 	sa, err := shellApp(ctx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(sa.Commands).To(HaveLen(3))
-	gt.Expect(sa.Commands[0].Name).To(Equal("exit"))
-	gt.Expect(sa.Commands[1].Name).To(Equal("start"))
-	gt.Expect(sa.Commands[2].Name).To(Equal("status"))
-
 	tests := []struct {
 		command string
 		stdout  string
 		stderr  string
 	}{
-		{command: "", stdout: "", stderr: ""},
 		{command: "exit", stdout: "", stderr: ""},
 		{command: "help", stdout: sa.CustomAppHelpTemplate, stderr: ""},
 		{command: "unknown-command", stdout: "", stderr: "Unknown command: unknown-command\n"},
 	}
 	for _, tt := range tests {
-		gt := NewGomegaWithT(t)
+		t.Run(tt.command, func(t *testing.T) {
+			gt := NewGomegaWithT(t)
 
-		stdin := strings.NewReader(tt.command + "\n")
-		stdout := bytes.NewBuffer(nil)
-		stderr := bytes.NewBuffer(nil)
+			stdin := strings.NewReader(tt.command + "\n")
+			stdout := bytes.NewBuffer(nil)
+			stderr := bytes.NewBuffer(nil)
 
-		app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
-		err := app.Run([]string{"batik"})
-		gt.Expect(err).NotTo(HaveOccurred())
-		gt.Expect(stdout.String()).To(Equal(tt.stdout))
-		gt.Expect(stderr.String()).To(Equal(tt.stderr))
+			app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
+			err := app.Run([]string{"batik"})
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(stdout.String()).To(Equal(tt.stdout))
+			gt.Expect(stderr.String()).To(Equal(tt.stderr))
+		})
 	}
+}
+
+func TestBatikInteraciveWiring(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	app := cli.NewApp()
+	ctx := cli.NewContext(app, nil, nil)
+	sa, err := shellApp(ctx)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	t.Run("AvailableCommands", func(t *testing.T) {
+		gt.Expect(sa.Commands).To(HaveLen(3))
+		gt.Expect(sa.Commands[0].Name).To(Equal("exit"))
+		gt.Expect(sa.Commands[1].Name).To(Equal("start"))
+		gt.Expect(sa.Commands[2].Name).To(Equal("status"))
+	})
+
+	t.Run("HelpTemplate", func(t *testing.T) {
+		gt.Expect(strings.Split(strings.TrimSpace(sa.CustomAppHelpTemplate), "\n")).To(ConsistOf(
+			"Commands:",
+			"    exit    exit the shell",
+			"    start   start the grpc server",
+			"    status  check status of server",
+		))
+	})
 }
