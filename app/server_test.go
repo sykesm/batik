@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/sykesm/batik/app/internal/testprotos"
+	"github.com/sykesm/batik/pkg/log"
 )
 
 type emptyServiceServer struct{}
@@ -48,13 +49,16 @@ func invokeEmptyCall(address string, dialOptions ...grpc.DialOption) (*testproto
 func TestNewServer(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
+	logger, err := log.NewLogger("", ioutil.Discard)
+	gt.Expect(err).NotTo(HaveOccurred())
+
 	testAddress := "127.0.0.1:9053"
 	srv, err := NewServer(
 		Config{
 			Server: Server{Address: testAddress},
 		},
-		ioutil.Discard,
-		ioutil.Discard,
+		logger,
+		logger,
 	)
 	gt.Expect(err).NotTo(HaveOccurred())
 

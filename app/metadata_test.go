@@ -28,7 +28,7 @@ func TestMetadata_Config(t *testing.T) {
 		},
 	}
 
-	ctx.App.Metadata[string(CONFIG)] = expectedConfig
+	ctx.App.Metadata[string(configKey)] = expectedConfig
 
 	config = GetConfig(ctx)
 	gt.Expect(config).To(Equal(expectedConfig))
@@ -41,5 +41,5 @@ func TestMetadata_Config(t *testing.T) {
 
 	SetConfig(ctx, newConfig)
 
-	gt.Expect(ctx.App.Metadata[string(CONFIG)]).To(Equal(newConfig))
+	gt.Expect(ctx.App.Metadata[string(configKey)]).To(Equal(newConfig))
 }

@@ -10,10 +10,12 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 
 	"github.com/sykesm/batik/pkg/buildinfo"
 	"github.com/sykesm/batik/pkg/config"
+	"github.com/sykesm/batik/pkg/log"
 	"github.com/sykesm/batik/pkg/repl"
 )
 
@@ -37,6 +39,22 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			Usage:   "Path to yaml file to load configuration parameters from",
 			EnvVars: []string{"BATIK_CFG_PATH"},
 		},
+		&cli.StringFlag{
+			Name:    "log-level",
+			Usage:   "Log level",
+			Value:   "info",
+			EnvVars: []string{"BATIK_LOG_LEVEL"},
+		},
+		&cli.StringFlag{
+			Name:  "log-output-file",
+			Usage: "Log output file path, if stdout, logs will go to stdout",
+			Value: "stdout",
+		},
+		&cli.StringFlag{
+			Name:  "errlog-output-file",
+			Usage: "ErrLog output file path, if stderr, err logs will go to stderr",
+			Value: "stderr",
+		},
 	}
 	app.Commands = []*cli.Command{
 		startCommand(false),
@@ -46,11 +64,27 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	app.Metadata = make(map[string]interface{})
 
 	app.Before = func(c *cli.Context) error {
+		logLevel := c.String("log-level")
+		logPath := c.String("log-output-file")
+		errLogPath := c.String("errlog-output-file")
+
+		logger, err := log.NewLogger(logLevel, logPath)
+		if err != nil {
+			return cli.Exit(errors.Wrap(err, "failed creating new logger"), exitLoggerCreateFailed)
+		}
+
+		errLogger, err := log.NewLogger("warn", errLogPath)
+		if err != nil {
+			return cli.Exit(errors.Wrap(err, "failed creating new errLogger"), exitErrLoggerCreateFailed)
+		}
+
+		SetLogger(c, logger)
+		SetErrLogger(c, errLogger)
+
 		configPath := c.String("config")
 
 		var cfg Config
-		err := config.Load(configPath, config.EnvironLookuper(), &cfg)
-		if err != nil {
+		if err := config.Load(configPath, config.EnvironLookuper(), &cfg); err != nil {
 			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), exitConfigLoadFailed)
 		}
 
@@ -87,12 +121,23 @@ func shellApp(ctx *cli.Context) (*cli.App, error) {
 	app := cli.NewApp()
 	app.Name = "batik"
 	app.HideVersion = true
+	app.Writer = ctx.App.Writer
+	app.ErrWriter = ctx.App.ErrWriter
 	app.CommandNotFound = func(c *cli.Context, name string) {
 		fmt.Fprintf(c.App.ErrWriter, "Unknown command: %s\n", name)
 	}
 	app.ExitErrHandler = func(c *cli.Context, err error) {}
-	app.Metadata = map[string]interface{}{
-		"config": GetConfig(ctx),
+	app.Metadata = make(map[string]interface{})
+
+	app.Before = func(c *cli.Context) error {
+		SetConfig(c, GetConfig(ctx))
+		logger, err := GetLogger(ctx)
+		if err != nil {
+			fmt.Fprintf(c.App.ErrWriter, "Failed setup: %s\n", err)
+		}
+		SetLogger(c, logger)
+
+		return nil
 	}
 
 	app.Commands = []*cli.Command{

@@ -14,15 +14,17 @@ func statusCommand() *cli.Command {
 		Name:        "status",
 		Description: "check status of server",
 		Action: func(ctx *cli.Context) error {
-			server := ctx.App.Metadata["server"]
+			server, err := GetServer(ctx)
+			if err != nil {
+				return cli.Exit(err, exitServerStatusFailed)
+			}
 			if server == nil {
 				fmt.Fprintln(ctx.App.Writer, "Server not running")
 				return nil
 			}
 
-			bs := server.(*BatikServer)
-			if err := bs.Status(); err != nil {
-				return cli.Exit(fmt.Sprintf("Server not responding at %s", bs.address), 1)
+			if err := server.Status(); err != nil {
+				return cli.Exit(fmt.Errorf("server not responding at %s", server.address), exitServerStatusFailed)
 			}
 
 			fmt.Fprintln(ctx.App.Writer, "Server running")

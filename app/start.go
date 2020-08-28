@@ -4,8 +4,7 @@
 package app
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -22,22 +21,31 @@ func startCommand(interactive bool) *cli.Command {
 		},
 		Action: func(ctx *cli.Context) error {
 			config := GetConfig(ctx)
+			logger, err := GetLogger(ctx)
+			if err != nil {
+				return cli.Exit(err, exitServerStartFailed)
+			}
+			errLogger, err := GetErrLogger(ctx)
+			if err != nil {
+				return cli.Exit(err, exitServerStartFailed)
+			}
 			if ctx.String("address") != "" {
 				config.Server.Address = ctx.String("address")
 			}
 
-			server, err := NewServer(config, ctx.App.Writer, ctx.App.ErrWriter)
+			server, err := NewServer(config, logger, errLogger)
 			if err != nil {
-				return cli.Exit(fmt.Sprintf("failed to create server: %s", err), exitServerCreateFailed)
+				return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
 			}
-			ctx.App.Metadata["server"] = server
+
+			SetServer(ctx, server)
 
 			start := func() error {
 				if err := server.Start(); err != nil {
-					return cli.Exit(err.Error(), exitServerStartFailed)
+					return cli.Exit(err, exitServerStartFailed)
 				}
 
-				fmt.Fprintln(ctx.App.ErrWriter, "Server stopped")
+				logger.Info().Msg("Server stopped")
 				return nil
 			}
 

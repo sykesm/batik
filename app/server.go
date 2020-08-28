@@ -4,14 +4,13 @@
 package app
 
 import (
-	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 
 	sb "github.com/sykesm/batik/pkg/pb/store"
@@ -26,20 +25,20 @@ type BatikServer struct {
 	address string
 	server  *grpc.Server
 
-	stdout io.Writer
-	stderr io.Writer
+	logger    *zerolog.Logger
+	errLogger *zerolog.Logger
 
 	db *store.LevelDBKV
 }
 
 // TODO(mjs): Replace stdout and stderr with loggers.
 
-func NewServer(config Config, stdout, stderr io.Writer) (*BatikServer, error) {
+func NewServer(config Config, logger, errLogger *zerolog.Logger) (*BatikServer, error) {
 	server := &BatikServer{
-		address: config.Server.Address,
-		server:  grpc.NewServer(),
-		stdout:  stdout,
-		stderr:  stderr,
+		address:   config.Server.Address,
+		server:    grpc.NewServer(),
+		logger:    logger,
+		errLogger: errLogger,
 	}
 
 	if err := server.initializeDB(config.DBPath); err != nil {
@@ -84,7 +83,7 @@ func (s *BatikServer) registerServices() error {
 }
 
 func (s *BatikServer) Start() error {
-	fmt.Fprintf(s.stdout, "Starting server at %s\n", s.address)
+	s.logger.Info().Str("address", s.address).Msg("Starting server")
 	listener, err := net.Listen("tcp", s.address)
 	if err != nil {
 		return err
@@ -104,19 +103,19 @@ func (s *BatikServer) Start() error {
 		serve <- grpcErr
 	}()
 
-	fmt.Fprintln(s.stdout, "Server started")
+	s.logger.Info().Msg("Server started")
 
 	// Block until grpc server exits
 	return <-serve
 }
 
 func (s *BatikServer) Stop() {
-	fmt.Fprintln(s.stdout, "Stopping server")
+	s.logger.Info().Msg("Stopping server")
 	s.server.GracefulStop()
 }
 
 func (s *BatikServer) Status() error {
-	fmt.Fprintf(s.stdout, "Checking status of server at %s\n", s.address)
+	s.logger.Info().Str("address", s.address).Msg("Checking status of server")
 
 	// create GRPC client conn
 	clientConn, err := grpc.Dial(s.address, grpc.WithInsecure(), grpc.WithBlock())
@@ -141,7 +140,7 @@ func (s *BatikServer) handleSignals(handlers map[os.Signal]func()) {
 
 	go func() {
 		for sig := range signalChan {
-			fmt.Fprintf(s.stderr, "\nReceived signal: %d (%s)\n", sig, sig)
+			s.errLogger.Warn().Msgf("Received signal: %d (%s)", sig, sig)
 			handlers[sig]()
 		}
 	}()

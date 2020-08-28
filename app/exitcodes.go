@@ -8,6 +8,9 @@ const (
 	exitShellSetupFailed
 	exitCommandNotFound
 	exitConfigLoadFailed
+	exitLoggerCreateFailed
+	exitErrLoggerCreateFailed
 	exitServerCreateFailed
 	exitServerStartFailed
+	exitServerStatusFailed
 )
