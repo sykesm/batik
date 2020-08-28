@@ -28,7 +28,7 @@ func TestBatikWiring(t *testing.T) {
 	gt.Expect(app.Flags[0].Names()[0]).To(Equal("config"))
 
 	// Command implementations
-	gt.Expect(app.Commands).NotTo(BeEmpty())
+	gt.Expect(app.Commands).To(HaveLen(2))
 	gt.Expect(app.Commands[0].Name).To(Equal("start"))
 	gt.Expect(app.Commands[1].Name).To(Equal("status"))
 }
@@ -75,6 +75,11 @@ func TestBatikInteractive(t *testing.T) {
 	ctx := cli.NewContext(app, nil, nil)
 	sa, err := shellApp(ctx)
 	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(sa.Commands).To(HaveLen(3))
+	gt.Expect(sa.Commands[0].Name).To(Equal("exit"))
+	gt.Expect(sa.Commands[1].Name).To(Equal("start"))
+	gt.Expect(sa.Commands[2].Name).To(Equal("status"))
 
 	tests := []struct {
 		command string
