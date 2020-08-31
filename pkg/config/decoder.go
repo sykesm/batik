@@ -5,13 +5,14 @@ package config
 
 import (
 	"encoding"
-	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var (
@@ -78,14 +79,14 @@ var (
 		reflect.TypeOf(url.URL{}): func(v string) (interface{}, error) {
 			u, err := url.Parse(v)
 			if err != nil {
-				return nil, fmt.Errorf("unable to parse URL: %v", err)
+				return nil, errors.Wrap(err, "unable to parse URL")
 			}
 			return *u, nil
 		},
 		reflect.TypeOf(time.Nanosecond): func(v string) (interface{}, error) {
 			s, err := time.ParseDuration(v)
 			if err != nil {
-				return nil, fmt.Errorf("unable to parse duration: %v", err)
+				return nil, errors.Wrap(err, "unable to parse duration")
 			}
 			return s, err
 		},
@@ -173,7 +174,7 @@ func (d Decoder) get(field reflect.StructField) (val string, found bool, err err
 		case "":
 			break
 		default:
-			return "", false, fmt.Errorf("decode: tag option %q not supported", opt)
+			return "", false, errors.Errorf("decode: tag option %q not supported", opt)
 		}
 	}
 
@@ -330,5 +331,5 @@ func (e parseError) Error() string {
 }
 
 func newNoParserError(sf reflect.StructField) error {
-	return fmt.Errorf(`decode: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
+	return errors.Errorf(`decode: no parser found for field "%s" of type "%s"`, sf.Name, sf.Type)
 }

@@ -4,11 +4,10 @@
 package config
 
 import (
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,7 +50,7 @@ func Load(cfgPath string, l Lookuper, out interface{}) error {
 
 	if cfgPath != "" {
 		if err := readFile(cfgPath, out); err != nil {
-			return fmt.Errorf("read file: %s", err)
+			return errors.Wrap(err, "read file")
 		}
 	}
 
@@ -62,7 +61,7 @@ func Load(cfgPath string, l Lookuper, out interface{}) error {
 	}
 
 	if err := d.Parse(out); err != nil {
-		return fmt.Errorf("decode: %+w", err)
+		return errors.Wrap(err, "decode")
 	}
 
 	return nil

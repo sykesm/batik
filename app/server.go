@@ -4,7 +4,6 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -12,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	sb "github.com/sykesm/batik/pkg/pb/store"
@@ -99,7 +99,7 @@ func (s *BatikServer) Start() error {
 	go func() {
 		var grpcErr error
 		if grpcErr = s.server.Serve(listener); grpcErr != nil {
-			grpcErr = fmt.Errorf("grpc server exited with error: %s", grpcErr)
+			grpcErr = errors.Wrap(grpcErr, "grpc server exited with error")
 		}
 		serve <- grpcErr
 	}()
