@@ -10,6 +10,7 @@ import (
 	"time"
 
 	cli "github.com/urfave/cli/v2"
+
 	"github.com/sykesm/batik/app"
 	"github.com/sykesm/batik/pkg/buildinfo"
 )
@@ -23,14 +24,5 @@ func main() {
 		fmt.Printf("Built:      %s\n", c.App.Compiled.Format(time.ANSIC))
 	}
 
-	app := app.Batik(os.Args, os.Stdin, os.Stdout, os.Stderr)
-
-	if err := app.Run(os.Args); err != nil {
-		errorExit(2, "command failed: %s", err)
-	}
-}
-
-func errorExit(exitCode int, fmtMsg string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, fmtMsg+"\n", args...)
-	os.Exit(exitCode)
+	app.Batik(os.Args, os.Stdin, os.Stdout, os.Stderr).Run(os.Args)
 }
