@@ -14,9 +14,11 @@ require (
 	github.com/onsi/gomega v1.9.0
 	github.com/peterh/liner v1.2.0
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.19.0
+	github.com/stretchr/testify v1.6.1 // indirect
+	github.com/sykesm/zap-logfmt v0.0.3
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/urfave/cli/v2 v2.2.1-0.20200712133201-d2d2098085ce
+	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/sys v0.0.0-20200824131525-c12d262b63d8 // indirect

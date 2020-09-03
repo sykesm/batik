@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	sb "github.com/sykesm/batik/pkg/pb/store"
@@ -25,20 +25,18 @@ type BatikServer struct {
 	address string
 	server  *grpc.Server
 
-	logger    *zerolog.Logger
-	errLogger *zerolog.Logger
+	logger *zap.Logger
 
 	db *store.LevelDBKV
 }
 
 // TODO(mjs): Replace stdout and stderr with loggers.
 
-func NewServer(config Config, logger, errLogger *zerolog.Logger) (*BatikServer, error) {
+func NewServer(config Config, logger *zap.Logger) (*BatikServer, error) {
 	server := &BatikServer{
-		address:   config.Server.Address,
-		server:    grpc.NewServer(),
-		logger:    logger,
-		errLogger: errLogger,
+		address: config.Server.Address,
+		server:  grpc.NewServer(),
+		logger:  logger.With(zap.String("address", config.Server.Address)),
 	}
 
 	if err := server.initializeDB(config.DBPath); err != nil {
@@ -83,7 +81,7 @@ func (s *BatikServer) registerServices() error {
 }
 
 func (s *BatikServer) Start() error {
-	s.logger.Info().Str("address", s.address).Msg("Starting server")
+	s.logger.Info("Starting server")
 	listener, err := net.Listen("tcp", s.address)
 	if err != nil {
 		return err
@@ -103,19 +101,19 @@ func (s *BatikServer) Start() error {
 		serve <- grpcErr
 	}()
 
-	s.logger.Info().Msg("Server started")
+	s.logger.Info("Server started")
 
 	// Block until grpc server exits
 	return <-serve
 }
 
 func (s *BatikServer) Stop() {
-	s.logger.Info().Msg("Stopping server")
+	s.logger.Info("Stopping server")
 	s.server.GracefulStop()
 }
 
 func (s *BatikServer) Status() error {
-	s.logger.Info().Str("address", s.address).Msg("Checking status of server")
+	s.logger.Info("Checking status of server")
 
 	// create GRPC client conn
 	clientConn, err := grpc.Dial(s.address, grpc.WithInsecure(), grpc.WithBlock())
@@ -140,7 +138,7 @@ func (s *BatikServer) handleSignals(handlers map[os.Signal]func()) {
 
 	go func() {
 		for sig := range signalChan {
-			s.errLogger.Warn().Msgf("Received signal: %d (%s)", sig, sig)
+			s.logger.Warn("Received signal", zap.String("signal", sig.String()))
 			handlers[sig]()
 		}
 	}()

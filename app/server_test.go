@@ -25,7 +25,7 @@ func (ess *emptyServiceServer) EmptyCall(context.Context, *testprotos.Empty) (*t
 
 // invoke the EmptyCall RPC
 func invokeEmptyCall(address string, dialOptions ...grpc.DialOption) (*testprotos.Empty, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	//create GRPC client conn
 	clientConn, err := grpc.DialContext(ctx, address, dialOptions...)
@@ -49,7 +49,7 @@ func invokeEmptyCall(address string, dialOptions ...grpc.DialOption) (*testproto
 func TestNewServer(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	logger, err := log.NewLogger("", ioutil.Discard)
+	logger, err := log.NewLogger(log.Config{Writer: ioutil.Discard})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	testAddress := "127.0.0.1:9053"
@@ -57,7 +57,6 @@ func TestNewServer(t *testing.T) {
 		Config{
 			Server: Server{Address: testAddress},
 		},
-		logger,
 		logger,
 	)
 	gt.Expect(err).NotTo(HaveOccurred())

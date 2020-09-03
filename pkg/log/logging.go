@@ -4,111 +4,136 @@
 package log
 
 import (
-	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"syscall"
-	"time"
 
-	"github.com/rs/zerolog"
-	"golang.org/x/crypto/ssh/terminal"
+	zaplogfmt "github.com/sykesm/zap-logfmt"
+	"github.com/sykesm/batik/pkg/log/encoder"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-// FilteredWriter writes filtered logs to the designated level.
-type FilteredWriter struct {
-	w     zerolog.LevelWriter
-	level zerolog.Level
+const (
+	defaultFormat = "%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
+)
+
+// Config is used to provide dependencies to a Logging instance.
+type Config struct {
+	// Name produces a named logger instance.
+	//
+	// If Name is not provided, the logger will be unnamed.
+	Name string
+
+	// Format is the log record format specifier for the Logging instance. If the
+	// spec is the string "json", log records will be formatted as JSON. Any
+	// other string will be provided to the FormatEncoder. Please see
+	// encoder.ParseFormat for details on the supported verbs.
+	//
+	// If Format is not provided, a default format that provides basic information will
+	// be used.
+	Format string
+
+	// LogSpec determines the log levels that are enabled for the logging system. The
+	// spec must be in a format that can be processed by ActivateSpec.
+	//
+	// If LogSpec is not provided, loggers will be enabled at the INFO level.
+	LogSpec string
+
+	// Writer is the sink for encoded and formatted log records.
+	//
+	// If a Writer is not provided, os.Stderr will be used as the log sink.
+	Writer io.Writer
 }
 
-func (w *FilteredWriter) Write(p []byte) (n int, err error) {
-	return w.w.Write(p)
-}
-
-func (w *FilteredWriter) WriteLevel(level zerolog.Level, p []byte) (n int, err error) {
-	if level >= w.level {
-		return w.w.WriteLevel(level, p)
-	}
-	return len(p), nil
-}
-
-func NewDefaultErrLogger() *zerolog.Logger {
-	l, _ := NewLogger("warn", "stderr")
-	return l
-}
-
-func NewDefaultLogger() *zerolog.Logger {
-	l, _ := NewLogger("info", "stdout")
-	return l
-}
-
-// NewLogger creates a new *zerolog.Logger instance that writes logs at the indicated level to the logPath.
-// logPath can be any of the following:
-// * string representing a file path to write logs to
-// * the string literal "stdout" or "stderr" indicating to write to the respective buffer
-// * any io.Writer
-func NewLogger(level string, logPath interface{}) (*zerolog.Logger, error) {
-	logLevel, err := zerolog.ParseLevel(level)
+func NewLogger(config Config, options ...zap.Option) (*zap.Logger, error) {
+	e, err := NewEncoder(config.Format)
 	if err != nil {
 		return nil, err
 	}
 
-	w, err := logOutput(logLevel, logPath)
+	w := NewWriteSyncer(config.Writer)
+
+	l, err := NameToLevel(config.LogSpec)
 	if err != nil {
 		return nil, err
 	}
 
-	logger := zerolog.New(w).With().Timestamp().Logger()
-
-	return &logger, nil
+	return zap.New(zapcore.NewCore(
+		e,
+		w,
+		l,
+	), append(defaultZapOptions(), options...)...,
+	).Named(config.Name), nil
 }
 
-// logOutput determines where we should send logs (if anywhere) and the log level.
-func logOutput(level zerolog.Level, logPath interface{}) (io.Writer, error) {
-	logOutput := ioutil.Discard
-
-	if level == zerolog.Disabled {
-		return logOutput, nil
-	}
-
-	switch logPath.(type) {
-	case io.Writer:
-		logOutput = logPath.(io.Writer)
-	case string:
-		if logPath == "stdout" || logPath == "stderr" {
-			logOutput = parseStream(logPath.(string))
-
-			// Pretty log if tty
-			if terminal.IsTerminal(int(os.Stdout.Fd())) {
-				logOutput = zerolog.ConsoleWriter{Out: logOutput, TimeFormat: time.RFC3339}
-			}
-		} else {
-			var err error
-			logOutput, err = os.OpenFile(logPath.(string), syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
-			if err != nil {
-				return nil, err
-			}
-		}
-	default:
-		return nil, fmt.Errorf("unrecognized logPath: %s of type %T", logPath, logPath)
-	}
-
-	levelWriter := zerolog.MultiLevelWriter(logOutput)
-	// A filtered writer allows us to set the log level for a specific logger instance instead of using the global
-	// log level.
-	filteredWriter := &FilteredWriter{levelWriter, level}
-	w := zerolog.MultiLevelWriter(filteredWriter)
-
-	return w, nil
-}
-
-func parseStream(stream string) *os.File {
-	switch stream {
+// NewWriter opens and returns an *os.File from a log file path.
+// If logPath is "stdout" or "stderr", it will return the respective
+// os.Stdout or os.Stderr files. If the dest is a file path, a close function
+// will also be returned for the caller to handle file syncs.
+func NewWriter(dest string) (io.Writer, func(), error) {
+	switch dest {
 	case "stdout":
-		return os.Stdout
+		return os.Stdout, func() {}, nil
 	case "stderr":
-		return os.Stderr
+		return os.Stderr, func() {}, nil
+	default:
+		f, err := os.OpenFile(dest, syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
+		closeFunc := func() {
+			f.Close()
+			f.Sync()
+		}
+		return f, closeFunc, err
+	}
+}
+
+func NewWriteSyncer(w io.Writer) zapcore.WriteSyncer {
+	if w == nil {
+		w = os.Stderr
 	}
 
-	return nil
+	var sw zapcore.WriteSyncer
+	switch t := w.(type) {
+	case *os.File:
+		sw = zapcore.Lock(t)
+	case zapcore.WriteSyncer:
+		sw = t
+	default:
+		sw = zapcore.AddSync(w)
+	}
+
+	return sw
+}
+
+// NewEncoder returns a zapcore.Encoder based on the format string.
+// Supported format strings include "json", and "logfmt". Any other string will
+// be passed to the FormatEncoder.
+func NewEncoder(format string) (zapcore.Encoder, error) {
+	if format == "" {
+		format = defaultFormat
+	}
+
+	var e zapcore.Encoder
+	switch format {
+	case "json":
+		e = zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+	case "logfmt":
+		e = zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig())
+	default:
+		// console
+		formatters, err := encoder.ParseFormat(format)
+		if err != nil {
+			return nil, err
+		}
+		e = encoder.NewFormatEncoder(formatters...)
+	}
+
+	return e, nil
+}
+
+func defaultZapOptions() []zap.Option {
+	return []zap.Option{
+		zap.AddCaller(),
+		zap.AddStacktrace(zapcore.ErrorLevel),
+	}
 }

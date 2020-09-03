@@ -44,8 +44,8 @@ var _ = Describe("Grpc", func() {
 		var err error
 		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).To(BeNil())
-		Eventually(session, testTimeout).Should(gbytes.Say("Starting server"))
-		Eventually(session, testTimeout).Should(gbytes.Say("Server started"))
+		Eventually(session.Err, testTimeout).Should(gbytes.Say("Starting server"))
+		Eventually(session.Err, testTimeout).Should(gbytes.Say("Server started"))
 	})
 
 	AfterEach(func() {

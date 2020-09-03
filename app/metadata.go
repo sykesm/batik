@@ -6,18 +6,17 @@ package app
 import (
 	"errors"
 
-	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
 	"github.com/sykesm/batik/pkg/log"
+	"go.uber.org/zap"
 )
 
 type metadataKey string
 
 const (
-	configKey    metadataKey = "config"
-	loggerKey                = "logger"
-	errLoggerKey             = "errLogger"
-	serverKey                = "server"
+	configKey metadataKey = "config"
+	loggerKey             = "logger"
+	serverKey             = "server"
 )
 
 // GetConfig retrieves a Config object from the app Metadata.
@@ -37,13 +36,13 @@ func SetConfig(c *cli.Context, config Config) {
 
 // GetLogger retrieves a logger from the app Metadata, if one
 // does not exist it will return a new default logger.
-func GetLogger(c *cli.Context) (*zerolog.Logger, error) {
+func GetLogger(c *cli.Context) (*zap.Logger, error) {
 	logger := getMetadata(c, loggerKey)
 	if logger == nil {
-		return log.NewDefaultLogger(), nil
+		return log.NewLogger(log.Config{})
 	}
 
-	l, ok := logger.(*zerolog.Logger)
+	l, ok := logger.(*zap.Logger)
 	if !ok {
 		return nil, errors.New("logger not of type *zerolog.Logger")
 	}
@@ -52,29 +51,8 @@ func GetLogger(c *cli.Context) (*zerolog.Logger, error) {
 }
 
 // SetLogger stores a logger on the app Metadata.
-func SetLogger(c *cli.Context, logger *zerolog.Logger) {
+func SetLogger(c *cli.Context, logger *zap.Logger) {
 	setMetadata(c, loggerKey, logger)
-}
-
-// GetErrLogger retrieves an errLogger from the app Metadata, if one
-// does not exist it will return a new default errLogger.
-func GetErrLogger(c *cli.Context) (*zerolog.Logger, error) {
-	logger := getMetadata(c, errLoggerKey)
-	if logger == nil {
-		return log.NewDefaultErrLogger(), nil
-	}
-
-	l, ok := logger.(*zerolog.Logger)
-	if !ok {
-		return nil, errors.New("errLogger not of type *zerolog.Logger")
-	}
-
-	return l, nil
-}
-
-// SetErrLogger stores an errLogger on the app Metadata.
-func SetErrLogger(c *cli.Context, logger *zerolog.Logger) {
-	setMetadata(c, errLoggerKey, logger)
 }
 
 // GetServer retrieves a server from the app Metadata if one exists.

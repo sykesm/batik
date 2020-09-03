@@ -5,108 +5,104 @@ package log
 
 import (
 	"bytes"
-	"io"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 )
 
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
 		testName    string
-		level       string
-		logPath     interface{}
+		config      Config
 		message     string
 		expectedOut string
 	}{
 		{
-			testName:    "logs at level",
-			level:       "info",
-			logPath:     &bytes.Buffer{},
+			testName:    "logs with default format string",
+			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}},
 			message:     "test",
-			expectedOut: `{"level":"info","time":".*","message":"test"}`,
+			expectedOut: `\x1b.*func1 -> INFO.*\x1b.*test`,
+		},
+		{
+			testName:    "logs with format string",
+			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}, Format: "msg=%{message}"},
+			message:     "test",
+			expectedOut: "msg=test",
+		},
+		{
+			testName:    "logs with logfmt",
+			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}, Format: "logfmt"},
+			message:     "test",
+			expectedOut: `ts=.* level=info caller=log/logging_test.go:.* msg=test`,
+		},
+		{
+			testName:    "logs with json",
+			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}, Format: "json"},
+			message:     "test",
+			expectedOut: `{"level":"info","ts":.*,"caller":"log/logging_test.go:.*","msg":"test"}`,
 		},
 		{
 			testName:    "logs under level",
-			level:       "warn",
-			logPath:     &bytes.Buffer{},
+			config:      Config{LogSpec: "warn", Writer: &bytes.Buffer{}},
 			message:     "test",
 			expectedOut: "^$",
 		},
-		{
-			testName:    "logs to file",
-			level:       "info",
-			logPath:     "out.txt",
-			message:     "test",
-			expectedOut: `{"level":"info","time":".*","message":"test"}`,
-		},
+		// {
+		// 	testName:    "logs to file",
+		// 	level:       "info",
+		//  config:      Config{Writer: &os.File{}},
+		// 	message:     "test",
+		// 	expectedOut: `{"level":"info","time":".*","message":"test"}`,
+		// },
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			logger, err := NewLogger(tt.level, tt.logPath)
+			logger, err := NewLogger(tt.config)
 			gt.Expect(err).NotTo(HaveOccurred())
 
-			logger.Info().Msg(tt.message)
+			logger.Info(tt.message)
 
-			switch tt.logPath.(type) {
-			case io.Writer:
-				gt.Expect(tt.logPath).To(MatchRegexp(tt.expectedOut))
-			case string:
-				defer os.Remove(tt.logPath.(string))
-				gt.Expect(tt.logPath).To(BeAnExistingFile())
-				bytes, err := ioutil.ReadFile(tt.logPath.(string))
-				gt.Expect(err).NotTo(HaveOccurred())
-				gt.Expect(bytes).To(MatchRegexp(tt.expectedOut))
-			}
+			// switch tt.config.Writer.(type) {
+			// case io.Writer:
+			gt.Expect(tt.config.Writer.(*bytes.Buffer).String()).To(MatchRegexp(tt.expectedOut))
+			// case string:
+			// 	defer os.Remove(tt.logPath.(string))
+			// 	gt.Expect(tt.logPath).To(BeAnExistingFile())
+			// 	bytes, err := ioutil.ReadFile(tt.logPath.(string))
+			// 	gt.Expect(err).NotTo(HaveOccurred())
+			// 	gt.Expect(bytes).To(MatchRegexp(tt.expectedOut))
+			// }
 		})
 	}
-
-	t.Run("logs with no level", func(t *testing.T) {
-		gt := NewGomegaWithT(t)
-
-		buf := gbytes.NewBuffer()
-		logger, err := NewLogger("warn", buf)
-		gt.Expect(err).NotTo(HaveOccurred())
-
-		logger.Log().Msg("test")
-
-		gt.Expect(buf).To(gbytes.Say(`{"time":".*","message":"test"}`))
-	})
 }
 
 func TestNewLogger_Failures(t *testing.T) {
 	tests := []struct {
 		testName    string
-		level       string
-		logPath     interface{}
+		config      Config
 		expectedErr string
 	}{
 		{
 			testName:    "invalid level",
-			level:       "invalid",
-			logPath:     gbytes.NewBuffer(),
-			expectedErr: "Unknown Level String: 'invalid', defaulting to NoLevel",
+			config:      Config{LogSpec: "invalid", Writer: &bytes.Buffer{}},
+			expectedErr: "invalid log level: invalid",
 		},
-		{
-			testName:    "invalid path",
-			level:       "info",
-			logPath:     "/",
-			expectedErr: "open /: is a directory",
-		},
+		// {
+		// 	testName:    "invalid path",
+		// 	config:      Config{LogSpec: "info", Writer: &os.File{}},
+		// 	expectedErr: "open /: is a directory",
+		// },
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			logger, err := NewLogger(tt.level, tt.logPath)
-			gt.Expect(err).To(MatchError(MatchRegexp(tt.expectedErr)))
+			logger, err := NewLogger(tt.config)
+			gt.Expect(err).To(MatchError(tt.expectedErr))
 			gt.Expect(logger).To(BeNil())
 		})
 	}

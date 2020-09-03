@@ -65,30 +65,43 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 
 	app.Before = func(c *cli.Context) error {
 		logLevel := c.String("log-level")
-		logPath := c.String("log-output-file")
-		errLogPath := c.String("errlog-output-file")
+		// logPath := c.String("log-output-file")
+		// errLogPath := c.String("errlog-output-file")
 
-		logger, err := log.NewLogger(logLevel, logPath)
+		// w, err := log.NewWriter(logPath)
+		// if err != nil {
+		// 	return cli.Exit(errors.Wrap(err, "failed creating log writer"), exitLoggerCreateFailed)
+		// }
+		logger, err := log.NewLogger(log.Config{
+			Name:    "batik",
+			LogSpec: logLevel,
+			Writer:  app.ErrWriter,
+			// Format:  "logfmt",
+		})
 		if err != nil {
 			return cli.Exit(errors.Wrap(err, "failed creating new logger"), exitLoggerCreateFailed)
 		}
 
-		errLogger, err := log.NewLogger("warn", errLogPath)
-		if err != nil {
-			return cli.Exit(errors.Wrap(err, "failed creating new errLogger"), exitErrLoggerCreateFailed)
-		}
-
 		SetLogger(c, logger)
-		SetErrLogger(c, errLogger)
 
 		configPath := c.String("config")
 
 		var cfg Config
 		if err := config.Load(configPath, config.EnvironLookuper(), &cfg); err != nil {
-			return cli.Exit(fmt.Sprintf("failed loading batik config: %s", err), exitConfigLoadFailed)
+			return cli.Exit(errors.Wrap(err, "failed loading batik config"), exitConfigLoadFailed)
 		}
 
 		SetConfig(c, cfg)
+
+		return nil
+	}
+
+	app.After = func(c *cli.Context) error {
+		logger, err := GetLogger(c)
+		if err != nil {
+			return cli.Exit(errors.Wrap(err, "failed to retrieve logger"), exitAppShutdownFailed)
+		}
+		logger.Sync()
 
 		return nil
 	}

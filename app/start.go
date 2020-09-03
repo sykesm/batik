@@ -25,15 +25,12 @@ func startCommand(interactive bool) *cli.Command {
 			if err != nil {
 				return cli.Exit(err, exitServerStartFailed)
 			}
-			errLogger, err := GetErrLogger(ctx)
-			if err != nil {
-				return cli.Exit(err, exitServerStartFailed)
-			}
+
 			if ctx.String("address") != "" {
 				config.Server.Address = ctx.String("address")
 			}
 
-			server, err := NewServer(config, logger, errLogger)
+			server, err := NewServer(config, logger)
 			if err != nil {
 				return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
 			}
@@ -45,7 +42,7 @@ func startCommand(interactive bool) *cli.Command {
 					return cli.Exit(err, exitServerStartFailed)
 				}
 
-				logger.Info().Msg("Server stopped")
+				logger.Info("Server stopped")
 				return nil
 			}
 

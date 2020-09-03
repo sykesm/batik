@@ -13,4 +13,5 @@ const (
 	exitServerCreateFailed
 	exitServerStartFailed
 	exitServerStatusFailed
+	exitAppShutdownFailed
 )
