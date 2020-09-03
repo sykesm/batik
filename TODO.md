@@ -11,10 +11,10 @@ This document contains a set of stories and work items for Batik.
 ## Services
 
 - [ ] Adopt ifrit (or its patterns) for managing multiple independent processes in the server
-- [ ] Introduce rs/zerolog for logging
+- [x] Introduce zap logger for logging
 
 ## Discussion Topics
 
 - [ ] The best way to organize this list and regularly groom it
-- [ ] How to track completed tasks (leave in place or move?)
-- [ ] How to handle logging and error streams (one vs two loggers?)
+- [x] How to track completed tasks (leave in place or move?)
+- [x] How to handle logging and error streams (one vs two loggers?)
