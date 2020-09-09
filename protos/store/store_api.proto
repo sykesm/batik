@@ -16,8 +16,9 @@ service StoreAPI {
   // GetTransaction retrieves the associated transaction corresponding to the
   // txid passed in the GetTransactionRequest.
   rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
-  // PutTransaction first verifies that the transaction can be hashed to the
-  // provided txid and then stores the transaction in the backing store.
+  // PutTransaction hashes the transaction and then stores the
+  // encoded transaction in the backing store.
+  // Note: This API is temporary and intended for test. DO NOT USE.
   rpc PutTransaction(PutTransactionRequest) returns (PutTransactionResponse);
 
   // GetState retrieves the associated ResolvedState corresponding to the state reference
@@ -25,6 +26,9 @@ service StoreAPI {
   // output index that the State was originally created at in the transaction output
   // list.
   rpc GetState(GetStateRequest) returns (GetStateResponse);
+  // PutState stores the encoded resolved state in the backing store.
+  // Note: This API is temporary and intended for test. DO NOT USE.
+  rpc PutState(PutStateRequest) returns (PutStateResponse);
 };
 
 // GetTransactionRequest contains a hashed transaction id.
@@ -38,11 +42,9 @@ message GetTransactionResponse {
   transaction.Transaction transaction = 1;
 }
 
-// PutTransactionRequest contains a transaction and the hash over the transaction as a
-// transaction id.
+// PutTransactionRequest contains a transaction.
 message PutTransactionRequest {
-  bytes txid = 1;
-  transaction.Transaction transaction = 2;
+  transaction.Transaction transaction = 1;
 }
 
 // PutTransactionResponse is an empty response returned on attempting to store
@@ -61,3 +63,12 @@ message GetStateRequest {
 message GetStateResponse {
   transaction.ResolvedState state = 1;
 }
+
+// PutStateRequest contains a resolved state.
+message PutStateRequest {
+  transaction.ResolvedState state = 1;
+}
+
+// PutStateResponse is an empty response returned on attempting to store
+// a resolved state in the backing store.
+message PutStateResponse {}

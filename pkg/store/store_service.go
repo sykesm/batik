@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"crypto"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -20,22 +19,29 @@ import (
 
 // StoreService implements the StoreAPIServer gRPC interface.
 type StoreService struct {
-	sync.RWMutex
-	Db *LevelDBKV
+	mu sync.Locker
+	db KV
 }
 
 var _ sb.StoreAPIServer = (*StoreService)(nil)
 
+func NewStoreService(db KV) *StoreService {
+	return &StoreService{
+		mu: &sync.Mutex{},
+		db: db,
+	}
+}
+
 // GetTransaction retrieves the associated transaction corresponding to the
 // txid passed in the GetTransactionRequest.
 func (s *StoreService) GetTransaction(ctx context.Context, req *sb.GetTransactionRequest) (*sb.GetTransactionResponse, error) {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	tx := &tb.Transaction{}
 
 	key := transactionKey(req.Txid)
-	data, err := s.Db.Get(key)
+	data, err := s.db.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -49,19 +55,15 @@ func (s *StoreService) GetTransaction(ctx context.Context, req *sb.GetTransactio
 	}, nil
 }
 
-// PutTransaction first verifies that the transaction can be hashed to the
-// provided txid and then stores the transaction in the backing store.
+// PutTransaction hashes the transaction to a txid and then stores
+// the encoded transaction in the backing store.
 func (s *StoreService) PutTransaction(ctx context.Context, req *sb.PutTransactionRequest) (*sb.PutTransactionResponse, error) {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	id, err := transaction.ID(crypto.SHA256, req.Transaction)
 	if err != nil {
 		return nil, err
-	}
-
-	if bytes.Compare(id, req.Txid) != 0 {
-		return nil, fmt.Errorf("request txid [%x] does not match hashed tx: [%x]", req.Txid, id)
 	}
 
 	encodedTx, err := protomsg.MarshalDeterministic(req.Transaction)
@@ -69,8 +71,8 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *sb.PutTransactio
 		return nil, err
 	}
 
-	key := transactionKey(req.Txid)
-	if err := s.Db.Put(key, encodedTx); err != nil {
+	key := transactionKey(id)
+	if err := s.db.Put(key, encodedTx); err != nil {
 		return nil, err
 	}
 
@@ -82,13 +84,13 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *sb.PutTransactio
 // output index that the State was originally created at in the transaction output
 // list.
 func (s *StoreService) GetState(ctx context.Context, req *sb.GetStateRequest) (*sb.GetStateResponse, error) {
-	s.Lock()
-	defer s.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	state := &tb.ResolvedState{}
 
 	key := stateKey(req.StateRef)
-	data, err := s.Db.Get(key)
+	data, err := s.db.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +105,29 @@ func (s *StoreService) GetState(ctx context.Context, req *sb.GetStateRequest) (*
 	return &sb.GetStateResponse{
 		State: state,
 	}, nil
+}
+
+// PutState stores the encoded resolved state in the backing store.
+func (s *StoreService) PutState(ctx context.Context, req *sb.PutStateRequest) (*sb.PutStateResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	encodedState, err := protomsg.MarshalDeterministic(req.State)
+	if err != nil {
+		return nil, err
+	}
+
+	stateRef := &tb.StateReference{
+		Txid:        req.State.Txid,
+		OutputIndex: req.State.OutputIndex,
+	}
+
+	key := stateKey(stateRef)
+	if err := s.db.Put(key, encodedState); err != nil {
+		return nil, err
+	}
+
+	return &sb.PutStateResponse{}, nil
 }
 
 // transactionKey returns a byte slice key of the format "tx:<txid>"

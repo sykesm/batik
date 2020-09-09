@@ -113,7 +113,6 @@ var _ = Describe("Grpc", func() {
 			When("the transaction exists", func() {
 				BeforeEach(func() {
 					putReq := &sb.PutTransactionRequest{
-						Txid:        txid,
 						Transaction: testTx,
 					}
 
@@ -134,7 +133,6 @@ var _ = Describe("Grpc", func() {
 
 			BeforeEach(func() {
 				req = &sb.PutTransactionRequest{
-					Txid:        txid,
 					Transaction: testTx,
 				}
 			})
@@ -152,21 +150,13 @@ var _ = Describe("Grpc", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proto.Equal(resp.Transaction, testTx)).To(BeTrue())
 			})
-
-			When("the txid does not match the hashed transaction", func() {
-				BeforeEach(func() {
-					req.Txid = []byte("invalid key")
-				})
-
-				It("returns an error", func() {
-					_, err := storeServiceClient.PutTransaction(context.Background(), req)
-					Expect(err).To(MatchError("rpc error: code = Unknown desc = request txid [696e76616c6964206b6579] does not match hashed tx: [53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f]"))
-				})
-			})
 		})
 
 		Describe("GetState", func() {
-			var req *sb.GetStateRequest
+			var (
+				req       *sb.GetStateRequest
+				testState *tb.ResolvedState
+			)
 
 			BeforeEach(func() {
 				req = &sb.GetStateRequest{
@@ -174,6 +164,12 @@ var _ = Describe("Grpc", func() {
 						Txid:        txid,
 						OutputIndex: 0,
 					},
+				}
+				testState = &tb.ResolvedState{
+					Txid:        txid,
+					OutputIndex: 0,
+					State:       testTx.Outputs[0].State,
+					Info:        testTx.Outputs[0].Info,
 				}
 			})
 
@@ -185,8 +181,58 @@ var _ = Describe("Grpc", func() {
 				})
 			})
 
-			// TODO
-			XWhen("the state exists", func() {
+			When("the state exists", func() {
+				BeforeEach(func() {
+					putReq := &sb.PutStateRequest{
+						State: testState,
+					}
+
+					_, err := storeServiceClient.PutState(context.Background(), putReq)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("retrieves a state from the store", func() {
+					resp, err := storeServiceClient.GetState(context.Background(), req)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(proto.Equal(resp.State, testState)).To(BeTrue())
+				})
+			})
+		})
+
+		Describe("PutState", func() {
+			var (
+				req       *sb.PutStateRequest
+				testState *tb.ResolvedState
+			)
+
+			BeforeEach(func() {
+				testState = &tb.ResolvedState{
+					Txid:        txid,
+					OutputIndex: 0,
+					State:       testTx.Outputs[0].State,
+					Info:        testTx.Outputs[0].Info,
+				}
+
+				req = &sb.PutStateRequest{
+					State: testState,
+				}
+			})
+
+			// TODO: this test is too similar to the retrieval one, maybe rewrite this and the retrieval one
+			// to store and retrieve from the db directly somehow
+			It("stores a state in the store", func() {
+				_, err := storeServiceClient.PutState(context.Background(), req)
+				Expect(err).NotTo(HaveOccurred())
+
+				getReq := &sb.GetStateRequest{
+					StateRef: &tb.StateReference{
+						Txid:        txid,
+						OutputIndex: 0,
+					},
+				}
+				resp, err := storeServiceClient.GetState(context.Background(), getReq)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(proto.Equal(resp.State, testState)).To(BeTrue())
 			})
 		})
 	})

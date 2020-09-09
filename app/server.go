@@ -27,7 +27,7 @@ type BatikServer struct {
 
 	logger *zap.Logger
 
-	db *store.LevelDBKV
+	db store.KV
 }
 
 func NewServer(config Config, logger *zap.Logger) (*BatikServer, error) {
@@ -70,9 +70,7 @@ func (s *BatikServer) registerServices() error {
 		return errors.New("server db not initialized")
 	}
 
-	storeSvc := &store.StoreService{
-		Db: s.db,
-	}
+	storeSvc := store.NewStoreService(s.db)
 	sb.RegisterStoreAPIServer(s.server, storeSvc)
 
 	return nil

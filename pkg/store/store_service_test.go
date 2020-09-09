@@ -24,9 +24,7 @@ func TestStoreService_GetTransaction(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
-	storeSvc := &StoreService{
-		Db: db,
-	}
+	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
 	txid, err := transaction.ID(crypto.SHA256, testTx)
@@ -60,9 +58,7 @@ func TestStoreService_PutTransaction(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
-	storeSvc := &StoreService{
-		Db: db,
-	}
+	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
 	txid, err := transaction.ID(crypto.SHA256, testTx)
@@ -73,13 +69,8 @@ func TestStoreService_PutTransaction(t *testing.T) {
 	key := transactionKey(txid)
 
 	req := &sb.PutTransactionRequest{
-		Txid:        []byte("invalid key"),
 		Transaction: testTx,
 	}
-	_, err = storeSvc.PutTransaction(context.Background(), req)
-	gt.Expect(err).To(MatchError("request txid [696e76616c6964206b6579] does not match hashed tx: [53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f]"))
-
-	req.Txid = txid
 	_, err = storeSvc.PutTransaction(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -98,9 +89,7 @@ func TestStoreService_GetState(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
-	storeSvc := &StoreService{
-		Db: db,
-	}
+	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
 	txid, err := transaction.ID(crypto.SHA256, testTx)
@@ -135,6 +124,50 @@ func TestStoreService_GetState(t *testing.T) {
 	resp, err = storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(proto.Equal(resp.State, testState)).To(BeTrue())
+}
+
+func TestStoreService_PutState(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	path, cleanup := tested.TempDir(t, "", "level")
+	defer cleanup()
+
+	db, err := NewLevelDB(path)
+	gt.Expect(err).NotTo(HaveOccurred())
+	defer tested.Close(t, db)
+
+	storeSvc := NewStoreService(db)
+
+	testTx := newTestTransaction()
+	txid, err := transaction.ID(crypto.SHA256, testTx)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	testState := &tb.ResolvedState{
+		Txid:        txid,
+		OutputIndex: 0,
+		Info:        testTx.Outputs[0].Info,
+		State:       testTx.Outputs[0].State,
+	}
+
+	encodedState, err := protomsg.MarshalDeterministic(testState)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	testStateRef := &tb.StateReference{
+		Txid:        txid,
+		OutputIndex: 0,
+	}
+
+	key := stateKey(testStateRef)
+
+	req := &sb.PutStateRequest{
+		State: testState,
+	}
+	_, err = storeSvc.PutState(context.Background(), req)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	data, err := db.Get(key)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(data).To(Equal(encodedState))
 }
 
 func newTestTransaction() *tb.Transaction {
