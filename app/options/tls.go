@@ -6,7 +6,7 @@ package options
 import (
 	"regexp"
 
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 )
 
 // A CertKeyPair references files containing the TLS server certificate
@@ -16,27 +16,42 @@ type CertKeyPair struct {
 	// or server certificate chain. If the file contains a certificate chain, the
 	// PEM blocks must be concatenated such that each certificate certifies the
 	// preceding it; the root CA shall be the last certificate in the list.
-	CertFile string
+	CertFile string `yaml:"cert_file,omitempty" batik:"relpath"`
 	// KeyFile is the name of a file containing a PEM encoded private key for the
 	// certificate provided in CertFile.
-	KeyFile string
+	KeyFile string `yaml:"key_file,omitempty" batik:"relpath"`
+	// CertData is the PEM encoded server certificate or server certifiate chain.
+	CertData string `yaml:"cert,omitempty"`
+	// KeyData is the PEM encoded private key for the server certificate.
+	KeyData string `yaml:"key,omitempty"`
 }
 
-// TLSOptions exposes configuration options for network services secured by
-// TLS.
-type TLSOptions struct {
+// TLSServer exposes configuration options for network services secured
+// by TLS.
+type TLSServer struct {
 	// ServerCert contains the TLS server certifcate and key.
-	ServerCert CertKeyPair
+	ServerCert CertKeyPair `yaml:",inline,omitempty"`
 }
 
-// Flags returns flags that can be applied to commands to configure network
-// services secured by TLS.
-func (o *TLSOptions) Flags() []cli.Flag {
+// TLSServerDefaults returns the default configuration values for TLS servers.
+func TLSServerDefaults() *TLSServer {
+	return &TLSServer{}
+}
+
+// ApplyDefaults applies default values for missing configuration fields.
+func (t *TLSServer) ApplyDefaults() error {
+	return nil
+}
+
+// Flags exposes configuration fields as flags. The current value of the
+// receiver is used as the default value of the flag so a ApplyDefaults should
+// be called before requesting flags.
+func (t *TLSServer) Flags(commandName string) []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
 			Name:        "tls-cert-file",
-			Value:       o.ServerCert.CertFile,
-			Destination: &o.ServerCert.CertFile,
+			Value:       t.ServerCert.CertFile,
+			Destination: &t.ServerCert.CertFile,
 			TakesFile:   true,
 			Usage: flow(`File containing the PEM encoded certificate (or chain) for the server.
 				When providing a certificate chain, the chain must start with the server certificate
@@ -44,8 +59,8 @@ func (o *TLSOptions) Flags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:        "tls-private-key-file",
-			Value:       o.ServerCert.KeyFile,
-			Destination: &o.ServerCert.KeyFile,
+			Value:       t.ServerCert.KeyFile,
+			Destination: &t.ServerCert.KeyFile,
 			TakesFile:   true,
 			Usage:       flow(`File containing the PEM encoded private key for the server.`),
 		},
