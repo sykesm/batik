@@ -58,12 +58,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 
 	app.Before = func(ctx *cli.Context) error {
 		logLevel := ctx.String("log-level")
-		// logPath := c.String("log-output-file")
-
-		// w, err := log.NewWriter(logPath)
-		// if err != nil {
-		// 	return cli.Exit(errors.Wrap(err, "failed creating log writer"), exitLoggerCreateFailed)
-		// }
 		logger, err := log.NewLogger(log.Config{
 			Name:    "batik",
 			LogSpec: logLevel,

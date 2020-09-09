@@ -6,12 +6,12 @@ package log
 import (
 	"io"
 	"os"
-	"syscall"
 
 	zaplogfmt "github.com/sykesm/zap-logfmt"
-	"github.com/sykesm/batik/pkg/log/encoder"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/sykesm/batik/pkg/log/encoder"
 )
 
 const (
@@ -65,26 +65,6 @@ func NewLogger(config Config, options ...zap.Option) (*zap.Logger, error) {
 		l,
 	), append(defaultZapOptions(), options...)...,
 	).Named(config.Name), nil
-}
-
-// NewWriter opens and returns an *os.File from a log file path.
-// If logPath is "stdout" or "stderr", it will return the respective
-// os.Stdout or os.Stderr files. If the dest is a file path, a close function
-// will also be returned for the caller to handle file syncs.
-func NewWriter(dest string) (io.Writer, func(), error) {
-	switch dest {
-	case "stdout":
-		return os.Stdout, func() {}, nil
-	case "stderr":
-		return os.Stderr, func() {}, nil
-	default:
-		f, err := os.OpenFile(dest, syscall.O_CREAT|syscall.O_RDWR|syscall.O_APPEND, 0666)
-		closeFunc := func() {
-			f.Close()
-			f.Sync()
-		}
-		return f, closeFunc, err
-	}
 }
 
 func NewWriteSyncer(w io.Writer) zapcore.WriteSyncer {
