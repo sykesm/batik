@@ -56,12 +56,9 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		statusCommand(),
 	}
 
-	app.Metadata = make(map[string]interface{})
-
 	app.Before = func(ctx *cli.Context) error {
 		logLevel := ctx.String("log-level")
 		// logPath := c.String("log-output-file")
-		// errLogPath := c.String("errlog-output-file")
 
 		// w, err := log.NewWriter(logPath)
 		// if err != nil {
@@ -71,13 +68,11 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			Name:    "batik",
 			LogSpec: logLevel,
 			Writer:  app.ErrWriter,
-			// Format:  "logfmt",
+			Format:  "logfmt",
 		})
 		if err != nil {
 			return cli.Exit(errors.Wrap(err, "failed creating new logger"), exitLoggerCreateFailed)
 		}
-
-		SetLogger(ctx, logger)
 
 		configPath := ctx.String("config")
 
@@ -87,16 +82,16 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		}
 
 		SetConfig(ctx, cfg)
+		SetLogger(ctx, logger)
 
 		return nil
 	}
 
 	app.After = func(ctx *cli.Context) error {
-		logger, err := GetLogger(ctx)
-		if err != nil {
-			return cli.Exit(errors.Wrap(err, "failed to retrieve logger"), exitAppShutdownFailed)
+		logger, _ := GetLogger(ctx)
+		if logger != nil {
+			logger.Sync()
 		}
-		logger.Sync()
 
 		return nil
 	}
@@ -135,7 +130,6 @@ func shellApp(parentCtx *cli.Context) (*cli.App, error) {
 		fmt.Fprintf(ctx.App.ErrWriter, "Unknown command: %s\n", name)
 	}
 	app.ExitErrHandler = func(ctx *cli.Context, err error) {}
-	app.Metadata = make(map[string]interface{})
 
 	app.Before = func(ctx *cli.Context) error {
 		SetConfig(ctx, GetConfig(parentCtx))

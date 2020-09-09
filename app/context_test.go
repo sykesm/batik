@@ -5,6 +5,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -15,11 +16,7 @@ import (
 func TestMetadata_Config(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	ctx := &cli.Context{
-		App: &cli.App{
-			Metadata: make(map[string]interface{}),
-		},
-	}
+	ctx := cli.NewContext(cli.NewApp(), nil, nil)
 
 	config := GetConfig(ctx)
 	gt.Expect(config).To(Equal(Config{}))
@@ -30,7 +27,7 @@ func TestMetadata_Config(t *testing.T) {
 		},
 	}
 
-	ctx.App.Metadata[string(configKey)] = expectedConfig
+	ctx.Context = context.WithValue(ctx.Context, configKey, expectedConfig)
 
 	config = GetConfig(ctx)
 	gt.Expect(config).To(Equal(expectedConfig))
@@ -43,17 +40,13 @@ func TestMetadata_Config(t *testing.T) {
 
 	SetConfig(ctx, newConfig)
 
-	gt.Expect(ctx.App.Metadata[string(configKey)]).To(Equal(newConfig))
+	gt.Expect(ctx.Context.Value(configKey)).To(Equal(newConfig))
 }
 
 func TestMetadata_Logger(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	ctx := &cli.Context{
-		App: &cli.App{
-			Metadata: make(map[string]interface{}),
-		},
-	}
+	ctx := cli.NewContext(cli.NewApp(), nil, nil)
 
 	logger, err := GetLogger(ctx)
 	gt.Expect(logger).NotTo(BeNil())
@@ -66,7 +59,7 @@ func TestMetadata_Logger(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	SetLogger(ctx, newLogger)
-	gt.Expect(ctx.App.Metadata[string(loggerKey)]).To(Equal(newLogger))
+	gt.Expect(ctx.Context.Value(loggerKey)).To(Equal(newLogger))
 
 	logger, err = GetLogger(ctx)
 	gt.Expect(err).NotTo(HaveOccurred())

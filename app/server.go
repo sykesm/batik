@@ -30,8 +30,6 @@ type BatikServer struct {
 	db *store.LevelDBKV
 }
 
-// TODO(mjs): Replace stdout and stderr with loggers.
-
 func NewServer(config Config, logger *zap.Logger) (*BatikServer, error) {
 	server := &BatikServer{
 		address: config.Server.Address,
