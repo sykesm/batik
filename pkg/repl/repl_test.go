@@ -19,14 +19,14 @@ func TestRun(t *testing.T) {
 	commands := []*cli.Command{
 		{
 			Name: "echo",
-			Action: func(c *cli.Context) error {
-				fmt.Fprintf(c.App.Writer, "%v", c.Args().Slice())
+			Action: func(ctx *cli.Context) error {
+				fmt.Fprintf(ctx.App.Writer, "%v", ctx.Args().Slice())
 				return nil
 			},
 		},
 		{
 			Name: "fail",
-			Action: func(c *cli.Context) error {
+			Action: func(ctx *cli.Context) error {
 				return errors.New("bummer...")
 			},
 		},
@@ -56,7 +56,7 @@ func TestRun(t *testing.T) {
 			app.Name = "repltest"
 			app.HideVersion = true
 			app.Commands = commands
-			app.CommandNotFound = func(c *cli.Context, cmd string) {
+			app.CommandNotFound = func(ctx *cli.Context, cmd string) {
 				fmt.Printf("Command not found: %s\n", cmd)
 			}
 

@@ -29,8 +29,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	app.Writer = stdout
 	app.ErrWriter = stderr
 	app.EnableBashCompletion = true
-	app.CommandNotFound = func(c *cli.Context, name string) {
-		fmt.Fprintf(c.App.ErrWriter, "%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", c.App.Name, name)
+	app.CommandNotFound = func(ctx *cli.Context, name string) {
+		fmt.Fprintf(ctx.App.ErrWriter, "%[1]s: '%[2]s' is not a %[1]s command. See `%[1]s --help`.\n", ctx.App.Name, name)
 	}
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
@@ -63,8 +63,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 
 	app.Metadata = make(map[string]interface{})
 
-	app.Before = func(c *cli.Context) error {
-		logLevel := c.String("log-level")
+	app.Before = func(ctx *cli.Context) error {
+		logLevel := ctx.String("log-level")
 		// logPath := c.String("log-output-file")
 		// errLogPath := c.String("errlog-output-file")
 
@@ -82,22 +82,22 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit(errors.Wrap(err, "failed creating new logger"), exitLoggerCreateFailed)
 		}
 
-		SetLogger(c, logger)
+		SetLogger(ctx, logger)
 
-		configPath := c.String("config")
+		configPath := ctx.String("config")
 
 		var cfg Config
 		if err := config.Load(configPath, config.EnvironLookuper(), &cfg); err != nil {
 			return cli.Exit(errors.Wrap(err, "failed loading batik config"), exitConfigLoadFailed)
 		}
 
-		SetConfig(c, cfg)
+		SetConfig(ctx, cfg)
 
 		return nil
 	}
 
-	app.After = func(c *cli.Context) error {
-		logger, err := GetLogger(c)
+	app.After = func(ctx *cli.Context) error {
+		logger, err := GetLogger(ctx)
 		if err != nil {
 			return cli.Exit(errors.Wrap(err, "failed to retrieve logger"), exitAppShutdownFailed)
 		}
@@ -107,19 +107,19 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	}
 
 	// setup flags for the ledger
-	app.Action = func(c *cli.Context) error {
-		if c.Args().Present() {
-			arg := c.Args().First()
-			c.App.CommandNotFound(c, arg)
+	app.Action = func(ctx *cli.Context) error {
+		if ctx.Args().Present() {
+			arg := ctx.Args().First()
+			ctx.App.CommandNotFound(ctx, arg)
 			return cli.Exit("", exitCommandNotFound)
 		}
 
-		sa, err := shellApp(c)
+		sa, err := shellApp(ctx)
 		if err != nil {
 			return cli.Exit(err, exitShellSetupFailed)
 		}
 
-		return repl.New(sa, repl.WithStdin(stdin), repl.WithStdout(stdout), repl.WithStderr(stderr)).Run(c.Context)
+		return repl.New(sa, repl.WithStdin(stdin), repl.WithStdout(stdout), repl.WithStderr(stderr)).Run(ctx.Context)
 	}
 
 	// Sort the flags and commands to make it easier to find things.
@@ -130,25 +130,25 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	return app
 }
 
-func shellApp(ctx *cli.Context) (*cli.App, error) {
+func shellApp(parentCtx *cli.Context) (*cli.App, error) {
 	app := cli.NewApp()
 	app.Name = "batik"
 	app.HideVersion = true
-	app.Writer = ctx.App.Writer
-	app.ErrWriter = ctx.App.ErrWriter
-	app.CommandNotFound = func(c *cli.Context, name string) {
-		fmt.Fprintf(c.App.ErrWriter, "Unknown command: %s\n", name)
+	app.Writer = parentCtx.App.Writer
+	app.ErrWriter = parentCtx.App.ErrWriter
+	app.CommandNotFound = func(ctx *cli.Context, name string) {
+		fmt.Fprintf(ctx.App.ErrWriter, "Unknown command: %s\n", name)
 	}
-	app.ExitErrHandler = func(c *cli.Context, err error) {}
+	app.ExitErrHandler = func(ctx *cli.Context, err error) {}
 	app.Metadata = make(map[string]interface{})
 
-	app.Before = func(c *cli.Context) error {
-		SetConfig(c, GetConfig(ctx))
-		logger, err := GetLogger(ctx)
+	app.Before = func(ctx *cli.Context) error {
+		SetConfig(ctx, GetConfig(parentCtx))
+		logger, err := GetLogger(parentCtx)
 		if err != nil {
-			fmt.Fprintf(c.App.ErrWriter, "Failed setup: %s\n", err)
+			fmt.Fprintf(ctx.App.ErrWriter, "Failed setup: %s\n", err)
 		}
-		SetLogger(c, logger)
+		SetLogger(ctx, logger)
 
 		return nil
 	}

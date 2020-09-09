@@ -41,7 +41,7 @@ func TestBatikCommandNotFound(t *testing.T) {
 	stderr := bytes.NewBuffer(nil)
 
 	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
-	app.ExitErrHandler = func(c *cli.Context, err error) {}
+	app.ExitErrHandler = func(ctx *cli.Context, err error) {}
 
 	err := app.Run([]string{"batik", "bogus-command"})
 	gt.Expect(err).To(HaveOccurred())
@@ -58,8 +58,8 @@ func TestBatikConfigNotFound(t *testing.T) {
 	stderr := bytes.NewBuffer(nil)
 
 	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
-	app.ExitErrHandler = func(c *cli.Context, err error) {
-		fmt.Fprintf(c.App.ErrWriter, "%+v\n", err)
+	app.ExitErrHandler = func(ctx *cli.Context, err error) {
+		fmt.Fprintf(ctx.App.ErrWriter, "%+v\n", err)
 	}
 
 	err := app.Run([]string{"batik", "--config", "missing-file.txt"})
