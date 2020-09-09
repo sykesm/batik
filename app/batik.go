@@ -48,11 +48,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		&cli.StringFlag{
 			Name:  "log-output-file",
 			Usage: "Log output file path, if stdout, logs will go to stdout",
-			Value: "stdout",
-		},
-		&cli.StringFlag{
-			Name:  "errlog-output-file",
-			Usage: "ErrLog output file path, if stderr, err logs will go to stderr",
 			Value: "stderr",
 		},
 	}
