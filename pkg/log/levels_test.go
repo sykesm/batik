@@ -24,8 +24,6 @@ func TestNameToLevel(t *testing.T) {
 		{names: []string{"DPANIC", "dpanic"}, level: zapcore.DPanicLevel},
 		{names: []string{"PANIC", "panic"}, level: zapcore.PanicLevel},
 		{names: []string{"FATAL", "fatal"}, level: zapcore.FatalLevel},
-		{names: []string{"NOTICE", "notice"}, level: zapcore.InfoLevel},
-		{names: []string{"CRITICAL", "critical"}, level: zapcore.ErrorLevel},
 		{names: []string{"invalid"}, level: disabledLevel, expectedErr: "invalid log level: invalid"},
 		{names: []string{""}, level: zapcore.InfoLevel},
 	}

@@ -44,11 +44,6 @@ func NameToLevel(level string) (zapcore.Level, error) {
 	case "FATAL", "fatal":
 		return zapcore.FatalLevel, nil
 
-	case "NOTICE", "notice":
-		return zapcore.InfoLevel, nil // future
-	case "CRITICAL", "critical":
-		return zapcore.ErrorLevel, nil // future
-
 	case "":
 		return defaultLevel, nil
 
