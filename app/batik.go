@@ -45,11 +45,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			Value:   "info",
 			EnvVars: []string{"BATIK_LOG_LEVEL"},
 		},
-		&cli.StringFlag{
-			Name:  "log-output-file",
-			Usage: "Log output file path, if stdout, logs will go to stdout",
-			Value: "stderr",
-		},
 	}
 	app.Commands = []*cli.Command{
 		startCommand(false),
