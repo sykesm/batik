@@ -43,18 +43,18 @@ func (g *GRPC) ApplyDefaults() error {
 // be called before requesting flags.
 func (g *GRPC) Flags(commandName string) []cli.Flag {
 	return []cli.Flag{
-		&cli.UintFlag{
+		NewUintFlag(&cli.UintFlag{
 			Name:        "grpc-max-recv-message-size",
 			Value:       g.MaxRecvMessageSize,
 			Destination: &g.MaxRecvMessageSize,
 			Usage:       "FIXME: max-recv-message-size",
-		},
-		&cli.UintFlag{
+		}),
+		NewUintFlag(&cli.UintFlag{
 			Name:        "grpc-max-send-message-size",
 			Value:       g.MaxSendMessageSize,
 			Destination: &g.MaxSendMessageSize,
 			Usage:       "FIXME: max-send-message-size",
-		},
+		}),
 	}
 }
 
@@ -92,12 +92,12 @@ func (g *GRPCServer) ApplyDefaults() error {
 // be called before requesting flags.
 func (g *GRPCServer) Flags(commandName string) []cli.Flag {
 	flags := []cli.Flag{
-		&cli.DurationFlag{
+		NewDurationFlag(&cli.DurationFlag{
 			Name:        "grpc-conn-timeout",
 			Value:       g.ConnTimeout,
 			Destination: &g.ConnTimeout,
 			Usage:       "FIXME: connection-timeout",
-		},
+		}),
 	}
 	return append(flags, g.GRPC.Flags(commandName)...)
 }

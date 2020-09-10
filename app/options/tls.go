@@ -48,7 +48,7 @@ func (t *TLSServer) ApplyDefaults() error {
 // be called before requesting flags.
 func (t *TLSServer) Flags(commandName string) []cli.Flag {
 	return []cli.Flag{
-		&cli.StringFlag{
+		NewStringFlag(&cli.StringFlag{
 			Name:        "tls-cert-file",
 			Value:       t.ServerCert.CertFile,
 			Destination: &t.ServerCert.CertFile,
@@ -56,14 +56,14 @@ func (t *TLSServer) Flags(commandName string) []cli.Flag {
 			Usage: flow(`File containing the PEM encoded certificate (or chain) for the server.
 				When providing a certificate chain, the chain must start with the server certificate
 				and the remaining certificates must each certify the preceeding certificate.`),
-		},
-		&cli.StringFlag{
+		}),
+		NewStringFlag(&cli.StringFlag{
 			Name:        "tls-private-key-file",
 			Value:       t.ServerCert.KeyFile,
 			Destination: &t.ServerCert.KeyFile,
 			TakesFile:   true,
 			Usage:       flow(`File containing the PEM encoded private key for the server.`),
-		},
+		}),
 	}
 }
 

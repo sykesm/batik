@@ -48,12 +48,13 @@ func (s *Server) ApplyDefaults() error {
 // be called before requesting flags.
 func (s *Server) Flags(commandName string) []cli.Flag {
 	flags := []cli.Flag{
-		&cli.StringFlag{
+		NewStringFlag(&cli.StringFlag{
 			Name:        "listen-address",
 			Value:       s.ListenAddress,
 			Destination: &s.ListenAddress,
+			EnvVars:     []string{"BATIK_LISTEN_ADDR"},
 			Usage:       "FIXME: listen-address",
-		},
+		}),
 	}
 
 	flags = append(flags, s.GRPC.Flags(commandName)...)

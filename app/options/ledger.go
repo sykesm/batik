@@ -38,11 +38,11 @@ func (l *Ledger) ApplyDefaults() error {
 // be called before requesting flags.
 func (l *Ledger) Flags(commandName string) []cli.Flag {
 	return []cli.Flag{
-		&cli.StringFlag{
+		NewStringFlag(&cli.StringFlag{
 			Name:        "data-dir",
 			Value:       l.DataDir,
 			Destination: &l.DataDir,
 			Usage:       "FIXME: data directory",
-		},
+		}),
 	}
 }
