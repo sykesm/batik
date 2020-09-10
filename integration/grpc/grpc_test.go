@@ -37,7 +37,7 @@ var _ = Describe("Grpc", func() {
 		var dbPath string
 		dbPath, cleanup = tested.TempDir(GinkgoT(), "", "level")
 
-		cmd := exec.Command(batikPath, "start", "-a", address)
+		cmd := exec.Command(batikPath, "start", "--listen-address", address)
 		cmd.Env = os.Environ()
 		cmd.Env = append(cmd.Env, "DB_PATH="+dbPath)
 

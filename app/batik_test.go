@@ -12,6 +12,8 @@ import (
 
 	. "github.com/onsi/gomega"
 	cli "github.com/urfave/cli/v2"
+
+	"github.com/sykesm/batik/app/options"
 )
 
 func TestBatikWiring(t *testing.T) {
@@ -66,14 +68,14 @@ func TestBatikConfigNotFound(t *testing.T) {
 	gt.Expect(err).To(HaveOccurred())
 	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(3))
 	gt.Expect(stdout.String()).To(BeEmpty())
-	gt.Expect(stderr.String()).To(MatchRegexp("failed loading batik config:.*missing-file.txt"))
+	gt.Expect(stderr.String()).To(MatchRegexp("unable to read config:.*missing-file.txt"))
 }
 
 func TestBatikInteractive(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	app := cli.NewApp()
 	ctx := cli.NewContext(app, nil, nil)
-	sa, err := shellApp(ctx)
+	sa, err := shellApp(ctx, options.ConfigDefaults())
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	tests := []struct {
@@ -106,7 +108,7 @@ func TestBatikInteraciveWiring(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	app := cli.NewApp()
 	ctx := cli.NewContext(app, nil, nil)
-	sa, err := shellApp(ctx)
+	sa, err := shellApp(ctx, options.ConfigDefaults())
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	t.Run("AvailableCommands", func(t *testing.T) {

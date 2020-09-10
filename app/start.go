@@ -6,31 +6,26 @@ package app
 import (
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
+
+	"github.com/sykesm/batik/app/options"
 )
 
-func startCommand(interactive bool) *cli.Command {
+func startCommand(config *options.Config, interactive bool) *cli.Command {
 	return &cli.Command{
 		Name:        "start",
 		Description: "start the grpc server",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "address",
-				Aliases: []string{"a"},
-				Usage:   "Listen address for the grpc server",
-			},
-		},
+		Flags:       config.Server.Flags("start"),
 		Action: func(ctx *cli.Context) error {
-			config := GetConfig(ctx)
 			logger, err := GetLogger(ctx)
 			if err != nil {
 				return cli.Exit(err, exitServerStartFailed)
 			}
 
-			if ctx.String("address") != "" {
-				config.Server.Address = ctx.String("address")
+			serverConfig := Config{
+				Server: Server{Address: config.Server.ListenAddress},
+				DBPath: config.Ledger.DataDir,
 			}
-
-			server, err := NewServer(config, logger)
+			server, err := NewServer(serverConfig, logger)
 			if err != nil {
 				return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
 			}

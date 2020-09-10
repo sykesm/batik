@@ -7,9 +7,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/urfave/cli/v2"
-	"github.com/sykesm/batik/pkg/log"
+	cli "github.com/urfave/cli/v2"
 	"go.uber.org/zap"
+
+	"github.com/sykesm/batik/pkg/log"
 )
 
 type contextKey int
@@ -19,18 +20,6 @@ const (
 	loggerKey
 	serverKey
 )
-
-// GetConfig retrieves a Config object from a *cli.Context.
-func GetConfig(ctx *cli.Context) Config {
-	config, _ := retrieveFromCtx(ctx, configKey).(Config)
-
-	return config
-}
-
-// SetConfig stores a Config object on the *cli.Context.
-func SetConfig(ctx *cli.Context, config Config) {
-	setOnCtx(ctx, configKey, config)
-}
 
 func GetLogger(ctx *cli.Context) (*zap.Logger, error) {
 	logger := retrieveFromCtx(ctx, loggerKey)

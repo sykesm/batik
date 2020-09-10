@@ -14,4 +14,5 @@ const (
 	exitServerStartFailed
 	exitServerStatusFailed
 	exitAppShutdownFailed
+	exitConfigDecodeFailed
 )
