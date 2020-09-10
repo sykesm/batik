@@ -6,6 +6,7 @@ This document contains a set of stories and work items for Batik.
 
 - [ ] Investigate the `altsrc` package for loading configuration data from different sources
 - [ ] Investigate "defaulters", "option" structs, and the "AddFlags" patterns for setting up and overriding configuration options for each command
+  In progress
 - [ ] Investigate doc generation from the cli package
 
 ## Services
@@ -16,5 +17,6 @@ This document contains a set of stories and work items for Batik.
 ## Discussion Topics
 
 - [ ] The best way to organize this list and regularly groom it
+- [ ] Consistent treatment of errors and Wrap vs. WithMessage
 - [x] How to track completed tasks (leave in place or move?)
 - [x] How to handle logging and error streams (one vs two loggers?)
