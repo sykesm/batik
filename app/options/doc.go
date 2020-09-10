@@ -40,3 +40,9 @@ package options
 // context. This context enables the same configuration model to be used on
 // different commands with possibly different flag names. The Flags method will
 // be called after applying defaults.
+//
+// The flags returned from Flags should be the implementations from this
+// package. Without the special behavior implemented in Apply, the flag set
+// creation that occurs when running commands will result in the loss of any
+// configuration values updated between the call to Flags and the execution of
+// the command.
