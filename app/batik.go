@@ -87,15 +87,13 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		}
 
 		SetLogger(ctx, logger)
+		RegisterExitHandler(syncLogger(logger))
 
 		return nil
 	}
 
 	app.After = func(ctx *cli.Context) error {
-		logger, _ := GetLogger(ctx)
-		if logger != nil {
-			logger.Sync()
-		}
+		Exit()
 
 		return nil
 	}
