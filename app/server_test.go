@@ -69,7 +69,7 @@ func TestNewServer(t *testing.T) {
 	gt.Expect(srv.db).NotTo(BeNil())
 
 	// register the GRPC test server
-	testprotos.RegisterTestServiceServer(srv.server, &emptyServiceServer{})
+	testprotos.RegisterTestServiceServer(srv.server.Server, &emptyServiceServer{})
 
 	go srv.Start()
 	defer srv.Stop()

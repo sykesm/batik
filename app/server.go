@@ -4,15 +4,16 @@
 package app
 
 import (
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/pkg/errors"
+	"github.com/tedsuo/ifrit"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/sykesm/batik/pkg/grpccomm"
 	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/store"
@@ -23,7 +24,7 @@ import (
 // with the store and encoding transactions.
 type BatikServer struct {
 	address string
-	server  *grpc.Server
+	server  *grpccomm.Server
 
 	logger *zap.Logger
 
@@ -31,9 +32,15 @@ type BatikServer struct {
 }
 
 func NewServer(config Config, logger *zap.Logger) (*BatikServer, error) {
+	grpcserver := grpccomm.NewServer(
+		grpccomm.ServerConfig{
+			ListenAddress: config.Server.Address,
+			Logger:        logger,
+		},
+	)
 	server := &BatikServer{
 		address: config.Server.Address,
-		server:  grpc.NewServer(),
+		server:  grpcserver,
 		logger:  logger.With(zap.String("address", config.Server.Address)),
 	}
 
@@ -64,43 +71,30 @@ func (s *BatikServer) initializeDB(dbPath string) error {
 // registerServices registers the gRPC services supported by this server.
 func (s *BatikServer) registerServices() error {
 	encodeTxSvc := &transaction.EncodeService{}
-	tb.RegisterEncodeTransactionAPIServer(s.server, encodeTxSvc)
+	tb.RegisterEncodeTransactionAPIServer(s.server.Server, encodeTxSvc)
 
 	if s.db == nil {
 		return errors.New("server db not initialized")
 	}
 
 	storeSvc := store.NewStoreService(s.db)
-	sb.RegisterStoreAPIServer(s.server, storeSvc)
+	sb.RegisterStoreAPIServer(s.server.Server, storeSvc)
 
 	return nil
 }
 
 func (s *BatikServer) Start() error {
 	s.logger.Info("Starting server")
-	listener, err := net.Listen("tcp", s.address)
-	if err != nil {
-		return err
-	}
-	serve := make(chan error)
 
+	process := ifrit.Invoke(s.server)
 	s.handleSignals(map[os.Signal]func(){
-		syscall.SIGINT:  func() { s.server.GracefulStop(); serve <- nil },
-		syscall.SIGTERM: func() { s.server.GracefulStop(); serve <- nil },
+		syscall.SIGINT:  func() { process.Signal(syscall.SIGINT) },
+		syscall.SIGTERM: func() { process.Signal(syscall.SIGTERM) },
 	})
-
-	go func() {
-		var grpcErr error
-		if grpcErr = s.server.Serve(listener); grpcErr != nil {
-			grpcErr = errors.Wrap(grpcErr, "grpc server exited with error")
-		}
-		serve <- grpcErr
-	}()
-
 	s.logger.Info("Server started")
 
 	// Block until grpc server exits
-	return <-serve
+	return <-process.Wait()
 }
 
 func (s *BatikServer) Stop() {

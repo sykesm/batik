@@ -17,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/sykesm/zap-logfmt v0.0.3
 	github.com/syndtr/goleveldb v1.0.0
+	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00
 	github.com/urfave/cli/v2 v2.2.1-0.20200712133201-d2d2098085ce
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
