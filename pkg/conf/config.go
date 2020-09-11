@@ -1,17 +1,16 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package config
+package conf
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
-// Load populates configuration by searching configuration sources and assigns the
+// LoadFile populates configuration by searching configuration sources and assigns the
 // discovered values into the object referenced by out.
 //
 // The configuration sources are examined in the following order:
@@ -27,27 +26,9 @@ import (
 //
 // If a config file still does not already exist at any of the above paths, configuration
 // parameters will need to be passed via command line flags or environment variables.
-func Load(cfgPath string, out interface{}) error {
-	if cfgPath == "" {
-		paths, err := SearchPath("batik")
-		if err != nil {
-			return err
-		}
-
-		for _, p := range paths {
-			path := filepath.Join(p, "batik.yaml")
-			_, err := os.Stat(path)
-			if err == nil {
-				cfgPath = path
-				break
-			}
-		}
-	}
-
-	if cfgPath != "" {
-		if err := readFile(cfgPath, out); err != nil {
-			return errors.Wrap(err, "read file")
-		}
+func LoadFile(cfgPath string, out interface{}) error {
+	if err := readFile(cfgPath, out); err != nil {
+		return errors.Wrap(err, "read file")
 	}
 
 	return nil

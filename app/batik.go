@@ -6,17 +6,16 @@ package app
 import (
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
-	yaml "gopkg.in/yaml.v3"
 
 	"github.com/sykesm/batik/app/options"
 	"github.com/sykesm/batik/pkg/buildinfo"
+	"github.com/sykesm/batik/pkg/conf"
 	"github.com/sykesm/batik/pkg/log"
 	"github.com/sykesm/batik/pkg/repl"
 )
@@ -58,7 +57,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	app.Before = func(ctx *cli.Context) error {
 		logLevel := ctx.String("log-level")
 		logger, err := log.NewLogger(log.Config{
-			Name:    "batik",
+			Name:    app.Name,
 			LogSpec: logLevel,
 			Writer:  app.ErrWriter,
 			Format:  "logfmt",
@@ -68,16 +67,16 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		}
 
 		configPath := ctx.String("config")
+		if configPath == "" {
+			configPath, err = conf.File(app.Name)
+			if err != nil {
+				return cli.Exit(err, exitConfigLoadFailed)
+			}
+		}
 		if configPath != "" {
-			cf, err := os.Open(configPath)
+			err = conf.LoadFile(configPath, config)
 			if err != nil {
 				return cli.Exit(errors.Wrap(err, "unable to read config"), exitConfigLoadFailed)
-			}
-
-			decoder := yaml.NewDecoder(cf)
-			err = decoder.Decode(config)
-			if err != nil {
-				return cli.Exit(errors.Wrap(err, "unable to read config"), exitConfigDecodeFailed)
 			}
 		}
 

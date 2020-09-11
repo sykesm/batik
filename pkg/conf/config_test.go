@@ -1,10 +1,9 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package config
+package conf
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -45,36 +44,11 @@ func TestLoad(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			var batikConfig BatikConfig
-			err := Load(tt.cfgPath, &batikConfig)
+			err := LoadFile(tt.cfgPath, &batikConfig)
 			gt.Expect(err).NotTo(HaveOccurred())
 			gt.Expect(batikConfig).To(Equal(tt.expectedConfig))
 		})
 	}
-
-	t.Run("load yaml from cwd", func(t *testing.T) {
-		gt := NewGomegaWithT(t)
-
-		tempFile, err := os.Create("batik.yaml")
-		gt.Expect(err).NotTo(HaveOccurred())
-
-		_, err = tempFile.WriteString(`server: { address: 127.0.0.1:9001 }`)
-		gt.Expect(err).NotTo(HaveOccurred())
-		defer func() {
-			tempFile.Close()
-			os.Remove(tempFile.Name())
-		}()
-
-		expectedConfig := BatikConfig{
-			Server: Server{
-				Address: "127.0.0.1:9001",
-			},
-		}
-
-		var batikConfig BatikConfig
-		err = Load("", &batikConfig)
-		gt.Expect(err).NotTo(HaveOccurred())
-		gt.Expect(batikConfig).To(Equal(expectedConfig))
-	})
 }
 
 func TestLoadFailures(t *testing.T) {
@@ -91,7 +65,7 @@ func TestLoadFailures(t *testing.T) {
 		{
 			testName:    "invalid yaml",
 			cfgPath:     filepath.Join("testdata", "invalid.yaml"),
-			expectedErr: "read file: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!seq into config.BatikConfig",
+			expectedErr: "read file: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!seq into conf.BatikConfig",
 		},
 	}
 
@@ -100,7 +74,7 @@ func TestLoadFailures(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			var batikConfig BatikConfig
-			err := Load(tt.cfgPath, &batikConfig)
+			err := LoadFile(tt.cfgPath, &batikConfig)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
