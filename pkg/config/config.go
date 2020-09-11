@@ -27,11 +27,7 @@ import (
 //
 // If a config file still does not already exist at any of the above paths, configuration
 // parameters will need to be passed via command line flags or environment variables.
-func Load(cfgPath string, l Lookuper, out interface{}) error {
-	if l == nil {
-		return errors.New("empty lookuper")
-	}
-
+func Load(cfgPath string, out interface{}) error {
 	if cfgPath == "" {
 		paths, err := SearchPath("batik")
 		if err != nil {
@@ -52,16 +48,6 @@ func Load(cfgPath string, l Lookuper, out interface{}) error {
 		if err := readFile(cfgPath, out); err != nil {
 			return errors.Wrap(err, "read file")
 		}
-	}
-
-	d := Decoder{
-		lookuper:   l,
-		defaultTag: "default",
-		parseTag:   "env",
-	}
-
-	if err := d.Parse(out); err != nil {
-		return errors.Wrap(err, "decode")
 	}
 
 	return nil

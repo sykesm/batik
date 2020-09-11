@@ -20,35 +20,21 @@ type BatikConfig struct {
 // Server contains configuration properties for a Batik gRPC server.
 type Server struct {
 	// Address configures the listen address for the gRPC server.
-	Address string `yaml:"address" default:"127.0.0.1:9053" env:"BATIK_ADDRESS"`
+	Address string `yaml:"address"`
 }
 
 func TestLoad(t *testing.T) {
 	tests := []struct {
 		testName       string
 		cfgPath        string
-		envMap         map[string]string
 		expectedConfig BatikConfig
 	}{
 		{
 			testName: "load yaml from file",
 			cfgPath:  filepath.Join("testdata", "batik-config.yaml"),
-			envMap:   map[string]string{},
 			expectedConfig: BatikConfig{
 				Server: Server{
 					Address: "127.0.0.1:9000",
-				},
-			},
-		},
-		{
-			testName: "load env vars override",
-			cfgPath:  "",
-			envMap: map[string]string{
-				"BATIK_ADDRESS": "127.0.0.1:9004",
-			},
-			expectedConfig: BatikConfig{
-				Server: Server{
-					Address: "127.0.0.1:9004",
 				},
 			},
 		},
@@ -59,7 +45,7 @@ func TestLoad(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			var batikConfig BatikConfig
-			err := Load(tt.cfgPath, MapLookuper(tt.envMap), &batikConfig)
+			err := Load(tt.cfgPath, &batikConfig)
 			gt.Expect(err).NotTo(HaveOccurred())
 			gt.Expect(batikConfig).To(Equal(tt.expectedConfig))
 		})
@@ -71,9 +57,7 @@ func TestLoad(t *testing.T) {
 		tempFile, err := os.Create("batik.yaml")
 		gt.Expect(err).NotTo(HaveOccurred())
 
-		_, err = tempFile.WriteString(`server:
-  address: 127.0.0.1:9001
-`)
+		_, err = tempFile.WriteString(`server: { address: 127.0.0.1:9001 }`)
 		gt.Expect(err).NotTo(HaveOccurred())
 		defer func() {
 			tempFile.Close()
@@ -87,7 +71,7 @@ func TestLoad(t *testing.T) {
 		}
 
 		var batikConfig BatikConfig
-		err = Load("", MapLookuper(nil), &batikConfig)
+		err = Load("", &batikConfig)
 		gt.Expect(err).NotTo(HaveOccurred())
 		gt.Expect(batikConfig).To(Equal(expectedConfig))
 	})
@@ -97,19 +81,16 @@ func TestLoadFailures(t *testing.T) {
 	tests := []struct {
 		testName    string
 		cfgPath     string
-		envMap      map[string]string
 		expectedErr string
 	}{
 		{
 			testName:    "nonexistent dir",
 			cfgPath:     filepath.Join("dne", "batik.yaml"),
-			envMap:      map[string]string{},
 			expectedErr: "read file: open dne/batik.yaml: no such file or directory",
 		},
 		{
 			testName:    "invalid yaml",
 			cfgPath:     filepath.Join("testdata", "invalid.yaml"),
-			envMap:      map[string]string{},
 			expectedErr: "read file: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!seq into config.BatikConfig",
 		},
 	}
@@ -119,7 +100,7 @@ func TestLoadFailures(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			var batikConfig BatikConfig
-			err := Load(tt.cfgPath, MapLookuper(tt.envMap), &batikConfig)
+			err := Load(tt.cfgPath, &batikConfig)
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
