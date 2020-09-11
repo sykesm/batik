@@ -54,6 +54,11 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		statusCommand(),
 	}
 
+	// Sort the flags and commands to make it easier to find things.
+	// https://github.com/urfave/cli/blob/master/docs/v2/manual.md#ordering
+	sort.Sort(cli.FlagsByName(app.Flags))
+	sort.Sort(cli.CommandsByName(app.Commands))
+
 	app.Before = func(ctx *cli.Context) error {
 		logLevel := ctx.String("log-level")
 		logger, err := log.NewLogger(log.Config{
@@ -66,38 +71,23 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit(errors.Wrap(err, "failed creating new logger"), exitLoggerCreateFailed)
 		}
 
-		configPath := ctx.String("config")
-		if configPath == "" {
-			configPath, err = conf.File(app.Name)
-			if err != nil {
-				return cli.Exit(err, exitConfigLoadFailed)
-			}
-		}
-		if configPath != "" {
-			err = conf.LoadFile(configPath, config)
-			if err != nil {
-				return cli.Exit(errors.Wrap(err, "unable to read config"), exitConfigLoadFailed)
-			}
-		}
-
-		err = config.ApplyDefaults()
-		if err != nil {
-			panic(err)
-		}
-
+		RegisterExitHandler(func() { logger.Sync() })
 		SetLogger(ctx, logger)
-		RegisterExitHandler(syncLogger(logger))
+
+		err = resolveConfig(ctx, config)
+		if err != nil {
+			return cli.Exit(errors.WithMessage(err, "unable to read config"), exitConfigLoadFailed)
+		}
 
 		return nil
 	}
 
 	app.After = func(ctx *cli.Context) error {
 		Exit()
-
 		return nil
 	}
 
-	// setup flags for the ledger
+	// The default action starts the interactive console shell.
 	app.Action = func(ctx *cli.Context) error {
 		if ctx.Args().Present() {
 			arg := ctx.Args().First()
@@ -113,14 +103,30 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		return repl.New(sa, repl.WithStdin(stdin), repl.WithStdout(stdout), repl.WithStderr(stderr)).Run(ctx.Context)
 	}
 
-	// Sort the flags and commands to make it easier to find things.
-	// https://github.com/urfave/cli/blob/master/docs/v2/manual.md#ordering
-	sort.Sort(cli.FlagsByName(app.Flags))
-	sort.Sort(cli.CommandsByName(app.Commands))
-
 	return app
 }
 
+func resolveConfig(ctx *cli.Context, config *options.Config) error {
+	configPath := ctx.String("config")
+	if configPath == "" {
+		cf, err := conf.File(ctx.App.Name)
+		if err != nil {
+			return err
+		}
+		configPath = cf
+	}
+
+	if configPath != "" {
+		err := conf.LoadFile(configPath, config)
+		if err != nil {
+			return err
+		}
+	}
+
+	return config.ApplyDefaults()
+}
+
+// shellApp is the interactive console application.
 func shellApp(parentCtx *cli.Context, config *options.Config) (*cli.App, error) {
 	app := cli.NewApp()
 	app.Name = "batik"
