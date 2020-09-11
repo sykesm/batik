@@ -11,14 +11,12 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var buf *bytes.Buffer
-
 func TestAtExit(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	atexit := New()
 
-	buf = &bytes.Buffer{}
+	buf := &bytes.Buffer{}
 	atexit.Register(func() { fmt.Fprint(buf, "testHandler1") })
 	atexit.Register(func() { fmt.Fprint(buf, "testHandler2") })
 
