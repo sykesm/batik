@@ -3,11 +3,13 @@
 
 package options
 
+// Config exposes the conigurable elements of the application.
 type Config struct {
 	Server Server `yaml:"server,omitempty"`
 	Ledger Ledger `yaml:"ledger,omitempty"`
 }
 
+// ConfigDefaults returns the default configuration values for the app.
 func ConfigDefaults() *Config {
 	return &Config{
 		Server: *ServerDefaults(),
@@ -15,6 +17,7 @@ func ConfigDefaults() *Config {
 	}
 }
 
+// ApplyDefaults applies default values for missing configuration fields.
 func (c *Config) ApplyDefaults() error {
 	if err := c.Server.ApplyDefaults(); err != nil {
 		return err
@@ -22,6 +25,5 @@ func (c *Config) ApplyDefaults() error {
 	if err := c.Ledger.ApplyDefaults(); err != nil {
 		return err
 	}
-
 	return nil
 }
