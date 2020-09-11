@@ -40,25 +40,25 @@ func SetLogger(ctx *cli.Context, logger *zap.Logger) {
 	setOnCtx(ctx, loggerKey, logger)
 }
 
-// GetServer retrieves a server from the *cli.Context if one exists.
-func GetServer(ctx *cli.Context) (*BatikServer, error) {
-	server := retrieveFromCtx(ctx, serverKey)
-	if server == nil {
-		return nil, nil
-	}
+// // GetServer retrieves a server from the *cli.Context if one exists.
+// func GetServer(ctx *cli.Context) (*BatikServer, error) {
+// 	server := retrieveFromCtx(ctx, serverKey)
+// 	if server == nil {
+// 		return nil, nil
+// 	}
 
-	s, ok := server.(*BatikServer)
-	if !ok {
-		return nil, errors.New("server not of type *BatikServer")
-	}
+// 	s, ok := server.(*BatikServer)
+// 	if !ok {
+// 		return nil, errors.New("server not of type *BatikServer")
+// 	}
 
-	return s, nil
-}
+// 	return s, nil
+// }
 
-// SetServer stores a *BatikServer on the *cli.Context.
-func SetServer(ctx *cli.Context, server *BatikServer) {
-	setOnCtx(ctx, serverKey, server)
-}
+// // SetServer stores a *BatikServer on the *cli.Context.
+// func SetServer(ctx *cli.Context, server *BatikServer) {
+// 	setOnCtx(ctx, serverKey, server)
+// }
 
 func retrieveFromCtx(ctx *cli.Context, key contextKey) interface{} {
 	return ctx.Context.Value(key)

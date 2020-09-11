@@ -26,6 +26,9 @@ type ServerConfig struct {
 	Logger        *zap.Logger
 }
 
+// TODO: Should we just take a *grpc.Server and treat this as a
+// simple runner?
+
 func NewServer(config ServerConfig, grpcOptions ...grpc.ServerOption) *Server {
 	return &Server{
 		Server:        grpc.NewServer(grpcOptions...),

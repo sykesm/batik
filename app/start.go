@@ -5,9 +5,16 @@ package app
 
 import (
 	"github.com/pkg/errors"
+	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/sigmon"
 	cli "github.com/urfave/cli/v2"
 
 	"github.com/sykesm/batik/app/options"
+	"github.com/sykesm/batik/pkg/grpccomm"
+	sb "github.com/sykesm/batik/pkg/pb/store"
+	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	"github.com/sykesm/batik/pkg/store"
+	"github.com/sykesm/batik/pkg/transaction"
 )
 
 func startCommand(config *options.Config, interactive bool) *cli.Command {
@@ -24,33 +31,34 @@ func startCommand(config *options.Config, interactive bool) *cli.Command {
 				return cli.Exit(err, exitServerStartFailed)
 			}
 
-			serverConfig := Config{
-				Server: Server{Address: config.Server.ListenAddress},
-				DBPath: config.Ledger.DataDir,
-			}
-			server, err := NewServer(serverConfig, logger)
+			grpcServer := grpccomm.NewServer(
+				grpccomm.ServerConfig{
+					ListenAddress: config.Server.ListenAddress,
+					Logger:        logger,
+				},
+			)
+
+			db, err := store.NewLevelDB("")
 			if err != nil {
 				return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
 			}
 
-			SetServer(ctx, server)
+			encodeService := &transaction.EncodeService{}
+			tb.RegisterEncodeTransactionAPIServer(grpcServer.Server, encodeService)
 
-			start := func() error {
-				if err := server.Start(); err != nil {
-					return cli.Exit(err, exitServerStartFailed)
-				}
+			storeService := store.NewStoreService(db)
+			sb.RegisterStoreAPIServer(grpcServer.Server, storeService)
 
-				logger.Info("Server stopped")
-				return nil
+			// SetServer(ctx, server)
+
+			logger.Info("Starting server")
+			process := ifrit.Invoke(sigmon.New(grpcServer))
+			logger.Info("Server started")
+			if !interactive {
+				return <-process.Wait()
 			}
 
-			// TODO: The server needs work to enable us to start, wait for ready, and then
-			// return.
-			if interactive {
-				go start()
-				return nil
-			}
-			return start()
+			return nil
 		},
 	}
 }
