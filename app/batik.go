@@ -14,6 +14,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 
 	"github.com/sykesm/batik/app/options"
+	"github.com/sykesm/batik/pkg/atexit"
 	"github.com/sykesm/batik/pkg/buildinfo"
 	"github.com/sykesm/batik/pkg/conf"
 	"github.com/sykesm/batik/pkg/log"
@@ -22,6 +23,7 @@ import (
 
 func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
 	config := options.ConfigDefaults()
+	atexit := atexit.New()
 
 	app := cli.NewApp()
 	app.Copyright = fmt.Sprintf("© Copyright IBM Corporation %04d. All rights reserved.", buildinfo.Built().Year())
@@ -71,7 +73,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit(errors.Wrap(err, "failed creating new logger"), exitLoggerCreateFailed)
 		}
 
-		RegisterExitHandler(func() { logger.Sync() })
+		atexit.Register(func() { logger.Sync() })
 		SetLogger(ctx, logger)
 
 		err = resolveConfig(ctx, config)
@@ -83,7 +85,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	}
 
 	app.After = func(ctx *cli.Context) error {
-		Exit()
+		defer atexit.Exit()
 		return nil
 	}
 
