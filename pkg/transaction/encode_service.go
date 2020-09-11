@@ -8,7 +8,6 @@ import (
 	"crypto"
 
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
-	"github.com/sykesm/batik/pkg/protomsg"
 )
 
 // EncodeService implements the EncodeTransactionAPIServer gRPC interface.
@@ -22,18 +21,13 @@ var _ tb.EncodeTransactionAPIServer = (*EncodeService)(nil)
 func (e *EncodeService) EncodeTransaction(ctx context.Context, req *tb.EncodeTransactionRequest) (*tb.EncodeTransactionResponse, error) {
 	tx := req.Transaction
 
-	id, err := ID(crypto.SHA256, tx)
-	if err != nil {
-		return nil, err
-	}
-
-	encodedTx, err := protomsg.MarshalDeterministic(tx)
+	id, encoded, err := Marshal(crypto.SHA256, tx)
 	if err != nil {
 		return nil, err
 	}
 
 	return &tb.EncodeTransactionResponse{
 		Txid:               id,
-		EncodedTransaction: encodedTx,
+		EncodedTransaction: encoded,
 	}, nil
 }

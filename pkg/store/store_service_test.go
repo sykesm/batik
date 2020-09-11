@@ -27,9 +27,7 @@ func TestStoreService_GetTransaction(t *testing.T) {
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
-	txid, err := transaction.ID(crypto.SHA256, testTx)
-	gt.Expect(err).NotTo(HaveOccurred())
-	encodedTx, err := protomsg.MarshalDeterministic(testTx)
+	txid, encodedTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	key := transactionKey(txid)
@@ -61,9 +59,7 @@ func TestStoreService_PutTransaction(t *testing.T) {
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
-	txid, err := transaction.ID(crypto.SHA256, testTx)
-	gt.Expect(err).NotTo(HaveOccurred())
-	encodedTx, err := protomsg.MarshalDeterministic(testTx)
+	txid, encodedTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	key := transactionKey(txid)
@@ -92,7 +88,7 @@ func TestStoreService_GetState(t *testing.T) {
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
-	txid, err := transaction.ID(crypto.SHA256, testTx)
+	txid, _, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	testState := &tb.ResolvedState{
@@ -139,7 +135,7 @@ func TestStoreService_PutState(t *testing.T) {
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
-	txid, err := transaction.ID(crypto.SHA256, testTx)
+	txid, _, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	testState := &tb.ResolvedState{

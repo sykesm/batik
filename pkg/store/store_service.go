@@ -61,18 +61,13 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *sb.PutTransactio
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	id, err := transaction.ID(crypto.SHA256, req.Transaction)
-	if err != nil {
-		return nil, err
-	}
-
-	encodedTx, err := protomsg.MarshalDeterministic(req.Transaction)
+	id, encoded, err := transaction.Marshal(crypto.SHA256, req.Transaction)
 	if err != nil {
 		return nil, err
 	}
 
 	key := transactionKey(id)
-	if err := s.db.Put(key, encodedTx); err != nil {
+	if err := s.db.Put(key, encoded); err != nil {
 		return nil, err
 	}
 

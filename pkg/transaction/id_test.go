@@ -54,7 +54,7 @@ func TestSalt(t *testing.T) {
 	}
 }
 
-func TestID(t *testing.T) {
+func TestMarshal(t *testing.T) {
 	noop := func(tx *transaction.Transaction) {}
 	salted := func(tx *transaction.Transaction) { tx.Salt = []byte("sodium-chloride") }
 	reset := func(tx *transaction.Transaction) { tx.Reset() }
@@ -82,7 +82,7 @@ func TestID(t *testing.T) {
 
 			tx := newTestTransaction()
 			tt.setup(tx)
-			id, err := ID(crypto.SHA256, tx)
+			id, encoded, err := Marshal(crypto.SHA256, tx)
 			if tt.errMatcher != nil {
 				gt.Expect(err).To(tt.errMatcher)
 				return
@@ -93,13 +93,17 @@ func TestID(t *testing.T) {
 			gt.Expect(err).NotTo(HaveOccurred())
 
 			gt.Expect(id).To(Equal(tt.expected), "got %x want %x reflect %x", id, tt.expected, reflected)
+
+			expectedEncoded, err := protomsg.MarshalDeterministic(tx)
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(encoded).To(Equal(expectedEncoded))
 		})
 	}
 }
 
 func TestIDMatchesReflected(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	id, err := ID(crypto.SHA256, newTestTransaction())
+	id, _, err := Marshal(crypto.SHA256, newTestTransaction())
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	reflected, err := reflectTransactionID(crypto.SHA256, newTestTransaction())
@@ -111,7 +115,7 @@ func TestIDMatchesReflected(t *testing.T) {
 func TestReflectDetectsChanges(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	productionID, err := ID(crypto.SHA256, newTestTransaction())
+	productionID, _, err := Marshal(crypto.SHA256, newTestTransaction())
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	encoded, err := protomsg.MarshalDeterministic(newTestTransaction())

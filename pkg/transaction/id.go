@@ -9,12 +9,13 @@ import (
 	"github.com/sykesm/batik/pkg/merkle"
 	"github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/protomsg"
+	"google.golang.org/protobuf/encoding/protowire"
 )
 
-// ID generates a transaction ID from a Transaction message. An error is
-// returned if any element of the transaction cannot be marshaled into a
-// protobuf message.
-func ID(h merkle.Hasher, tx *transaction.Transaction) ([]byte, error) {
+// Marshal encodes a Transaction message and also generates a transaction ID
+// over the transaction. An error is returned if any element of the transaction cannot
+// be marshaled into a protobuf message.
+func Marshal(h merkle.Hasher, tx *transaction.Transaction) ([]byte, []byte, error) {
 	// fieldGetters is used instead of proto reflection to get the list of fields
 	// and their associated field numbers when generating merkle hashes used for
 	// transaction ID generation.
@@ -26,19 +27,44 @@ func ID(h merkle.Hasher, tx *transaction.Transaction) ([]byte, error) {
 		func(tx *transaction.Transaction) (uint32, interface{}) { return 6, tx.RequiredSigners },
 	}
 
+	// The encoded transaction can be constructed from the encoded elements of
+	// the transaction in order as they appear. Encoded elements are prepended
+	// by the protowire encoded tag of the field number followed by the length
+	// of the encoded message.
 	var leaves [][]byte
+	var encoded []byte
+	if len(tx.Salt) != 0 {
+		encoded = append(encoded, encodedElement(1, tx.Salt)...)
+	}
 	for _, getField := range fieldGetters {
 		fn, list := getField(tx)
 		m, err := marshalMessages(list)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		for i := range m {
+			encoded = append(encoded, encodedElement(fn, m[i])...)
 			m[i] = append(salt(h, tx.Salt, fn, uint32(i)), m[i]...)
 		}
 		leaves = append(leaves, merkle.Root(h, m...))
 	}
-	return merkle.Root(h, leaves...), nil
+
+	return merkle.Root(h, leaves...), encoded, nil
+}
+
+// encodedElement returns the encoded pieces of each message in a transaction.
+// The element is prepended with the protowire encoded tag of the field number
+// followed by the length of the encoded message.
+//
+// This logic loosely follows how protomsg.MarshalDeterministic encodes a proto.Message.
+func encodedElement(fn uint32, m []byte) []byte {
+	var encodedElement []byte
+
+	encodedElement = append(encodedElement, byte(protowire.EncodeTag(protowire.Number(fn), protowire.BytesType)))
+	encodedElement = append(encodedElement, byte(len(m)))
+	encodedElement = append(encodedElement, m...)
+
+	return encodedElement
 }
 
 // A salt is generated for each leaf by caculating an HMAC over the protobuf
