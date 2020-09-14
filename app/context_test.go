@@ -35,5 +35,5 @@ func TestMetadata_Logger(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	logger.Info("test")
 
-	gt.Expect(buf.String()).To(MatchRegexp("TestMetadata_Logger.*test"))
+	gt.Expect(buf.String()).To(MatchRegexp("msg=test"))
 }

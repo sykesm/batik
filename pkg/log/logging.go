@@ -4,18 +4,17 @@
 package log
 
 import (
+	"errors"
 	"io"
 	"os"
 
 	zaplogfmt "github.com/sykesm/zap-logfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"github.com/sykesm/batik/pkg/log/encoder"
 )
 
 const (
-	defaultFormat = "%{color}%{time:2006-01-02 15:04:05.000 MST} [%{module}] %{shortfunc} -> %{level:.4s} %{id:03x}%{color:reset} %{message}"
+	defaultFormat = "logfmt"
 )
 
 // Config is used to provide dependencies to a Logging instance.
@@ -100,12 +99,7 @@ func NewEncoder(format string) (zapcore.Encoder, error) {
 	case "logfmt":
 		e = zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig())
 	default:
-		// console
-		formatters, err := encoder.ParseFormat(format)
-		if err != nil {
-			return nil, err
-		}
-		e = encoder.NewFormatEncoder(formatters...)
+		return nil, errors.New("unrecognized log format")
 	}
 
 	return e, nil

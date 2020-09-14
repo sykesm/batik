@@ -18,18 +18,6 @@ func TestNewLogger(t *testing.T) {
 		expectedOut string
 	}{
 		{
-			testName:    "logs with default format string",
-			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}},
-			message:     "test",
-			expectedOut: `\x1b.*func1 -> INFO.*\x1b.*test`,
-		},
-		{
-			testName:    "logs with format string",
-			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}, Format: "msg=%{message}"},
-			message:     "test",
-			expectedOut: "msg=test",
-		},
-		{
 			testName:    "logs with logfmt",
 			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}, Format: "logfmt"},
 			message:     "test",
