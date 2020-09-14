@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	cli "github.com/urfave/cli/v2"
 
-	"github.com/sykesm/batik/app/options"
+	"github.com/sykesm/batik/pkg/options"
 )
 
 func TestBatikWiring(t *testing.T) {
@@ -75,7 +75,7 @@ func TestBatikInteractive(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	app := cli.NewApp()
 	ctx := cli.NewContext(app, nil, nil)
-	sa, err := shellApp(ctx, options.ConfigDefaults())
+	sa, err := shellApp(ctx, options.BatikDefaults())
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	tests := []struct {
@@ -108,7 +108,7 @@ func TestBatikInteraciveWiring(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	app := cli.NewApp()
 	ctx := cli.NewContext(app, nil, nil)
-	sa, err := shellApp(ctx, options.ConfigDefaults())
+	sa, err := shellApp(ctx, options.BatikDefaults())
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	t.Run("AvailableCommands", func(t *testing.T) {

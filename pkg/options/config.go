@@ -3,22 +3,22 @@
 
 package options
 
-// Config exposes the conigurable elements of the application.
-type Config struct {
+// Batik exposes the conigurable elements of the application.
+type Batik struct {
 	Server Server `yaml:"server,omitempty"`
 	Ledger Ledger `yaml:"ledger,omitempty"`
 }
 
-// ConfigDefaults returns the default configuration values for the app.
-func ConfigDefaults() *Config {
-	return &Config{
+// BatikDefaults returns the default configuration values for the app.
+func BatikDefaults() *Batik {
+	return &Batik{
 		Server: *ServerDefaults(),
 		Ledger: *LedgerDefaults(),
 	}
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (c *Config) ApplyDefaults() error {
+func (c *Batik) ApplyDefaults() error {
 	if err := c.Server.ApplyDefaults(); err != nil {
 		return err
 	}

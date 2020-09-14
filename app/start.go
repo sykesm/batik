@@ -9,15 +9,15 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	cli "github.com/urfave/cli/v2"
 
-	"github.com/sykesm/batik/app/options"
 	"github.com/sykesm/batik/pkg/grpccomm"
+	"github.com/sykesm/batik/pkg/options"
 	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
-func startCommand(config *options.Config, interactive bool) *cli.Command {
+func startCommand(config *options.Batik, interactive bool) *cli.Command {
 	return &cli.Command{
 		Name:        "start",
 		Description: "start the grpc server",

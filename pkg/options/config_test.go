@@ -13,30 +13,30 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
-func TestConfigDefaults(t *testing.T) {
+func TestBatikDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	config := ConfigDefaults()
-	gt.Expect(config).To(Equal(&Config{
+	config := BatikDefaults()
+	gt.Expect(config).To(Equal(&Batik{
 		Server: *ServerDefaults(),
 		Ledger: *LedgerDefaults(),
 	}))
 }
 
-func TestConfigApplyDefaults(t *testing.T) {
+func TestBatikApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
-		setup    func(*Config)
+		setup    func(*Batik)
 		matchErr types.GomegaMatcher
 	}{
-		"empty":  {setup: func(c *Config) { *c = Config{} }, matchErr: BeNil()},
-		"server": {setup: func(c *Config) { c.Server = Server{} }, matchErr: BeNil()},
-		"ledger": {setup: func(c *Config) { c.Ledger = Ledger{} }, matchErr: BeNil()},
+		"empty":  {setup: func(c *Batik) { *c = Batik{} }, matchErr: BeNil()},
+		"server": {setup: func(c *Batik) { c.Server = Server{} }, matchErr: BeNil()},
+		"ledger": {setup: func(c *Batik) { c.Ledger = Ledger{} }, matchErr: BeNil()},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			input := ConfigDefaults()
+			input := BatikDefaults()
 			tt.setup(input)
 
 			err := input.ApplyDefaults()
@@ -44,24 +44,24 @@ func TestConfigApplyDefaults(t *testing.T) {
 			if err != nil {
 				return
 			}
-			gt.Expect(input).To(Equal(ConfigDefaults()))
+			gt.Expect(input).To(Equal(BatikDefaults()))
 		})
 	}
 }
 
-func TestReadConfigApplyDefaults(t *testing.T) {
+func TestReadConfigFileApplyDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	cf, err := os.Open("testdata/config.yaml")
+	cf, err := os.Open("testdata/batik.yaml")
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer cf.Close()
 
-	var config Config
+	var config Batik
 	decoder := yaml.NewDecoder(cf)
 
 	err = decoder.Decode(&config)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(config).To(Equal(Config{
+	gt.Expect(config).To(Equal(Batik{
 		Server: Server{
 			ListenAddress: "127.0.0.1:7879",
 			GRPC: GRPCServer{
@@ -78,7 +78,7 @@ func TestReadConfigApplyDefaults(t *testing.T) {
 
 	err = config.ApplyDefaults()
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(config).To(Equal(Config{
+	gt.Expect(config).To(Equal(Batik{
 		Server: Server{
 			ListenAddress: "127.0.0.1:7879",
 			GRPC: GRPCServer{

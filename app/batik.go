@@ -13,16 +13,16 @@ import (
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 
-	"github.com/sykesm/batik/app/options"
 	"github.com/sykesm/batik/pkg/atexit"
 	"github.com/sykesm/batik/pkg/buildinfo"
 	"github.com/sykesm/batik/pkg/conf"
 	"github.com/sykesm/batik/pkg/log"
+	"github.com/sykesm/batik/pkg/options"
 	"github.com/sykesm/batik/pkg/repl"
 )
 
 func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
-	config := options.ConfigDefaults()
+	config := options.BatikDefaults()
 	atexit := atexit.New()
 
 	app := cli.NewApp()
@@ -108,7 +108,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	return app
 }
 
-func resolveConfig(ctx *cli.Context, config *options.Config) error {
+func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 	configPath := ctx.String("config")
 	if configPath == "" {
 		cf, err := conf.File(ctx.App.Name)
@@ -129,7 +129,7 @@ func resolveConfig(ctx *cli.Context, config *options.Config) error {
 }
 
 // shellApp is the interactive console application.
-func shellApp(parentCtx *cli.Context, config *options.Config) (*cli.App, error) {
+func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
 	app := cli.NewApp()
 	app.Name = "batik"
 	app.HideVersion = true
