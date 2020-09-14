@@ -7,24 +7,31 @@ import (
 	"crypto/hmac"
 
 	"github.com/sykesm/batik/pkg/merkle"
-	"github.com/sykesm/batik/pkg/pb/transaction"
+	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
+// IntermediateTx holds intermediate information for an encoded transaction.
+type IntermediateTx struct {
+	Tx      *tb.Transaction
+	Encoded []byte
+	ID      []byte
+}
+
 // Marshal encodes a Transaction message and also generates a transaction ID
 // over the transaction. An error is returned if any element of the transaction cannot
 // be marshaled into a protobuf message.
-func Marshal(h merkle.Hasher, tx *transaction.Transaction) ([]byte, []byte, error) {
+func Marshal(h merkle.Hasher, tx *tb.Transaction) (*IntermediateTx, error) {
 	// fieldGetters is used instead of proto reflection to get the list of fields
 	// and their associated field numbers when generating merkle hashes used for
 	// transaction ID generation.
-	fieldGetters := []func(*transaction.Transaction) (fn uint32, list interface{}){
-		func(tx *transaction.Transaction) (uint32, interface{}) { return 2, tx.Inputs },
-		func(tx *transaction.Transaction) (uint32, interface{}) { return 3, tx.References },
-		func(tx *transaction.Transaction) (uint32, interface{}) { return 4, tx.Outputs },
-		func(tx *transaction.Transaction) (uint32, interface{}) { return 5, tx.Parameters },
-		func(tx *transaction.Transaction) (uint32, interface{}) { return 6, tx.RequiredSigners },
+	fieldGetters := []func(*tb.Transaction) (fn uint32, list interface{}){
+		func(tx *tb.Transaction) (uint32, interface{}) { return 2, tx.Inputs },
+		func(tx *tb.Transaction) (uint32, interface{}) { return 3, tx.References },
+		func(tx *tb.Transaction) (uint32, interface{}) { return 4, tx.Outputs },
+		func(tx *tb.Transaction) (uint32, interface{}) { return 5, tx.Parameters },
+		func(tx *tb.Transaction) (uint32, interface{}) { return 6, tx.RequiredSigners },
 	}
 
 	// The encoded transaction can be constructed from the encoded elements of
@@ -40,7 +47,7 @@ func Marshal(h merkle.Hasher, tx *transaction.Transaction) ([]byte, []byte, erro
 		fn, list := getField(tx)
 		m, err := marshalMessages(list)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		for i := range m {
 			encoded = append(encoded, encodedElement(fn, m[i])...)
@@ -49,7 +56,11 @@ func Marshal(h merkle.Hasher, tx *transaction.Transaction) ([]byte, []byte, erro
 		leaves = append(leaves, merkle.Root(h, m...))
 	}
 
-	return merkle.Root(h, leaves...), encoded, nil
+	return &IntermediateTx{
+		Tx:      tx,
+		Encoded: encoded,
+		ID:      merkle.Root(h, leaves...),
+	}, nil
 }
 
 // encodedElement returns the encoded pieces of each message in a transaction.

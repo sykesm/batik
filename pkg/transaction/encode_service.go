@@ -21,13 +21,13 @@ var _ tb.EncodeTransactionAPIServer = (*EncodeService)(nil)
 func (e *EncodeService) EncodeTransaction(ctx context.Context, req *tb.EncodeTransactionRequest) (*tb.EncodeTransactionResponse, error) {
 	tx := req.Transaction
 
-	id, encoded, err := Marshal(crypto.SHA256, tx)
+	intTx, err := Marshal(crypto.SHA256, tx)
 	if err != nil {
 		return nil, err
 	}
 
 	return &tb.EncodeTransactionResponse{
-		Txid:               id,
-		EncodedTransaction: encoded,
+		Txid:               intTx.ID,
+		EncodedTransaction: intTx.Encoded,
 	}, nil
 }

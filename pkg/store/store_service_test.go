@@ -27,18 +27,18 @@ func TestStoreService_GetTransaction(t *testing.T) {
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
-	txid, encodedTx, err := transaction.Marshal(crypto.SHA256, testTx)
+	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	key := transactionKey(txid)
+	key := transactionKey(intTx.ID)
 
 	req := &sb.GetTransactionRequest{
-		Txid: txid,
+		Txid: intTx.ID,
 	}
 	resp, err := storeSvc.GetTransaction(context.Background(), req)
 	gt.Expect(err).To(MatchError(MatchRegexp("leveldb: not found")))
 
-	err = db.Put(key, encodedTx)
+	err = db.Put(key, intTx.Encoded)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetTransaction(context.Background(), req)
@@ -59,10 +59,10 @@ func TestStoreService_PutTransaction(t *testing.T) {
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
-	txid, encodedTx, err := transaction.Marshal(crypto.SHA256, testTx)
+	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	key := transactionKey(txid)
+	key := transactionKey(intTx.ID)
 
 	req := &sb.PutTransactionRequest{
 		Transaction: testTx,
@@ -72,7 +72,7 @@ func TestStoreService_PutTransaction(t *testing.T) {
 
 	data, err := db.Get(key)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(data).To(Equal(encodedTx))
+	gt.Expect(data).To(Equal(intTx.Encoded))
 }
 
 func TestStoreService_GetState(t *testing.T) {
@@ -88,18 +88,18 @@ func TestStoreService_GetState(t *testing.T) {
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
-	txid, _, err := transaction.Marshal(crypto.SHA256, testTx)
+	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	testState := &tb.ResolvedState{
-		Txid:        txid,
+		Txid:        intTx.ID,
 		OutputIndex: 0,
 		Info:        testTx.Outputs[0].Info,
 		State:       testTx.Outputs[0].State,
 	}
 
 	testStateRef := &tb.StateReference{
-		Txid:        txid,
+		Txid:        intTx.ID,
 		OutputIndex: 0,
 	}
 
@@ -135,11 +135,11 @@ func TestStoreService_PutState(t *testing.T) {
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
-	txid, _, err := transaction.Marshal(crypto.SHA256, testTx)
+	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	testState := &tb.ResolvedState{
-		Txid:        txid,
+		Txid:        intTx.ID,
 		OutputIndex: 0,
 		Info:        testTx.Outputs[0].Info,
 		State:       testTx.Outputs[0].State,
@@ -149,7 +149,7 @@ func TestStoreService_PutState(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	testStateRef := &tb.StateReference{
-		Txid:        txid,
+		Txid:        intTx.ID,
 		OutputIndex: 0,
 	}
 

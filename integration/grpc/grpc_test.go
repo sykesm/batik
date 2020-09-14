@@ -89,8 +89,9 @@ var _ = Describe("Grpc", func() {
 			storeServiceClient = sb.NewStoreAPIClient(clientConn)
 
 			testTx = newTestTransaction()
-			txid, _, err = transaction.Marshal(crypto.SHA256, testTx)
+			intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 			Expect(err).NotTo(HaveOccurred())
+			txid = intTx.ID
 		})
 
 		Describe("GetTransaction", func() {

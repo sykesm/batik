@@ -61,13 +61,13 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *sb.PutTransactio
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	id, encoded, err := transaction.Marshal(crypto.SHA256, req.Transaction)
+	intTx, err := transaction.Marshal(crypto.SHA256, req.Transaction)
 	if err != nil {
 		return nil, err
 	}
 
-	key := transactionKey(id)
-	if err := s.db.Put(key, encoded); err != nil {
+	key := transactionKey(intTx.ID)
+	if err := s.db.Put(key, intTx.Encoded); err != nil {
 		return nil, err
 	}
 
