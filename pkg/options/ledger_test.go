@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 )
 
 func TestLedgerDefaults(t *testing.T) {
@@ -21,11 +20,10 @@ func TestLedgerDefaults(t *testing.T) {
 
 func TestLedgerApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
-		setup    func(*Ledger)
-		matchErr types.GomegaMatcher
+		setup func(*Ledger)
 	}{
-		"empty":    {setup: func(l *Ledger) { *l = Ledger{} }, matchErr: BeNil()},
-		"data dir": {setup: func(l *Ledger) { l.DataDir = "" }, matchErr: BeNil()},
+		"empty":    {setup: func(l *Ledger) { *l = Ledger{} }},
+		"data dir": {setup: func(l *Ledger) { l.DataDir = "" }},
 	}
 
 	for name, tt := range tests {
@@ -35,11 +33,7 @@ func TestLedgerApplyDefaults(t *testing.T) {
 			input := LedgerDefaults()
 			tt.setup(input)
 
-			err := input.ApplyDefaults()
-			gt.Expect(err).To(tt.matchErr)
-			if err != nil {
-				return
-			}
+			input.ApplyDefaults()
 			gt.Expect(input).To(Equal(LedgerDefaults()))
 		})
 	}

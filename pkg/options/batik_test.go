@@ -9,7 +9,6 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -24,12 +23,11 @@ func TestBatikDefaults(t *testing.T) {
 
 func TestBatikApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
-		setup    func(*Batik)
-		matchErr types.GomegaMatcher
+		setup func(*Batik)
 	}{
-		"empty":  {setup: func(c *Batik) { *c = Batik{} }, matchErr: BeNil()},
-		"server": {setup: func(c *Batik) { c.Server = Server{} }, matchErr: BeNil()},
-		"ledger": {setup: func(c *Batik) { c.Ledger = Ledger{} }, matchErr: BeNil()},
+		"empty":  {setup: func(c *Batik) { *c = Batik{} }},
+		"server": {setup: func(c *Batik) { c.Server = Server{} }},
+		"ledger": {setup: func(c *Batik) { c.Ledger = Ledger{} }},
 	}
 
 	for name, tt := range tests {
@@ -39,11 +37,7 @@ func TestBatikApplyDefaults(t *testing.T) {
 			input := BatikDefaults()
 			tt.setup(input)
 
-			err := input.ApplyDefaults()
-			gt.Expect(err).To(tt.matchErr)
-			if err != nil {
-				return
-			}
+			input.ApplyDefaults()
 			gt.Expect(input).To(Equal(BatikDefaults()))
 		})
 	}
@@ -76,8 +70,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 		},
 	}))
 
-	err = config.ApplyDefaults()
-	gt.Expect(err).NotTo(HaveOccurred())
+	config.ApplyDefaults()
 	gt.Expect(config).To(Equal(Batik{
 		Server: Server{
 			ListenAddress: "127.0.0.1:7879",
@@ -99,5 +92,4 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 			DataDir: "relative/path",
 		},
 	}))
-
 }

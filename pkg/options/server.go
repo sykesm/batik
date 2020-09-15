@@ -29,18 +29,13 @@ func ServerDefaults() *Server {
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (s *Server) ApplyDefaults() error {
+func (s *Server) ApplyDefaults() {
 	defaults := ServerDefaults()
 	if s.ListenAddress == "" {
 		s.ListenAddress = defaults.ListenAddress
 	}
-	if err := s.GRPC.ApplyDefaults(); err != nil {
-		return err
-	}
-	if err := s.TLS.ApplyDefaults(); err != nil {
-		return err
-	}
-	return nil
+	s.GRPC.ApplyDefaults()
+	s.TLS.ApplyDefaults()
 }
 
 // Flags exposes configuration fields as flags. The current value of the

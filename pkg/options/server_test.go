@@ -9,7 +9,6 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 )
 
 func TestServerDefaults(t *testing.T) {
@@ -24,13 +23,12 @@ func TestServerDefaults(t *testing.T) {
 
 func TestServerApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
-		setup    func(*Server)
-		matchErr types.GomegaMatcher
+		setup func(*Server)
 	}{
-		"empty":          {setup: func(s *Server) { *s = Server{} }, matchErr: BeNil()},
-		"listen address": {setup: func(s *Server) { s.ListenAddress = "" }, matchErr: BeNil()},
-		"GRPC":           {setup: func(s *Server) { s.GRPC = GRPCServer{} }, matchErr: BeNil()},
-		"TLS":            {setup: func(s *Server) { s.TLS = TLSServer{} }, matchErr: BeNil()},
+		"empty":          {setup: func(s *Server) { *s = Server{} }},
+		"listen address": {setup: func(s *Server) { s.ListenAddress = "" }},
+		"GRPC":           {setup: func(s *Server) { s.GRPC = GRPCServer{} }},
+		"TLS":            {setup: func(s *Server) { s.TLS = TLSServer{} }},
 	}
 
 	for name, tt := range tests {
@@ -40,11 +38,7 @@ func TestServerApplyDefaults(t *testing.T) {
 			input := ServerDefaults()
 			tt.setup(input)
 
-			err := input.ApplyDefaults()
-			gt.Expect(err).To(tt.matchErr)
-			if err != nil {
-				return
-			}
+			input.ApplyDefaults()
 			gt.Expect(input).To(Equal(ServerDefaults()))
 		})
 	}

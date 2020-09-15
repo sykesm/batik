@@ -27,7 +27,7 @@ package options
 //
 // The configuration structures should also implement two methods:
 //
-//   ApplyDefaults() error
+//   ApplyDefaults()
 //   Flags(commandName string) []cli.Flag
 //
 // The role of ApplyDefaults is to apply default values to fields that are

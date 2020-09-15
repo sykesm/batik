@@ -48,11 +48,8 @@ func load(r io.Reader, tr *TagResolver, out interface{}) error {
 	if err := decoder.Decode(out); err != nil {
 		return errors.WithStack(err)
 	}
-	ad, ok := out.(interface{ ApplyDefaults() error })
-	if ok {
-		if err := ad.ApplyDefaults(); err != nil {
-			return err
-		}
+	if ad, ok := out.(interface{ ApplyDefaults() }); ok {
+		ad.ApplyDefaults()
 	}
 	return tr.Resolve(out)
 }

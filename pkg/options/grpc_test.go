@@ -9,7 +9,6 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 )
 
 func TestGRPCDefaults(t *testing.T) {
@@ -23,12 +22,11 @@ func TestGRPCDefaults(t *testing.T) {
 
 func TestGRPCApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
-		setup    func(*GRPC)
-		matchErr types.GomegaMatcher
+		setup func(*GRPC)
 	}{
-		"empty":    {setup: func(g *GRPC) { *g = GRPC{} }, matchErr: BeNil()},
-		"max recv": {setup: func(g *GRPC) { g.MaxRecvMessageSize = 0 }, matchErr: BeNil()},
-		"max send": {setup: func(g *GRPC) { g.MaxSendMessageSize = 0 }, matchErr: BeNil()},
+		"empty":    {setup: func(g *GRPC) { *g = GRPC{} }},
+		"max recv": {setup: func(g *GRPC) { g.MaxRecvMessageSize = 0 }},
+		"max send": {setup: func(g *GRPC) { g.MaxSendMessageSize = 0 }},
 	}
 
 	for name, tt := range tests {
@@ -38,11 +36,7 @@ func TestGRPCApplyDefaults(t *testing.T) {
 			input := GRPCDefaults()
 			tt.setup(input)
 
-			err := input.ApplyDefaults()
-			gt.Expect(err).To(tt.matchErr)
-			if err != nil {
-				return
-			}
+			input.ApplyDefaults()
 			gt.Expect(input).To(Equal(GRPCDefaults()))
 		})
 	}
@@ -119,11 +113,10 @@ func TestGRPCServerDefaults(t *testing.T) {
 
 func TestGRPCServerApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
-		setup    func(*GRPCServer)
-		matchErr types.GomegaMatcher
+		setup func(*GRPCServer)
 	}{
-		"empty":        {setup: func(gs *GRPCServer) { *gs = GRPCServer{} }, matchErr: BeNil()},
-		"conn timeout": {setup: func(gs *GRPCServer) { gs.ConnTimeout = 0 }, matchErr: BeNil()},
+		"empty":        {setup: func(gs *GRPCServer) { *gs = GRPCServer{} }},
+		"conn timeout": {setup: func(gs *GRPCServer) { gs.ConnTimeout = 0 }},
 	}
 
 	for name, tt := range tests {
@@ -133,11 +126,7 @@ func TestGRPCServerApplyDefaults(t *testing.T) {
 			input := GRPCServerDefaults()
 			tt.setup(input)
 
-			err := input.ApplyDefaults()
-			gt.Expect(err).To(tt.matchErr)
-			if err != nil {
-				return
-			}
+			input.ApplyDefaults()
 			gt.Expect(input).To(Equal(GRPCServerDefaults()))
 		})
 	}

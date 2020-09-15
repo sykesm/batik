@@ -25,12 +25,11 @@ func LedgerDefaults() *Ledger {
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (l *Ledger) ApplyDefaults() error {
+func (l *Ledger) ApplyDefaults() {
 	defaults := LedgerDefaults()
 	if l.DataDir == "" {
 		l.DataDir = defaults.DataDir
 	}
-	return nil
 }
 
 // Flags exposes configuration fields as flags. The current value of the

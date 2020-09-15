@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,10 +19,9 @@ func TestTLSServerDefaults(t *testing.T) {
 
 func TestTLSServerApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
-		setup    func(ts *TLSServer)
-		matchErr types.GomegaMatcher
+		setup func(ts *TLSServer)
 	}{
-		"empty": {setup: func(ts *TLSServer) { *ts = TLSServer{} }, matchErr: BeNil()},
+		"empty": {setup: func(ts *TLSServer) { *ts = TLSServer{} }},
 	}
 
 	for name, tt := range tests {
@@ -33,11 +31,7 @@ func TestTLSServerApplyDefaults(t *testing.T) {
 			input := TLSServerDefaults()
 			tt.setup(input)
 
-			err := input.ApplyDefaults()
-			gt.Expect(err).To(tt.matchErr)
-			if err != nil {
-				return
-			}
+			input.ApplyDefaults()
 			gt.Expect(input).To(Equal(TLSServerDefaults()))
 		})
 	}

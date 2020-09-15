@@ -125,7 +125,8 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 		}
 	}
 
-	return config.ApplyDefaults()
+	config.ApplyDefaults()
+	return nil
 }
 
 // shellApp is the interactive console application.

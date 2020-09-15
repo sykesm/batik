@@ -27,7 +27,7 @@ func GRPCDefaults() *GRPC {
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (g *GRPC) ApplyDefaults() error {
+func (g *GRPC) ApplyDefaults() {
 	defaults := GRPCDefaults()
 	if g.MaxRecvMessageSize == 0 {
 		g.MaxRecvMessageSize = defaults.MaxRecvMessageSize
@@ -35,7 +35,6 @@ func (g *GRPC) ApplyDefaults() error {
 	if g.MaxSendMessageSize == 0 {
 		g.MaxSendMessageSize = defaults.MaxSendMessageSize
 	}
-	return nil
 }
 
 // Flags exposes configuration fields as flags. The current value of the
@@ -76,15 +75,12 @@ func GRPCServerDefaults() *GRPCServer {
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (g *GRPCServer) ApplyDefaults() error {
+func (g *GRPCServer) ApplyDefaults() {
 	defaults := GRPCServerDefaults()
-	if err := g.GRPC.ApplyDefaults(); err != nil {
-		return err
-	}
+	g.GRPC.ApplyDefaults()
 	if g.ConnTimeout == 0 {
 		g.ConnTimeout = defaults.ConnTimeout
 	}
-	return nil
 }
 
 // Flags exposes configuration fields as flags. The current value of the

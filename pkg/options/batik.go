@@ -18,12 +18,7 @@ func BatikDefaults() *Batik {
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (c *Batik) ApplyDefaults() error {
-	if err := c.Server.ApplyDefaults(); err != nil {
-		return err
-	}
-	if err := c.Ledger.ApplyDefaults(); err != nil {
-		return err
-	}
-	return nil
+func (c *Batik) ApplyDefaults() {
+	c.Server.ApplyDefaults()
+	c.Ledger.ApplyDefaults()
 }

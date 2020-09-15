@@ -11,24 +11,18 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 )
 
 // BatikConfig contains the configuration properties for a Batik instance.
 type BatikConfig struct {
 	// defApplied is set if defaults have been applied
 	defApplied bool
-	breakApply bool
 	// Server contains the batik grpc server configuration properties.
 	Server Server `yaml:"server"`
 }
 
-func (b *BatikConfig) ApplyDefaults() error {
-	if b.breakApply {
-		return errors.New("broken-apply")
-	}
+func (b *BatikConfig) ApplyDefaults() {
 	b.defApplied = true
-	return nil
 }
 
 // Server contains configuration properties for a Batik gRPC server.
@@ -114,14 +108,6 @@ func TestLoadFileFailures(t *testing.T) {
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
-}
-
-func TestApplyDefaultsError(t *testing.T) {
-	gt := NewGomegaWithT(t)
-
-	batikConfig := BatikConfig{breakApply: true}
-	err := Load(strings.NewReader("---\n"), &batikConfig)
-	gt.Expect(err).To(MatchError("broken-apply"))
 }
 
 func TestLoadNonApplier(t *testing.T) {

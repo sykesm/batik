@@ -39,9 +39,7 @@ func TLSServerDefaults() *TLSServer {
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (t *TLSServer) ApplyDefaults() error {
-	return nil
-}
+func (t *TLSServer) ApplyDefaults() {}
 
 // Flags exposes configuration fields as flags. The current value of the
 // receiver is used as the default value of the flag so a ApplyDefaults should
