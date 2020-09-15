@@ -4,14 +4,19 @@ This document contains a set of stories and work items for Batik.
 
 ## Configuration
 
-- [ ] Investigate the `altsrc` package for loading configuration data from different sources
-- [ ] Investigate "defaulters", "option" structs, and the "AddFlags" patterns for setting up and overriding configuration options for each command
-  In progress
+- [x] Investigate the `altsrc` package for loading configuration data from different sources
+- [x] Investigate "defaulters", "option" structs, and the "AddFlags" patterns
+      for setting up and overriding configuration options for each command
+- [ ] Create runtime TLS artifacts from configuration
 - [ ] Investigate doc generation from the cli package
+  - [ ] CLI documentation in markdown
+  - [ ] CLI man page
+  - [ ] Example YAML configuration from defaults + tags
 
 ## Services
 
 - [ ] Adopt ifrit (or its patterns) for managing multiple independent processes in the server
+  - [x] gRPC
 - [x] Introduce zap logger for logging
 
 ## Logging
