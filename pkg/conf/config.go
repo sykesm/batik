@@ -4,47 +4,55 @@
 package conf
 
 import (
+	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v3"
 )
 
-// LoadFile populates configuration by searching configuration sources and assigns the
-// discovered values into the object referenced by out.
+// LoadFile loads a YAML configuration document from the provided path into the
+// object referenced by out. After loading the configuration, ApplyDefaults, if
+// implemented, will be invoked on out.
 //
-// The configuration sources are examined in the following order:
-//   1. batik.yaml config file
-//   2. environment variable overrides
-//
-// If a path is specified but not found, it will return an error.
-// If a path is not specified, it will attempt to load the configuration yaml from
-// one of the following sources in order should one exist at that location:
-//   1. $(pwd)/batik.yaml
-//   2. os specific $XDG_CONFIG_HOME/batik/batik.yaml
-//   3. $HOME/.config/batik/batik.yaml
-//
-// If a config file still does not already exist at any of the above paths, configuration
-// parameters will need to be passed via command line flags or environment variables.
-func LoadFile(cfgPath string, out interface{}) error {
-	if err := readFile(cfgPath, out); err != nil {
-		return errors.Wrap(err, "read file")
-	}
-
-	return nil
-}
-
-func readFile(cfgPath string, cfg interface{}) error {
-	f, err := os.Open(cfgPath)
+// Once the configuration has been loaded and the defaults applied, the fields
+// of out annotated with the "batik" tag will be recursively processed by an
+// instance of the tag resolver setup to use the config source path as the
+// relative path root.
+func LoadFile(path string, out interface{}) error {
+	f, err := os.Open(path)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "conf")
 	}
 	defer f.Close()
 
-	decoder := yaml.NewDecoder(f)
-	if err := decoder.Decode(cfg); err != nil {
-		return err
-	}
+	tr := &TagResolver{SourcePath: filepath.Dir(path)}
+	return load(f, tr, out)
+}
 
-	return nil
+// Load loads a YAML configuration document from teh provided reader into the
+// object referenced by out. After loading the configuration, ApplyDefaults, if
+// implemented, will be invoked on out.
+//
+// Once the configuration has been loaded and the defaults applied, the fields
+// of out annotated with the "batik" tag will be recursively processed by an
+// instance of the tag resolver setup to use the current working directory as
+// the relative path root.
+func Load(r io.Reader, out interface{}) error {
+	return load(r, &TagResolver{}, out)
+}
+
+func load(r io.Reader, tr *TagResolver, out interface{}) error {
+	decoder := yaml.NewDecoder(r)
+	if err := decoder.Decode(out); err != nil {
+		return errors.WithStack(err)
+	}
+	ad, ok := out.(interface{ ApplyDefaults() error })
+	if ok {
+		if err := ad.ApplyDefaults(); err != nil {
+			return err
+		}
+	}
+	return tr.Resolve(out)
 }

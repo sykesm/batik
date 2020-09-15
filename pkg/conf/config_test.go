@@ -4,43 +4,61 @@
 package conf
 
 import (
+	"bytes"
+	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 )
 
 // BatikConfig contains the configuration properties for a Batik instance.
 type BatikConfig struct {
+	// defApplied is set if defaults have been applied
+	defApplied bool
+	breakApply bool
 	// Server contains the batik grpc server configuration properties.
 	Server Server `yaml:"server"`
+}
+
+func (b *BatikConfig) ApplyDefaults() error {
+	if b.breakApply {
+		return errors.New("broken-apply")
+	}
+	b.defApplied = true
+	return nil
 }
 
 // Server contains configuration properties for a Batik gRPC server.
 type Server struct {
 	// Address configures the listen address for the gRPC server.
 	Address string `yaml:"address"`
+	Relpath string `batik:"relpath"`
 }
 
-func TestLoad(t *testing.T) {
+func TestLoadFile(t *testing.T) {
 	tests := []struct {
-		testName       string
+		name           string
 		cfgPath        string
 		expectedConfig BatikConfig
 	}{
 		{
-			testName: "load yaml from file",
-			cfgPath:  filepath.Join("testdata", "batik-config.yaml"),
+			name:    "load yaml from file",
+			cfgPath: filepath.Join("testdata", "batik-config.yaml"),
 			expectedConfig: BatikConfig{
+				defApplied: true,
 				Server: Server{
 					Address: "127.0.0.1:9000",
+					Relpath: filepath.Join("testdata", "relative.txt"),
 				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			var batikConfig BatikConfig
@@ -51,26 +69,44 @@ func TestLoad(t *testing.T) {
 	}
 }
 
-func TestLoadFailures(t *testing.T) {
+func TestLoad(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	contents, err := ioutil.ReadFile(filepath.Join("testdata", "batik-config.yaml"))
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	var batikConfig BatikConfig
+	err = Load(bytes.NewBuffer(contents), &batikConfig)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(batikConfig).To(Equal(BatikConfig{
+		defApplied: true,
+		Server: Server{
+			Address: "127.0.0.1:9000",
+			Relpath: filepath.Join("relative.txt"),
+		},
+	}))
+}
+
+func TestLoadFileFailures(t *testing.T) {
 	tests := []struct {
-		testName    string
+		name        string
 		cfgPath     string
 		expectedErr string
 	}{
 		{
-			testName:    "nonexistent dir",
+			name:        "nonexistent dir",
 			cfgPath:     filepath.Join("dne", "batik.yaml"),
-			expectedErr: "read file: open dne/batik.yaml: no such file or directory",
+			expectedErr: "conf: open dne/batik.yaml: no such file or directory",
 		},
 		{
-			testName:    "invalid yaml",
+			name:        "invalid yaml",
 			cfgPath:     filepath.Join("testdata", "invalid.yaml"),
-			expectedErr: "read file: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!seq into conf.BatikConfig",
+			expectedErr: "yaml: unmarshal errors:\n  line 1: cannot unmarshal !!seq into conf.BatikConfig",
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			var batikConfig BatikConfig
@@ -78,4 +114,23 @@ func TestLoadFailures(t *testing.T) {
 			gt.Expect(err).To(MatchError(tt.expectedErr))
 		})
 	}
+}
+
+func TestApplyDefaultsError(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	batikConfig := BatikConfig{breakApply: true}
+	err := Load(strings.NewReader("---\n"), &batikConfig)
+	gt.Expect(err).To(MatchError("broken-apply"))
+}
+
+func TestLoadNonApplier(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	data := map[string]interface{}{}
+	err := Load(strings.NewReader("---\n{key: value}\n"), &data)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(data).To(Equal(map[string]interface{}{
+		"key": "value",
+	}))
 }
