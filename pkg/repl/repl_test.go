@@ -68,3 +68,9 @@ func TestRun(t *testing.T) {
 		})
 	}
 }
+
+func TestErrExit(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	gt.Expect(ErrExit.Error()).To(Equal("exit"))
+	gt.Expect(ErrExit.ExitCode()).To(Equal(0))
+}
