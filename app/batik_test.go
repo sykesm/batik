@@ -30,9 +30,8 @@ func TestBatikWiring(t *testing.T) {
 	gt.Expect(app.Flags[0].Names()[0]).To(Equal("config"))
 
 	// Command implementations
-	gt.Expect(app.Commands).To(HaveLen(2))
+	gt.Expect(app.Commands).To(HaveLen(1))
 	gt.Expect(app.Commands[0].Name).To(Equal("start"))
-	gt.Expect(app.Commands[1].Name).To(Equal("status"))
 }
 
 func TestBatikCommandNotFound(t *testing.T) {
@@ -112,18 +111,18 @@ func TestBatikInteraciveWiring(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	t.Run("AvailableCommands", func(t *testing.T) {
-		gt.Expect(sa.Commands).To(HaveLen(3))
+		gt := NewGomegaWithT(t)
+		gt.Expect(sa.Commands).To(HaveLen(2))
 		gt.Expect(sa.Commands[0].Name).To(Equal("exit"))
 		gt.Expect(sa.Commands[1].Name).To(Equal("start"))
-		gt.Expect(sa.Commands[2].Name).To(Equal("status"))
 	})
 
 	t.Run("HelpTemplate", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
 		gt.Expect(strings.Split(strings.TrimSpace(sa.CustomAppHelpTemplate), "\n")).To(ConsistOf(
 			"Commands:",
-			"    exit    exit the shell",
-			"    start   start the grpc server",
-			"    status  check status of server",
+			"    exit   exit the shell",
+			"    start  start the grpc server",
 		))
 	})
 }

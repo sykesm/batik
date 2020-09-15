@@ -53,7 +53,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	}
 	app.Commands = []*cli.Command{
 		startCommand(config, false),
-		statusCommand(),
 	}
 
 	// Sort the flags and commands to make it easier to find things.
@@ -160,7 +159,6 @@ func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
 			},
 		},
 		startCommand(config, true),
-		statusCommand(),
 	}
 
 	sort.Sort(cli.CommandsByName(app.Commands))
