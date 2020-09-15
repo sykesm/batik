@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCandidatePaths(t *testing.T) {
+func Test_candidateFiles(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	wd, err := os.Getwd()
@@ -22,7 +22,7 @@ func TestCandidatePaths(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	paths, err := CandidatePaths("franklin")
+	paths, err := candidateFiles("franklin")
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	gt.Expect(paths[0]).To(Equal(filepath.Join(wd, "franklin.yml")))

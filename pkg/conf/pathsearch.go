@@ -10,7 +10,27 @@ import (
 	"github.com/pkg/errors"
 )
 
-// CandidatePaths returns an ordered list of paths to candidate configuration
+// File returns the first config file candidate that exists. If no candidate
+// file exists, an empty path is returned with no error.
+func File(stem string) (string, error) {
+	candidates, err := candidateFiles(stem)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to determine candidate configuration files")
+	}
+	for _, c := range candidates {
+		if fileExists(c) {
+			return c, nil
+		}
+	}
+	return "", nil
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !os.IsNotExist(err)
+}
+
+// candidateFiles returns an ordered list of paths to candidate configuration
 // files. The list contains the file references from the following directories:
 //   - current working directory
 //   - os.UserConfigDir()
@@ -18,7 +38,7 @@ import (
 //
 // The provided stem is used as the XDG directory name and the filename
 // stem. Candidates are returned for .yaml and .yml file suffixes.
-func CandidatePaths(stem string) ([]string, error) {
+func candidateFiles(stem string) ([]string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -45,24 +65,4 @@ func CandidatePaths(stem string) ([]string, error) {
 	}
 
 	return paths, nil
-}
-
-// File returns the first config file candidate that exists. If no candidate
-// file exists, an empty path is returned with no error.
-func File(stem string) (string, error) {
-	candidates, err := CandidatePaths(stem)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to determine candidate configuration files")
-	}
-	for _, c := range candidates {
-		if fileExists(c) {
-			return c, nil
-		}
-	}
-	return "", nil
-}
-
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil || !os.IsNotExist(err)
 }
