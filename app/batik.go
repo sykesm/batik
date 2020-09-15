@@ -56,6 +56,11 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	sort.Sort(cli.CommandsByName(app.Commands))
 
 	app.Before = func(ctx *cli.Context) error {
+		err := resolveConfig(ctx, config)
+		if err != nil {
+			return cli.Exit(errors.WithMessage(err, "unable to read config"), exitConfigLoadFailed)
+		}
+
 		leveler := log.NewLeveler(config.Logging.LogSpec)
 		logger := log.NewLogger(log.Config{
 			Name:    app.Name,
@@ -66,11 +71,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 
 		atexit.Register(func() { logger.Sync() })
 		SetLogger(ctx, logger)
-
-		err := resolveConfig(ctx, config)
-		if err != nil {
-			return cli.Exit(errors.WithMessage(err, "unable to read config"), exitConfigLoadFailed)
-		}
 
 		return nil
 	}

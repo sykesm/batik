@@ -105,7 +105,7 @@ func TestBatikInteractive(t *testing.T) {
 	}
 }
 
-func TestBatikInteraciveWiring(t *testing.T) {
+func TestBatikInteractiveWiring(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	app := cli.NewApp()
 	ctx := cli.NewContext(app, nil, nil)
