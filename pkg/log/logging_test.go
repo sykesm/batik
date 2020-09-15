@@ -19,19 +19,19 @@ func TestNewLogger(t *testing.T) {
 	}{
 		{
 			testName:    "logs with logfmt",
-			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}, Format: "logfmt"},
+			config:      Config{Leveler: NewLeveler("info"), Writer: &bytes.Buffer{}, Format: "logfmt"},
 			message:     "test",
 			expectedOut: `ts=.* level=info caller=log/logging_test.go:.* msg=test`,
 		},
 		{
 			testName:    "logs with json",
-			config:      Config{LogSpec: "info", Writer: &bytes.Buffer{}, Format: "json"},
+			config:      Config{Leveler: NewLeveler("info"), Writer: &bytes.Buffer{}, Format: "json"},
 			message:     "test",
 			expectedOut: `{"level":"info","ts":.*,"caller":"log/logging_test.go:.*","msg":"test"}`,
 		},
 		{
 			testName:    "logs under level",
-			config:      Config{LogSpec: "warn", Writer: &bytes.Buffer{}},
+			config:      Config{Leveler: NewLeveler("warn"), Writer: &bytes.Buffer{}},
 			message:     "test",
 			expectedOut: "^$",
 		},
@@ -48,8 +48,7 @@ func TestNewLogger(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			logger, err := NewLogger(tt.config)
-			gt.Expect(err).NotTo(HaveOccurred())
+			logger := NewLogger(tt.config)
 
 			logger.Info(tt.message)
 
@@ -63,35 +62,6 @@ func TestNewLogger(t *testing.T) {
 			// 	gt.Expect(err).NotTo(HaveOccurred())
 			// 	gt.Expect(bytes).To(MatchRegexp(tt.expectedOut))
 			// }
-		})
-	}
-}
-
-func TestNewLogger_Failures(t *testing.T) {
-	tests := []struct {
-		testName    string
-		config      Config
-		expectedErr string
-	}{
-		{
-			testName:    "invalid level",
-			config:      Config{LogSpec: "invalid", Writer: &bytes.Buffer{}},
-			expectedErr: "invalid log level: invalid",
-		},
-		// {
-		// 	testName:    "invalid path",
-		// 	config:      Config{LogSpec: "info", Writer: &os.File{}},
-		// 	expectedErr: "open /: is a directory",
-		// },
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) {
-			gt := NewGomegaWithT(t)
-
-			logger, err := NewLogger(tt.config)
-			gt.Expect(err).To(MatchError(tt.expectedErr))
-			gt.Expect(logger).To(BeNil())
 		})
 	}
 }

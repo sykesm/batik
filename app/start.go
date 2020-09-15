@@ -22,8 +22,8 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 		Name:        "start",
 		Description: "start the grpc server",
 		Flags: append(
-			config.Server.Flags("start"),
-			config.Ledger.Flags("start")...,
+			config.Server.Flags(),
+			config.Ledger.Flags()...,
 		),
 		Action: func(ctx *cli.Context) error {
 			logger, err := GetLogger(ctx)

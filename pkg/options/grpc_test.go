@@ -44,7 +44,7 @@ func TestGRPCApplyDefaults(t *testing.T) {
 
 func TestGRPCFlagNames(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	flags := (&GRPC{}).Flags("command name")
+	flags := (&GRPC{}).Flags()
 
 	var names []string
 	for _, f := range flags {
@@ -90,7 +90,7 @@ func TestGRPCFlags(t *testing.T) {
 
 			grpc := &GRPC{}
 			flagSet := flag.NewFlagSet("grpc-test", flag.ContinueOnError)
-			for _, f := range grpc.Flags("full command name") {
+			for _, f := range grpc.Flags() {
 				err := f.Apply(flagSet)
 				gt.Expect(err).NotTo(HaveOccurred())
 			}
@@ -134,7 +134,7 @@ func TestGRPCServerApplyDefaults(t *testing.T) {
 
 func TestGRPCServerFlagNames(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	flags := (&GRPCServer{}).Flags("command name")
+	flags := (&GRPCServer{}).Flags()
 
 	var names []string
 	for _, f := range flags {
@@ -181,7 +181,7 @@ func TestGRPCServerFlags(t *testing.T) {
 
 			grpcServer := &GRPCServer{}
 			flagSet := flag.NewFlagSet("grpc-server-test", flag.ContinueOnError)
-			for _, f := range grpcServer.Flags("full command name") {
+			for _, f := range grpcServer.Flags() {
 				err := f.Apply(flagSet)
 				gt.Expect(err).NotTo(HaveOccurred())
 			}

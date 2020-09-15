@@ -4,7 +4,6 @@
 package log
 
 import (
-	"errors"
 	"io"
 	"os"
 
@@ -26,18 +25,12 @@ type Config struct {
 
 	// Format is the log record format specifier for the Logging instance. If the
 	// spec is the string "json", log records will be formatted as JSON. Any
-	// other string will be provided to the FormatEncoder. Please see
-	// encoder.ParseFormat for details on the supported verbs.
-	//
-	// If Format is not provided, a default format that provides basic information will
-	// be used.
+	// other string will be processed as "logfmt".
 	Format string
 
-	// LogSpec determines the log levels that are enabled for the logging system. The
-	// spec must be in a format that can be processed by ActivateSpec.
-	//
-	// If LogSpec is not provided, loggers will be enabled at the INFO level.
-	LogSpec string
+	// Leveler controls the log levels that are enabled for the logging system. The
+	// leveler is a zap.AtomicLevel that can dynamically reassign the log level.
+	Leveler zap.AtomicLevel
 
 	// Writer is the sink for encoded and formatted log records.
 	//
@@ -45,25 +38,17 @@ type Config struct {
 	Writer io.Writer
 }
 
-func NewLogger(config Config, options ...zap.Option) (*zap.Logger, error) {
-	e, err := NewEncoder(config.Format)
-	if err != nil {
-		return nil, err
-	}
+func NewLeveler(logspec string) zap.AtomicLevel {
+	return zap.NewAtomicLevelAt(NameToLevel(logspec))
+}
 
-	w := NewWriteSyncer(config.Writer)
-
-	l, err := NameToLevel(config.LogSpec)
-	if err != nil {
-		return nil, err
-	}
-
+func NewLogger(config Config, options ...zap.Option) *zap.Logger {
 	return zap.New(zapcore.NewCore(
-		e,
-		w,
-		l,
+		NewEncoder(config.Format),
+		NewWriteSyncer(config.Writer),
+		config.Leveler,
 	), append(defaultZapOptions(), options...)...,
-	).Named(config.Name), nil
+	).Named(config.Name)
 }
 
 func NewWriteSyncer(w io.Writer) zapcore.WriteSyncer {
@@ -86,23 +71,14 @@ func NewWriteSyncer(w io.Writer) zapcore.WriteSyncer {
 
 // NewEncoder returns a zapcore.Encoder based on the format string.
 // Supported format strings include "json", and "logfmt". Any other string will
-// be passed to the FormatEncoder.
-func NewEncoder(format string) (zapcore.Encoder, error) {
-	if format == "" {
-		format = defaultFormat
-	}
-
-	var e zapcore.Encoder
+// default to "logfmt".
+func NewEncoder(format string) zapcore.Encoder {
 	switch format {
 	case "json":
-		e = zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
-	case "logfmt":
-		e = zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig())
+		return zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 	default:
-		return nil, errors.New("unrecognized log format")
+		return zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig())
 	}
-
-	return e, nil
 }
 
 func defaultZapOptions() []zap.Option {

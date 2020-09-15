@@ -39,7 +39,7 @@ func TestTLSServerApplyDefaults(t *testing.T) {
 
 func TestTLSServerFlagNames(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	flags := (&TLSServer{}).Flags("command name")
+	flags := (&TLSServer{}).Flags()
 
 	var names []string
 	for _, f := range flags {
@@ -88,7 +88,7 @@ func TestTLSServerFlags(t *testing.T) {
 
 			opts := &TLSServer{}
 			flagSet := flag.NewFlagSet("server-tls-test", flag.ContinueOnError)
-			for _, f := range opts.Flags("full command name") {
+			for _, f := range opts.Flags() {
 				err := f.Apply(flagSet)
 				gt.Expect(err).NotTo(HaveOccurred())
 			}
@@ -104,7 +104,7 @@ func TestServerTLSUsage(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	opts := &TLSServer{}
-	for _, f := range opts.Flags("full command name") {
+	for _, f := range opts.Flags() {
 		f := f.(cli.DocGenerationFlag)
 		gt.Expect(f.GetUsage()).NotTo(ContainSubstring("\n"))
 		gt.Expect(f.GetUsage()).NotTo(MatchRegexp(`\s{2}`))

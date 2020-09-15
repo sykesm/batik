@@ -24,7 +24,7 @@ const (
 func GetLogger(ctx *cli.Context) (*zap.Logger, error) {
 	logger := retrieveFromCtx(ctx, loggerKey)
 	if logger == nil {
-		return log.NewLogger(log.Config{})
+		return log.NewLogger(log.Config{}), nil
 	}
 
 	l, ok := logger.(*zap.Logger)

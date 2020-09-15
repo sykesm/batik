@@ -24,7 +24,7 @@ func TestNameToLevel(t *testing.T) {
 		{names: []string{"DPANIC", "dpanic"}, level: zapcore.DPanicLevel},
 		{names: []string{"PANIC", "panic"}, level: zapcore.PanicLevel},
 		{names: []string{"FATAL", "fatal"}, level: zapcore.FatalLevel},
-		{names: []string{"invalid"}, level: disabledLevel, expectedErr: "invalid log level: invalid"},
+		{names: []string{"invalid"}, level: zapcore.InfoLevel},
 		{names: []string{""}, level: zapcore.InfoLevel},
 	}
 
@@ -32,13 +32,7 @@ func TestNameToLevel(t *testing.T) {
 		for _, name := range tc.names {
 			t.Run(name, func(t *testing.T) {
 				gt := NewGomegaWithT(t)
-				level, err := NameToLevel(name)
-				switch tc.expectedErr {
-				case "":
-					gt.Expect(err).NotTo(HaveOccurred())
-				default:
-					gt.Expect(err).To(MatchError(tc.expectedErr))
-				}
+				level := NameToLevel(name)
 				gt.Expect(level).To(Equal(tc.level))
 			})
 		}

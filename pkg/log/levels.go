@@ -4,7 +4,6 @@
 package log
 
 import (
-	"fmt"
 	"math"
 
 	"go.uber.org/zap/zapcore"
@@ -23,31 +22,27 @@ const (
 )
 
 // NameToLevel converts a level name to a zapcore.Level.  If the level name is
-// unknown, an error is returned. If the level name is not provided, the default
-// level is returned.
-func NameToLevel(level string) (zapcore.Level, error) {
+// unknown or not provided, the default level is returned.
+func NameToLevel(level string) zapcore.Level {
 	switch level {
 	case "PAYLOAD", "payload":
-		return payloadLevel, nil
+		return payloadLevel
 	case "DEBUG", "debug":
-		return zapcore.DebugLevel, nil
+		return zapcore.DebugLevel
 	case "INFO", "info":
-		return zapcore.InfoLevel, nil
+		return zapcore.InfoLevel
 	case "WARNING", "WARN", "warning", "warn":
-		return zapcore.WarnLevel, nil
+		return zapcore.WarnLevel
 	case "ERROR", "error":
-		return zapcore.ErrorLevel, nil
+		return zapcore.ErrorLevel
 	case "DPANIC", "dpanic":
-		return zapcore.DPanicLevel, nil
+		return zapcore.DPanicLevel
 	case "PANIC", "panic":
-		return zapcore.PanicLevel, nil
+		return zapcore.PanicLevel
 	case "FATAL", "fatal":
-		return zapcore.FatalLevel, nil
-
-	case "":
-		return defaultLevel, nil
+		return zapcore.FatalLevel
 
 	default:
-		return disabledLevel, fmt.Errorf("invalid log level: %s", level)
+		return defaultLevel
 	}
 }

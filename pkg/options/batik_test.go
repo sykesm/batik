@@ -16,8 +16,9 @@ func TestBatikDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	config := BatikDefaults()
 	gt.Expect(config).To(Equal(&Batik{
-		Server: *ServerDefaults(),
-		Ledger: *LedgerDefaults(),
+		Server:  *ServerDefaults(),
+		Ledger:  *LedgerDefaults(),
+		Logging: *LoggingDefaults(),
 	}))
 }
 
@@ -25,9 +26,10 @@ func TestBatikApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
 		setup func(*Batik)
 	}{
-		"empty":  {setup: func(c *Batik) { *c = Batik{} }},
-		"server": {setup: func(c *Batik) { c.Server = Server{} }},
-		"ledger": {setup: func(c *Batik) { c.Ledger = Ledger{} }},
+		"empty":   {setup: func(c *Batik) { *c = Batik{} }},
+		"server":  {setup: func(c *Batik) { c.Server = Server{} }},
+		"ledger":  {setup: func(c *Batik) { c.Ledger = Ledger{} }},
+		"logging": {setup: func(c *Batik) { c.Logging = Logging{} }},
 	}
 
 	for name, tt := range tests {
@@ -68,6 +70,9 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 		Ledger: Ledger{
 			DataDir: "relative/path",
 		},
+		Logging: Logging{
+			LogSpec: "debug",
+		},
 	}))
 
 	config.ApplyDefaults()
@@ -90,6 +95,10 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 		},
 		Ledger: Ledger{
 			DataDir: "relative/path",
+		},
+		Logging: Logging{
+			LogSpec: "debug",
+			Color:   "auto",
 		},
 	}))
 }

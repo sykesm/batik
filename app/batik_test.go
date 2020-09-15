@@ -27,7 +27,9 @@ func TestBatikWiring(t *testing.T) {
 
 	// Global flags
 	gt.Expect(app.Flags).NotTo(BeEmpty())
-	gt.Expect(app.Flags[0].Names()[0]).To(Equal("config"))
+	gt.Expect(app.Flags[0].Names()[0]).To(Equal("color"))
+	gt.Expect(app.Flags[1].Names()[0]).To(Equal("config"))
+	gt.Expect(app.Flags[2].Names()[0]).To(Equal("log-spec"))
 
 	// Command implementations
 	gt.Expect(app.Commands).To(HaveLen(1))

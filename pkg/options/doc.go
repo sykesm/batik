@@ -16,7 +16,7 @@ package options
 // exported fields. Each of these fields should be documented such that a user
 // or developer can understand what the field controls.
 //
-// In addition to field level documentation, the fields should have be
+// In addition to field level documentation, the fields should be
 // annotated with yaml tags that determine the key that can be used in
 // configuration files to set the configuration value.
 //
@@ -28,7 +28,7 @@ package options
 // The configuration structures should also implement two methods:
 //
 //   ApplyDefaults()
-//   Flags(commandName string) []cli.Flag
+//   Flags() []cli.Flag
 //
 // The role of ApplyDefaults is to apply default values to fields that are
 // missing a value. This allows us to construct instances of configuration that

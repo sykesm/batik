@@ -41,7 +41,7 @@ func TestLedgerApplyDefaults(t *testing.T) {
 
 func TestLedgerFlagNames(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	flags := (&Ledger{}).Flags("command name")
+	flags := (&Ledger{}).Flags()
 
 	var names []string
 	for _, f := range flags {
@@ -75,7 +75,7 @@ func TestLedgerFlags(t *testing.T) {
 
 			ledger := &Ledger{}
 			flagSet := flag.NewFlagSet("ledger-test", flag.ContinueOnError)
-			for _, f := range ledger.Flags("full command name") {
+			for _, f := range ledger.Flags() {
 				err := f.Apply(flagSet)
 				gt.Expect(err).NotTo(HaveOccurred())
 			}

@@ -44,7 +44,7 @@ func (t *TLSServer) ApplyDefaults() {}
 // Flags exposes configuration fields as flags. The current value of the
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
-func (t *TLSServer) Flags(commandName string) []cli.Flag {
+func (t *TLSServer) Flags() []cli.Flag {
 	return []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
 			Name:        "tls-cert-file",

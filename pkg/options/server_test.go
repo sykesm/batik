@@ -47,7 +47,7 @@ func TestServerApplyDefaults(t *testing.T) {
 func TestServerFlagNames(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	server := &Server{}
-	flags := server.Flags("command name")
+	flags := server.Flags()
 
 	var names []string
 	for _, f := range flags {
@@ -114,7 +114,7 @@ func TestServerFlags(t *testing.T) {
 
 			server := &Server{}
 			flagSet := flag.NewFlagSet("server-test", flag.ContinueOnError)
-			for _, f := range server.Flags("full command name") {
+			for _, f := range server.Flags() {
 				err := f.Apply(flagSet)
 				gt.Expect(err).NotTo(HaveOccurred())
 			}

@@ -44,13 +44,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			Usage:   "Path to yaml file to load configuration parameters from",
 			EnvVars: []string{"BATIK_CFG_PATH"},
 		},
-		&cli.StringFlag{
-			Name:    "log-level",
-			Usage:   "Log level",
-			Value:   "info",
-			EnvVars: []string{"BATIK_LOG_LEVEL"},
-		},
 	}
+	app.Flags = append(app.Flags, config.Logging.Flags()...)
 	app.Commands = []*cli.Command{
 		startCommand(config, false),
 	}
@@ -61,21 +56,18 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	sort.Sort(cli.CommandsByName(app.Commands))
 
 	app.Before = func(ctx *cli.Context) error {
-		logLevel := ctx.String("log-level")
-		logger, err := log.NewLogger(log.Config{
+		leveler := log.NewLeveler(config.Logging.LogSpec)
+		logger := log.NewLogger(log.Config{
 			Name:    app.Name,
-			LogSpec: logLevel,
+			Leveler: leveler,
 			Writer:  app.ErrWriter,
 			Format:  "logfmt",
 		})
-		if err != nil {
-			return cli.Exit(errors.Wrap(err, "failed creating new logger"), exitLoggerCreateFailed)
-		}
 
 		atexit.Register(func() { logger.Sync() })
 		SetLogger(ctx, logger)
 
-		err = resolveConfig(ctx, config)
+		err := resolveConfig(ctx, config)
 		if err != nil {
 			return cli.Exit(errors.WithMessage(err, "unable to read config"), exitConfigLoadFailed)
 		}

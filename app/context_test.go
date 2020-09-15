@@ -13,7 +13,7 @@ import (
 	"github.com/sykesm/batik/pkg/log"
 )
 
-func TestMetadata_Logger(t *testing.T) {
+func TestContext_Logger(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	ctx := cli.NewContext(cli.NewApp(), nil, nil)
@@ -23,10 +23,10 @@ func TestMetadata_Logger(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	var buf bytes.Buffer
-	newLogger, err := log.NewLogger(log.Config{
-		Writer: &buf,
+	newLogger := log.NewLogger(log.Config{
+		Leveler: log.NewLeveler("info"),
+		Writer:  &buf,
 	})
-	gt.Expect(err).NotTo(HaveOccurred())
 
 	SetLogger(ctx, newLogger)
 	gt.Expect(ctx.Context.Value(loggerKey)).To(Equal(newLogger))

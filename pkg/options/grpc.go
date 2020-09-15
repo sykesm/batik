@@ -40,7 +40,7 @@ func (g *GRPC) ApplyDefaults() {
 // Flags exposes configuration fields as flags. The current value of the
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
-func (g *GRPC) Flags(commandName string) []cli.Flag {
+func (g *GRPC) Flags() []cli.Flag {
 	return []cli.Flag{
 		NewUintFlag(&cli.UintFlag{
 			Name:        "grpc-max-recv-message-size",
@@ -86,7 +86,7 @@ func (g *GRPCServer) ApplyDefaults() {
 // Flags exposes configuration fields as flags. The current value of the
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
-func (g *GRPCServer) Flags(commandName string) []cli.Flag {
+func (g *GRPCServer) Flags() []cli.Flag {
 	flags := []cli.Flag{
 		NewDurationFlag(&cli.DurationFlag{
 			Name:        "grpc-conn-timeout",
@@ -95,5 +95,5 @@ func (g *GRPCServer) Flags(commandName string) []cli.Flag {
 			Usage:       "FIXME: connection-timeout",
 		}),
 	}
-	return append(flags, g.GRPC.Flags(commandName)...)
+	return append(flags, g.GRPC.Flags()...)
 }

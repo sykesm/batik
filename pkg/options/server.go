@@ -41,7 +41,7 @@ func (s *Server) ApplyDefaults() {
 // Flags exposes configuration fields as flags. The current value of the
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
-func (s *Server) Flags(commandName string) []cli.Flag {
+func (s *Server) Flags() []cli.Flag {
 	flags := []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
 			Name:        "listen-address",
@@ -52,7 +52,7 @@ func (s *Server) Flags(commandName string) []cli.Flag {
 		}),
 	}
 
-	flags = append(flags, s.GRPC.Flags(commandName)...)
-	flags = append(flags, s.TLS.Flags(commandName)...)
+	flags = append(flags, s.GRPC.Flags()...)
+	flags = append(flags, s.TLS.Flags()...)
 	return flags
 }
