@@ -21,12 +21,13 @@ import (
 // obtained during instantiation are added to flag sets prior to running the
 // command actions. When the flags are added to the flag sets, the "default
 // value" established at instantiation time is pushed back to the configuration
-// object. This results in any config file overrides being overwritten.
+// object. This results in any config file overrides being overwritten by the
+// initial defaults.
 //
 // To work around this, we override the Apply method on the cli Flag
-// implementations to update the flag "Value" field from the flag "Destination"
-// before adding the flag to the flag set. This causes the standard library to
-// push the current value back to the destination instead of the stale value
+// implementations to update the "Value" field from the "Destination" before
+// adding the flag to the flag set. This causes the standard library to push
+// the current value back to the destination instead of the stale value
 // populated during instantiation.
 
 // These are the types that are supported by the cli package. Please implement

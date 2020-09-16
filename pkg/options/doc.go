@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Options is a placeholder for configuration structures and command line
-// flags.  It's likely that the various options will be moved out of this
+// flags. It's likely that the various options will be moved out of this
 // package to live closer to the items that are configured.
 //
 // More succinctly, this is an experiment to see how component configuration
@@ -32,17 +32,16 @@ package options
 //
 // The role of ApplyDefaults is to apply default values to fields that are
 // missing a value. This allows us to construct instances of configuration that
-// can be used directly by the runtime if populated from a sparse configuraiton
+// can be used directly by the runtime if populated from a sparse configuration
 // file or when we add new fields.
 //
 // The role of Flags is to expose configuration elements as flags on CLI
-// commands. The full name of the command and subcommands are provided as
-// context. This context enables the same configuration model to be used on
-// different commands with possibly different flag names. The Flags method will
-// be called after applying defaults.
+// commands. The Flags method will be called after applying defaults. If
+// command specific context is required for flag names, we can extend the
+// interface to provide it.
 //
-// The flags returned from Flags should be the implementations from this
-// package. Without the special behavior implemented in Apply, the flag set
-// creation that occurs when running commands will result in the loss of any
-// configuration values updated between the call to Flags and the execution of
-// the command.
+// The flag instances returned from the Flags method should be the
+// implementations from this package. Without the special behavior implemented
+// in Apply, the flag set creation that occurs when running commands will
+// result in the loss of any configuration values updated between the call to
+// Flags and the execution of the command.
