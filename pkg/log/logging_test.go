@@ -30,6 +30,12 @@ func TestNewLogger(t *testing.T) {
 			expectedOut: `{"level":"info","ts":.*,"caller":"log/logging_test.go:.*","msg":"test"}`,
 		},
 		{
+			testName:    "logs with color",
+			config:      Config{Leveler: NewLeveler("info"), Writer: &bytes.Buffer{}, Format: "json", Color: "yes"},
+			message:     "test",
+			expectedOut: `\x1b.*|\x1b.*INFO.*\x1b.*|.*test.*`,
+		},
+		{
 			testName:    "logs under level",
 			config:      Config{Leveler: NewLeveler("warn"), Writer: &bytes.Buffer{}},
 			message:     "test",

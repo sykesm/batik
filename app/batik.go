@@ -67,6 +67,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			Leveler: leveler,
 			Writer:  app.ErrWriter,
 			Format:  "logfmt",
+			Color:   config.Logging.Color,
 		})
 
 		atexit.Register(func() { logger.Sync() })

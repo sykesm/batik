@@ -43,12 +43,12 @@ This document contains a set of stories and work items for Batik.
 
 ## Logging
 
-- [ ] Remove format strings and fabenc
-- [ ] Write a colorized post processor for logfmt (see humanlog patterns)
-- [ ] Process logging config options as flags (eg. color)
-- [ ] Introduce terminal detection for color processing
+- [x] Remove format strings and fabenc
+- [x] Write a colorized post processor for logfmt (see humanlog patterns)
+- [x] Process logging config options as flags (eg. color)
+- [x] Introduce terminal detection for color processing
 - [ ] Helpers (eg IsColorEnabled) for config object that wraps logger
-- [ ] Reduce error processing in logger creation path (handle errors higher up in app)
+- [x] Reduce error processing in logger creation path (handle errors higher up in app)
 
 # DB
 
