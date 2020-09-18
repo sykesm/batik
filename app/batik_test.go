@@ -124,7 +124,7 @@ func TestBatikInteractiveWiring(t *testing.T) {
 		gt.Expect(strings.Split(strings.TrimSpace(sa.CustomAppHelpTemplate), "\n")).To(ConsistOf(
 			"Commands:",
 			"    exit   exit the shell",
-			"    start  start the grpc server",
+			"    start  start the server",
 		))
 	})
 }

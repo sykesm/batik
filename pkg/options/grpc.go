@@ -4,6 +4,7 @@
 package options
 
 import (
+	"strconv"
 	"time"
 
 	cli "github.com/urfave/cli/v2"
@@ -41,18 +42,21 @@ func (g *GRPC) ApplyDefaults() {
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
 func (g *GRPC) Flags() []cli.Flag {
+	def := GRPCDefaults()
 	return []cli.Flag{
 		NewUintFlag(&cli.UintFlag{
 			Name:        "grpc-max-recv-message-size",
 			Value:       g.MaxRecvMessageSize,
 			Destination: &g.MaxRecvMessageSize,
 			Usage:       "FIXME: max-recv-message-size",
+			DefaultText: strconv.Itoa(int(def.MaxRecvMessageSize)),
 		}),
 		NewUintFlag(&cli.UintFlag{
 			Name:        "grpc-max-send-message-size",
 			Value:       g.MaxSendMessageSize,
 			Destination: &g.MaxSendMessageSize,
 			Usage:       "FIXME: max-send-message-size",
+			DefaultText: strconv.Itoa(int(def.MaxSendMessageSize)),
 		}),
 	}
 }
@@ -87,12 +91,14 @@ func (g *GRPCServer) ApplyDefaults() {
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
 func (g *GRPCServer) Flags() []cli.Flag {
+	def := GRPCServerDefaults()
 	flags := []cli.Flag{
 		NewDurationFlag(&cli.DurationFlag{
 			Name:        "grpc-conn-timeout",
 			Value:       g.ConnTimeout,
 			Destination: &g.ConnTimeout,
 			Usage:       "FIXME: connection-timeout",
+			DefaultText: def.ConnTimeout.String(),
 		}),
 	}
 	return append(flags, g.GRPC.Flags()...)

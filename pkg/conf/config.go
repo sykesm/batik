@@ -13,8 +13,7 @@ import (
 )
 
 // LoadFile loads a YAML configuration document from the provided path into the
-// object referenced by out. After loading the configuration, ApplyDefaults, if
-// implemented, will be invoked on out.
+// object referenced by out.
 //
 // Once the configuration has been loaded and the defaults applied, the fields
 // of out annotated with the "batik" tag will be recursively processed by an
@@ -31,9 +30,8 @@ func LoadFile(path string, out interface{}) error {
 	return load(f, tr, out)
 }
 
-// Load loads a YAML configuration document from teh provided reader into the
-// object referenced by out. After loading the configuration, ApplyDefaults, if
-// implemented, will be invoked on out.
+// Load loads a YAML configuration document from the provided reader into the
+// object referenced by out.
 //
 // Once the configuration has been loaded and the defaults applied, the fields
 // of out annotated with the "batik" tag will be recursively processed by an
@@ -47,9 +45,6 @@ func load(r io.Reader, tr *TagResolver, out interface{}) error {
 	decoder := yaml.NewDecoder(r)
 	if err := decoder.Decode(out); err != nil {
 		return errors.WithStack(err)
-	}
-	if ad, ok := out.(interface{ ApplyDefaults() }); ok {
-		ad.ApplyDefaults()
 	}
 	return tr.Resolve(out)
 }

@@ -45,3 +45,8 @@ package options
 // in Apply, the flag set creation that occurs when running commands will
 // result in the loss of any configuration values updated between the call to
 // Flags and the execution of the command.
+//
+// The DefaultText field of the cli.Flag should also be populated with the
+// default value for the flag. This ensures the correct default value is always
+// displayed in help messages regardless of whether or not the underlying
+// configuration has been modified.

@@ -102,6 +102,11 @@ func TestGRPCFlags(t *testing.T) {
 	}
 }
 
+func TestGRPCFlagsDefaultText(t *testing.T) {
+	flags := GRPCDefaults().Flags()
+	assertWrappedFlagWithDefaultText(t, flags...)
+}
+
 func TestGRPCServerDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	gs := GRPCServerDefaults()
@@ -191,4 +196,9 @@ func TestGRPCServerFlags(t *testing.T) {
 			gt.Expect(grpcServer).To(Equal(&tt.expected))
 		})
 	}
+}
+
+func TestGRPCServerFlagsDefaultText(t *testing.T) {
+	flags := GRPCServerDefaults().Flags()
+	assertWrappedFlagWithDefaultText(t, flags...)
 }

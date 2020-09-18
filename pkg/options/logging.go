@@ -39,18 +39,21 @@ func (l *Logging) ApplyDefaults() {
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
 func (l *Logging) Flags() []cli.Flag {
+	def := LoggingDefaults()
 	return []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
 			Name:        "log-spec",
 			Value:       l.LogSpec,
 			Destination: &l.LogSpec,
 			Usage:       "FIXME: log spec",
+			DefaultText: def.LogSpec,
 		}),
 		NewStringFlag(&cli.StringFlag{
 			Name:        "color",
 			Value:       l.Color,
 			Destination: &l.Color,
 			Usage:       "FIXME: color",
+			DefaultText: def.Color,
 		}),
 	}
 }

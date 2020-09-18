@@ -84,16 +84,21 @@ func TestLoggingFlags(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			ledger := &Logging{}
+			logging := &Logging{}
 			flagSet := flag.NewFlagSet("logging-test", flag.ContinueOnError)
-			for _, f := range ledger.Flags() {
+			for _, f := range logging.Flags() {
 				err := f.Apply(flagSet)
 				gt.Expect(err).NotTo(HaveOccurred())
 			}
 
 			err := flagSet.Parse(tt.args)
 			gt.Expect(err).NotTo(HaveOccurred())
-			gt.Expect(ledger).To(Equal(&tt.expected))
+			gt.Expect(logging).To(Equal(&tt.expected))
 		})
 	}
+}
+
+func TestLoggingFlagsDefaultText(t *testing.T) {
+	flags := LoggingDefaults().Flags()
+	assertWrappedFlagWithDefaultText(t, flags...)
 }

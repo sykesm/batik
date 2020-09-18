@@ -8,7 +8,6 @@ import (
 	"crypto"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -28,18 +27,19 @@ var _ = Describe("Grpc", func() {
 	var (
 		session *gexec.Session
 		address string
+		dbPath  string
 		cleanup func()
 	)
 
 	BeforeEach(func() {
 		address = fmt.Sprintf("127.0.0.1:%d", StartPort())
-
-		var dbPath string
 		dbPath, cleanup = tested.TempDir(GinkgoT(), "", "level")
-
-		cmd := exec.Command(batikPath, "start", "--listen-address", address)
-		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, "DB_PATH="+dbPath)
+		cmd := exec.Command(
+			batikPath,
+			"start",
+			"--listen-address", address,
+			"--data-dir", dbPath,
+		)
 
 		var err error
 		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)

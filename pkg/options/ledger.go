@@ -36,12 +36,14 @@ func (l *Ledger) ApplyDefaults() {
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
 func (l *Ledger) Flags() []cli.Flag {
+	def := LedgerDefaults()
 	return []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
 			Name:        "data-dir",
 			Value:       l.DataDir,
 			Destination: &l.DataDir,
 			Usage:       "FIXME: data directory",
+			DefaultText: def.DataDir,
 		}),
 	}
 }

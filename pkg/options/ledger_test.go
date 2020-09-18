@@ -86,3 +86,8 @@ func TestLedgerFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestLedgerFlagsDefaultText(t *testing.T) {
+	flags := LedgerDefaults().Flags()
+	assertWrappedFlagWithDefaultText(t, flags...)
+}

@@ -54,3 +54,26 @@ func TestFlagApply(t *testing.T) {
 	gt.Expect(str).To(Equal("flag-string"))
 	gt.Expect(ui).To(Equal(uint(9876)))
 }
+
+func assertWrappedFlagWithDefaultText(t *testing.T, flags ...cli.Flag) {
+	t.Helper()
+	gt := NewGomegaWithT(t)
+	for _, f := range flags {
+		switch f := f.(type) {
+		case *DurationFlag:
+			if f.Value != 0 {
+				gt.Expect(f.DefaultText).NotTo(BeZero())
+			}
+		case *StringFlag:
+			if f.Value != "" {
+				gt.Expect(f.DefaultText).NotTo(BeZero())
+			}
+		case *UintFlag:
+			if f.Value != 0 {
+				gt.Expect(f.DefaultText).NotTo(BeZero())
+			}
+		default:
+			t.Fatalf("%T is not a wrapped flag type", f)
+		}
+	}
+}

@@ -100,6 +100,11 @@ func TestTLSServerFlags(t *testing.T) {
 	}
 }
 
+func TestServerTLSFlagsDefaultText(t *testing.T) {
+	flags := TLSServerDefaults().Flags()
+	assertWrappedFlagWithDefaultText(t, flags...)
+}
+
 func TestServerTLSUsage(t *testing.T) {
 	gt := NewGomegaWithT(t)
 

@@ -45,6 +45,7 @@ func (t *TLSServer) ApplyDefaults() {}
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
 func (t *TLSServer) Flags() []cli.Flag {
+	def := TLSServerDefaults()
 	return []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
 			Name:        "tls-cert-file",
@@ -54,6 +55,7 @@ func (t *TLSServer) Flags() []cli.Flag {
 			Usage: flow(`File containing the PEM encoded certificate (or chain) for the server.
 				When providing a certificate chain, the chain must start with the server certificate
 				and the remaining certificates must each certify the preceeding certificate.`),
+			DefaultText: def.ServerCert.CertFile,
 		}),
 		NewStringFlag(&cli.StringFlag{
 			Name:        "tls-private-key-file",
@@ -61,6 +63,7 @@ func (t *TLSServer) Flags() []cli.Flag {
 			Destination: &t.ServerCert.KeyFile,
 			TakesFile:   true,
 			Usage:       flow(`File containing the PEM encoded private key for the server.`),
+			DefaultText: def.ServerCert.KeyFile,
 		}),
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/sigmon"
 	cli "github.com/urfave/cli/v2"
+	"go.uber.org/zap"
 
 	"github.com/sykesm/batik/pkg/grpccomm"
 	"github.com/sykesm/batik/pkg/options"
@@ -20,7 +21,8 @@ import (
 func startCommand(config *options.Batik, interactive bool) *cli.Command {
 	return &cli.Command{
 		Name:        "start",
-		Description: "start the grpc server",
+		Description: "Establish network connections and begin processing.",
+		Usage:       "start the server",
 		Flags: append(
 			config.Server.Flags(),
 			config.Ledger.Flags()...,
@@ -38,7 +40,8 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 				},
 			)
 
-			db, err := store.NewLevelDB("")
+			logger.Debug("creating database", zap.String("data_dir", config.Ledger.DataDir))
+			db, err := store.NewLevelDB(config.Ledger.DataDir)
 			if err != nil {
 				return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
 			}

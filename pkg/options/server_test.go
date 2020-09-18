@@ -125,3 +125,8 @@ func TestServerFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestServerFlagsDefaultText(t *testing.T) {
+	flags := ServerDefaults().Flags()
+	assertWrappedFlagWithDefaultText(t, flags...)
+}

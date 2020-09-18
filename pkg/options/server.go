@@ -42,6 +42,7 @@ func (s *Server) ApplyDefaults() {
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
 func (s *Server) Flags() []cli.Flag {
+	def := ServerDefaults()
 	flags := []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
 			Name:        "listen-address",
@@ -49,6 +50,7 @@ func (s *Server) Flags() []cli.Flag {
 			Destination: &s.ListenAddress,
 			EnvVars:     []string{"BATIK_LISTEN_ADDR"},
 			Usage:       "FIXME: listen-address",
+			DefaultText: def.ListenAddress,
 		}),
 	}
 

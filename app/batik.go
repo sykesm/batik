@@ -22,8 +22,8 @@ import (
 )
 
 func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
-	config := options.BatikDefaults()
 	atexit := atexit.New()
+	config := options.BatikDefaults()
 
 	app := cli.NewApp()
 	app.Copyright = fmt.Sprintf("© Copyright IBM Corporation %04d. All rights reserved.", buildinfo.Built().Year())
@@ -41,7 +41,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		&cli.StringFlag{
 			Name:    "config",
 			Aliases: []string{"c"},
-			Usage:   "Path to yaml file to load configuration parameters from",
+			Usage:   "Path to yaml configuration file",
 			EnvVars: []string{"BATIK_CFG_PATH"},
 		},
 	}
@@ -117,7 +117,6 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 		}
 	}
 
-	config.ApplyDefaults()
 	return nil
 }
 
@@ -145,8 +144,8 @@ func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
 
 	app.Commands = []*cli.Command{
 		{
-			Name:        "exit",
-			Description: "exit the shell",
+			Name:  "exit",
+			Usage: "exit the shell",
 			Action: func(ctx *cli.Context) error {
 				return repl.ErrExit
 			},
@@ -159,9 +158,9 @@ func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
 	// Generate the help message
 	s := strings.Builder{}
 	s.WriteString("Commands:\n")
-	w := tabwriter.NewWriter(&s, 0, 0, 1, ' ', 0)
+	w := tabwriter.NewWriter(&s, 8, 8, 2, ' ', 0)
 	for _, c := range app.VisibleCommands() {
-		if _, err := fmt.Fprintf(w, "    %s %s\t%s\n", c.Name, c.Usage, c.Description); err != nil {
+		if _, err := fmt.Fprintf(w, "    %s\t%s\n", c.Name, c.Usage); err != nil {
 			return nil, err
 		}
 	}
