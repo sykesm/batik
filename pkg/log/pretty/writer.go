@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -17,20 +16,21 @@ import (
 	"github.com/sykesm/batik/pkg/log/pretty/color"
 )
 
-// supportedTimeFields enumerates supported timestamp field names
-var supportedTimeFields = []string{"time", "ts", "@timestamp", "timestamp"}
-
-// supportedMessageFields enumarates supported Message field names
-var supportedMessageFields = []string{"message", "msg"}
-
-// supportedLevelFields enumarates supported level field names
-var supportedLevelFields = []string{"level", "lvl", "loglevel", "severity"}
+type reservedField string
 
 const (
 	TimeFormat string = time.StampMicro
 
+	// Reserved logfmt fields
+	timeField   reservedField = "ts"
+	lvlField                  = "level"
+	nameField                 = "logger"
+	callerField               = "caller"
+	msgField                  = "msg"
+
 	KeyColor              color.Color = color.FgGreen
 	ValColor                          = color.FgHiWhite
+	LoggerColor                       = color.FgBlue
 	TimeLightBgColor                  = color.FgBlack
 	TimeDarkBgColor                   = color.FgWhite
 	MsgLightBgColor                   = color.FgBlack
@@ -54,75 +54,20 @@ type Writer struct {
 // Write prettifys input logfmt lines and writes them onto the underlying writer.
 // If the lines aren't logfmt, an error is returned.
 func (w *Writer) Write(p []byte) (n int, err error) {
-	var (
-		finalLevel string
-		finalTime  time.Time
-		message    string
-
-		fields map[string]string
-	)
-
-	fields = make(map[string]string)
-
 	if !bytes.ContainsRune(p, '=') {
 		return 0, errors.New("not a logfmt string")
 	}
 
 	dec := logfmt.NewDecoder(bytes.NewReader(p))
-	for dec.ScanRecord() {
-	next_kv:
-		for dec.ScanKeyval() {
-			key := dec.Key()
-			val := dec.Value()
-			// process time
-			if finalTime.IsZero() {
-				foundTime := checkEachUntilFound(supportedTimeFields, func(field string) bool {
-					if !bytes.Equal(key, []byte(field)) {
-						return false
-					}
-					time, ok := tryParseTime(string(val))
-					if ok {
-						finalTime = time
-					}
-					return ok
-				})
-				if foundTime {
-					continue next_kv
-				}
-			}
+	dec.ScanRecord()
 
-			// process message
-			if len(message) == 0 {
-				foundMessage := checkEachUntilFound(supportedMessageFields, func(field string) bool {
-					if !bytes.Equal(key, []byte(field)) {
-						return false
-					}
-					message = string(val)
-					return true
-				})
-				if foundMessage {
-					continue next_kv
-				}
-			}
+	parsedTime := parseReservedTimeField(dec, timeField)
+	parsedLvl := parseReservedStringField(dec, lvlField)
+	parsedName := parseReservedStringField(dec, nameField)
+	parsedCaller := parseReservedStringField(dec, callerField)
+	parsedMsg := parseReservedStringField(dec, msgField)
 
-			// process log level
-			if len(finalLevel) == 0 {
-				foundLevel := checkEachUntilFound(supportedLevelFields, func(field string) bool {
-					if !bytes.Equal(key, []byte(field)) {
-						return false
-					}
-					finalLevel = string(val)
-					return true
-				})
-				if foundLevel {
-					continue next_kv
-				}
-			}
-
-			// process all other key/value fields
-			fields[string(key)] = string(val)
-		}
-	}
+	fields := parseUnreservedFields(dec)
 
 	if dec.Err() != nil {
 		return 0, dec.Err()
@@ -131,47 +76,13 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	buf := bytes.NewBuffer(nil)
 	out := tabwriter.NewWriter(buf, 0, 1, 0, '\t', 0)
 
-	msgColor := MsgDarkBgColor
-	msgAbsentColor := MsgAbsentDarkBgColor
-
-	var msg string
-	if message == "" {
-		msg = msgAbsentColor.Sprint("<no msg>")
-	} else {
-		msg = msgColor.Sprint(message)
-	}
-
-	lvl := strings.ToUpper(finalLevel)[:imin(4, len(finalLevel))]
-	var level string
-	switch finalLevel {
-	case "debug":
-		level = DebugLevelColor.Sprint(lvl)
-	case "info":
-		level = InfoLevelColor.Sprint(lvl)
-	case "warn", "warning":
-		level = WarnLevelColor.Sprint(lvl)
-	case "error":
-		level = ErrorLevelColor.Sprint(lvl)
-	case "fatal", "panic":
-		level = FatalLevelColor.Sprint(lvl)
-	default:
-		level = UnknownLevelColor.Sprint(lvl)
-	}
-
-	timeColor := TimeDarkBgColor
-	kv := make([]string, 0, len(fields))
-	for k, v := range fields {
-		kstr := KeyColor.Sprint(k)
-		vstr := ValColor.Sprint(v)
-		kv = append(kv, kstr+"="+vstr)
-	}
-
-	sort.Strings(kv)
-	_, _ = fmt.Fprintf(out, "%s |%s| %s\t %s\n",
-		timeColor.Sprint(finalTime.Format(TimeFormat)),
-		level,
-		msg,
-		strings.Join(kv, "\t "),
+	_, _ = fmt.Fprintf(out, "%s |%s| %s\t %s\t %s\t %s\n",
+		parsedTime,
+		parsedLvl,
+		parsedName,
+		parsedCaller,
+		parsedMsg,
+		strings.Join(fields, "\t "),
 	)
 
 	_ = out.Flush()
@@ -186,13 +97,76 @@ func imin(a, b int) int {
 	return b
 }
 
-// checkEachUntilFound searches a field list for a specific field based on
-// the found func.
-func checkEachUntilFound(fieldList []string, found func(string) bool) bool {
-	for _, field := range fieldList {
-		if found(field) {
-			return true
+func parseReservedTimeField(dec *logfmt.Decoder, f reservedField) string {
+	dec.ScanKeyval()
+
+	key := dec.Key()
+	val := dec.Value()
+
+	if !bytes.Equal(key, []byte(f)) {
+		return ""
+	}
+
+	if time, ok := tryParseTime(string(val)); ok {
+		return TimeDarkBgColor.Sprint(time.Format(TimeFormat))
+	}
+
+	return ""
+}
+
+func parseReservedStringField(dec *logfmt.Decoder, f reservedField) string {
+	dec.ScanKeyval()
+
+	key := string(dec.Key())
+	val := string(dec.Value())
+
+	if key != string(f) {
+		return ""
+	}
+
+	var c color.Color
+	switch f {
+	case nameField:
+		c = LoggerColor
+	case lvlField:
+		switch val {
+		case "debug":
+			c = DebugLevelColor
+		case "info":
+			c = InfoLevelColor
+		case "warn", "warning":
+			c = WarnLevelColor
+		case "error":
+			c = ErrorLevelColor
+		case "fatal", "panic":
+			c = FatalLevelColor
+		default:
+			c = UnknownLevelColor
+		}
+		val = strings.ToUpper(val)[:imin(4, len(val))]
+	case msgField:
+		if val == "" {
+			c = MsgAbsentDarkBgColor
+			val = "<no msg>"
+		} else {
+			c = MsgDarkBgColor
 		}
 	}
-	return false
+
+	return c.Sprint(val)
+}
+
+func parseUnreservedFields(dec *logfmt.Decoder) []string {
+	var fields []string
+
+	for dec.ScanKeyval() {
+		key := dec.Key()
+		val := dec.Value()
+
+		kstr := KeyColor.Sprint(string(key))
+		vstr := ValColor.Sprint(string(val))
+		fields = append(fields, kstr+"="+vstr)
+	}
+
+	return fields
 }
