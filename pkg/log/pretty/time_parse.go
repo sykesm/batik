@@ -9,8 +9,6 @@ import (
 )
 
 var formats = []string{
-	"2006-01-02 15:04:05.999999999 -0700 MST",
-	"2006-01-02 15:04:05",
 	time.RFC3339,
 	time.RFC3339Nano,
 	time.RFC822,
@@ -59,16 +57,6 @@ func tryParseTime(value interface{}) (time.Time, bool) {
 				return t, true
 			}
 		}
-	case float32:
-		return parseTimeFloat64(float64(value.(float32))), true
-	case float64:
-		return parseTimeFloat64(value.(float64)), true
-	case int:
-		return parseTimeFloat64(float64(value.(int))), true
-	case int32:
-		return parseTimeFloat64(float64(value.(int32))), true
-	case int64:
-		return parseTimeFloat64(float64(value.(int64))), true
 	}
 	return t, false
 }

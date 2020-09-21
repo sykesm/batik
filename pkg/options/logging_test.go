@@ -16,6 +16,7 @@ func TestLoggingDefaults(t *testing.T) {
 	gt.Expect(ledger).To(Equal(&Logging{
 		LogSpec: "info",
 		Color:   "auto",
+		Format:  "logfmt",
 	}))
 }
 
@@ -26,6 +27,7 @@ func TestLoggingApplyDefaults(t *testing.T) {
 		"empty":    {setup: func(l *Logging) { *l = Logging{} }},
 		"log spec": {setup: func(l *Logging) { l.LogSpec = "" }},
 		"color":    {setup: func(l *Logging) { l.Color = "" }},
+		"format":   {setup: func(l *Logging) { l.Format = "" }},
 	}
 
 	for name, tt := range tests {
@@ -50,10 +52,11 @@ func TestLoggingFlagNames(t *testing.T) {
 		names = append(names, f.Names()...)
 	}
 
-	gt.Expect(flags).To(HaveLen(2))
+	gt.Expect(flags).To(HaveLen(3))
 	gt.Expect(names).To(ConsistOf(
 		"log-spec",
 		"color",
+		"format",
 	))
 }
 
@@ -74,9 +77,13 @@ func TestLoggingFlags(t *testing.T) {
 			args:     []string{"--color=yes"},
 			expected: Logging{Color: "yes"},
 		},
-		"both": {
-			args:     []string{"--log-spec=debug", "--color=yes"},
-			expected: Logging{LogSpec: "debug", Color: "yes"},
+		"format": {
+			args:     []string{"--format=json"},
+			expected: Logging{Format: "json"},
+		},
+		"all": {
+			args:     []string{"--log-spec=debug", "--color=yes", "--format=json"},
+			expected: Logging{LogSpec: "debug", Color: "yes", Format: "json"},
 		},
 	}
 

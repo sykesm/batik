@@ -14,6 +14,9 @@ type Logging struct {
 	// Color can be either "yes", "no", or "auto" and defines different modes for
 	// configuring colored log output.
 	Color string `yaml:"color,omitempty"`
+	// Format can be either "logfmt" or "json" and defines the encoding format for
+	// non-colorized log output.
+	Format string `yaml:"format,omitempty"`
 }
 
 // LoggingDefaults returns the default configuration values for logging.
@@ -21,6 +24,7 @@ func LoggingDefaults() *Logging {
 	return &Logging{
 		LogSpec: "info",
 		Color:   "auto",
+		Format:  "logfmt",
 	}
 }
 
@@ -32,6 +36,9 @@ func (l *Logging) ApplyDefaults() {
 	}
 	if l.Color == "" {
 		l.Color = defaults.Color
+	}
+	if l.Format == "" {
+		l.Format = defaults.Format
 	}
 }
 
@@ -54,6 +61,13 @@ func (l *Logging) Flags() []cli.Flag {
 			Destination: &l.Color,
 			Usage:       "FIXME: color",
 			DefaultText: def.Color,
+		}),
+		NewStringFlag(&cli.StringFlag{
+			Name:        "format",
+			Value:       l.Format,
+			Destination: &l.Format,
+			Usage:       "FIXME: format",
+			DefaultText: def.Format,
 		}),
 	}
 }

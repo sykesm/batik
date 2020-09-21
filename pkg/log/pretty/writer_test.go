@@ -15,18 +15,16 @@ func TestWrite(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	w := NewWriter(buf)
+	w := Writer{buf}
 
 	testLine := "nonlogfmt line"
-	n, err := w.Write([]byte(testLine))
-	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(n).To(Equal(len(testLine)))
-	gt.Expect(buf.Bytes()).To(MatchRegexp(testLine))
+	_, err := w.Write([]byte(testLine))
+	gt.Expect(err).To(MatchError("not a logfmt string"))
 
 	testLine = `ts=1600356328.141956 level=info logger=batik caller=app/start.go:54 msg="Starting server"`
-	expectedLine := `\x1b.*Sep 17 11:09:29.*INFO.*|.*Starting server.*logger.*=.*batik.*caller.*=.*app/start.go:54.*`
-	n, err = w.Write([]byte(testLine))
+	expectedLine := `\x1b.*Sep 17 11:25:28.000000.*INFO.*|.*Starting server.*logger.*=.*batik.*caller.*=.*app/start.go:54.*`
+	n, err := w.Write([]byte(testLine))
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(n).To(Equal(138))
-	gt.Expect(buf.Bytes()).To(MatchRegexp(expectedLine))
+	gt.Expect(n).To(Equal(145))
+	gt.Expect(buf.String()).To(MatchRegexp(expectedLine))
 }

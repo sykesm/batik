@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	zaplogfmt "github.com/sykesm/zap-logfmt"
 	cli "github.com/urfave/cli/v2"
+	"go.uber.org/zap"
 
 	"github.com/sykesm/batik/pkg/log"
 )
@@ -22,11 +24,11 @@ func TestContext_Logger(t *testing.T) {
 	gt.Expect(logger).NotTo(BeNil())
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	var buf bytes.Buffer
-	newLogger := log.NewLogger(log.Config{
-		Leveler: log.NewLeveler("info"),
-		Writer:  &buf,
-	})
+	buf := &bytes.Buffer{}
+	encoder := zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig())
+	writer := log.NewWriteSyncer(buf)
+	leveler := log.NewLeveler("info")
+	newLogger := log.NewLogger(encoder, writer, leveler)
 
 	SetLogger(ctx, newLogger)
 	gt.Expect(ctx.Context.Value(loggerKey)).To(Equal(newLogger))

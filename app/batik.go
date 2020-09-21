@@ -6,17 +6,23 @@ package app
 import (
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
+	zaplogfmt "github.com/sykesm/zap-logfmt"
 	cli "github.com/urfave/cli/v2"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/sykesm/batik/pkg/atexit"
 	"github.com/sykesm/batik/pkg/buildinfo"
 	"github.com/sykesm/batik/pkg/conf"
 	"github.com/sykesm/batik/pkg/log"
+	"github.com/sykesm/batik/pkg/log/pretty"
 	"github.com/sykesm/batik/pkg/options"
 	"github.com/sykesm/batik/pkg/repl"
 )
@@ -61,14 +67,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			return cli.Exit(errors.WithMessage(err, "unable to read config"), exitConfigLoadFailed)
 		}
 
-		leveler := log.NewLeveler(config.Logging.LogSpec)
-		logger := log.NewLogger(log.Config{
-			Name:    app.Name,
-			Leveler: leveler,
-			Writer:  app.ErrWriter,
-			Format:  "logfmt",
-			Color:   config.Logging.Color,
-		})
+		encoder, writer, leveler := newBatikLoggerComponents(ctx, config.Logging)
+		logger := log.NewLogger(encoder, writer, leveler).Named(ctx.App.Name)
 
 		atexit.Register(func() { logger.Sync() })
 		SetLogger(ctx, logger)
@@ -118,6 +118,26 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 	}
 
 	return nil
+}
+
+func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore.Encoder, zapcore.WriteSyncer, zapcore.LevelEnabler) {
+	var encoder zapcore.Encoder
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.EncodeTime = zapcore.EpochNanosTimeEncoder
+
+	w := ctx.App.ErrWriter
+	f, ok := w.(*os.File)
+	switch {
+	case config.Color == "yes", config.Color == "auto" && ok && terminal.IsTerminal(int(f.Fd())):
+		w = &pretty.Writer{Writer: w}
+		encoder = zaplogfmt.NewEncoder(encoderConfig)
+	case config.Format == "json":
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
+	default:
+		encoder = zaplogfmt.NewEncoder(encoderConfig)
+	}
+
+	return encoder, log.NewWriteSyncer(w), log.NewLeveler(config.LogSpec)
 }
 
 // shellApp is the interactive console application.

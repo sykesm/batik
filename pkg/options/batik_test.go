@@ -99,6 +99,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 		Logging: Logging{
 			LogSpec: "debug",
 			Color:   "auto",
+			Format:  "logfmt",
 		},
 	}))
 }

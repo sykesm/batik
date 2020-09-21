@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 
+	zaplogfmt "github.com/sykesm/zap-logfmt"
 	cli "github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 
@@ -24,7 +25,11 @@ const (
 func GetLogger(ctx *cli.Context) (*zap.Logger, error) {
 	logger := retrieveFromCtx(ctx, loggerKey)
 	if logger == nil {
-		return log.NewLogger(log.Config{}), nil
+		return log.NewLogger(
+			zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig()),
+			log.NewWriteSyncer(ctx.App.ErrWriter),
+			log.NewLeveler("info"),
+		), nil
 	}
 
 	l, ok := logger.(*zap.Logger)
