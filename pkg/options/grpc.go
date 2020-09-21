@@ -8,6 +8,7 @@ import (
 	"time"
 
 	cli "github.com/urfave/cli/v2"
+	"google.golang.org/grpc"
 )
 
 // GRPC exposes configuration for gRPC servers and clients.
@@ -102,4 +103,14 @@ func (g *GRPCServer) Flags() []cli.Flag {
 		}),
 	}
 	return append(flags, g.GRPC.Flags()...)
+}
+
+// BuildServerOptions returns an array of grpc.ServerOptions based on the configuration
+// fields.
+func (g *GRPCServer) BuildServerOptions() []grpc.ServerOption {
+	return []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(int(g.GRPC.MaxRecvMessageSize)),
+		grpc.MaxSendMsgSize(int(g.GRPC.MaxSendMessageSize)),
+		grpc.ConnectionTimeout(g.ConnTimeout),
+	}
 }

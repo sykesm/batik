@@ -4,8 +4,10 @@
 package options
 
 import (
+	"crypto/tls"
 	"regexp"
 
+	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -24,6 +26,38 @@ type CertKeyPair struct {
 	CertData string `yaml:"cert,omitempty"`
 	// KeyData is the PEM encoded private key for the server certificate.
 	KeyData string `yaml:"key,omitempty"`
+}
+
+func (ckp CertKeyPair) validate() error {
+	// cannot set all four fields
+	if ckp.CertData != "" && ckp.KeyData != "" && ckp.CertFile != "" && ckp.KeyFile != "" {
+		return errors.New("certificate files and data were both provided but only one is allowed")
+	}
+	// need to specify cert file or data plus key data or file
+	if (ckp.CertData != "" || ckp.CertFile != "") && (ckp.KeyData == "" && ckp.KeyFile == "") {
+		return errors.New("private key data or file was not provided")
+	}
+	// need to specify key file or data plus cert data or file
+	if (ckp.KeyData != "" || ckp.KeyFile != "") && (ckp.CertData == "" && ckp.CertFile == "") {
+		return errors.New("certificate data or file was not provided")
+	}
+	return nil
+}
+
+func (ckp CertKeyPair) load() (cert tls.Certificate, err error) {
+	if err = ckp.validate(); err != nil {
+		return cert, err
+	}
+
+	if ckp.CertFile != "" {
+		cert, err = tls.LoadX509KeyPair(ckp.CertFile, ckp.KeyFile)
+	}
+
+	if ckp.CertData != "" {
+		cert, err = tls.X509KeyPair([]byte(ckp.CertData), []byte(ckp.KeyData))
+	}
+
+	return cert, err
 }
 
 // TLSServer exposes configuration options for network services secured
@@ -66,6 +100,24 @@ func (t *TLSServer) Flags() []cli.Flag {
 			DefaultText: def.ServerCert.KeyFile,
 		}),
 	}
+}
+
+// BuildTLSConfig returns a tls.Config based on the configuration options set for TLSServer
+// and returns error for invalid configuration options.
+func BuildTLSConfig(srv TLSServer) (*tls.Config, error) {
+	if (srv.ServerCert == CertKeyPair{}) {
+		return nil, nil
+	}
+
+	cert, err := srv.ServerCert.load()
+	if err != nil {
+		return nil, errors.Wrap(err, "options: failed to build TLS configuration")
+	}
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
+	}, nil
 }
 
 var trimRegex = regexp.MustCompile(`\n\s*`)

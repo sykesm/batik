@@ -202,3 +202,15 @@ func TestGRPCServerFlagsDefaultText(t *testing.T) {
 	flags := GRPCServerDefaults().Flags()
 	assertWrappedFlagWithDefaultText(t, flags...)
 }
+
+func TestBuildServerOptions(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	gs := GRPCServer{}
+	gs.ApplyDefaults()
+
+	gt.Expect(gs.BuildServerOptions()).To(HaveLen(3))
+	//TODO: not sure of there is any way to actually check that the options were
+	// set correctly
+
+}

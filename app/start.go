@@ -10,6 +10,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/sykesm/batik/pkg/grpccomm"
 	"github.com/sykesm/batik/pkg/grpclogging"
@@ -33,17 +34,30 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 			}
 
 			grpcLogger := logger.Named("grpc")
-			grpcServer := grpccomm.NewServer(
-				grpccomm.ServerConfig{
-					ListenAddress: config.Server.ListenAddress,
-					Logger:        grpcLogger,
-				},
+			gRPCOpts := config.Server.GRPC.BuildServerOptions()
+
+			tlsConf, err := options.BuildTLSConfig(config.Server.TLS)
+			if err != nil {
+				return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
+			}
+			if tlsConf != nil {
+				gRPCOpts = append(gRPCOpts, grpc.Creds(credentials.NewTLS(tlsConf)))
+			}
+			gRPCOpts = append(gRPCOpts,
 				grpc.ChainUnaryInterceptor(
 					grpclogging.UnaryServerInterceptor(grpcLogger),
 				),
 				grpc.ChainStreamInterceptor(
 					grpclogging.StreamServerInterceptor(grpcLogger),
 				),
+			)
+
+			grpcServer := grpccomm.NewServer(
+				grpccomm.ServerConfig{
+					ListenAddress: config.Server.ListenAddress,
+					Logger:        grpcLogger,
+				},
+				gRPCOpts...,
 			)
 
 			logger.Debug("initializing database", zap.String("data_dir", config.Ledger.DataDir))
