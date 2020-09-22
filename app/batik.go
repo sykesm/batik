@@ -164,14 +164,8 @@ func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
 	}
 
 	app.Commands = []*cli.Command{
-		{
-			Name:  "exit",
-			Usage: "exit the shell",
-			Action: func(ctx *cli.Context) error {
-				return repl.ErrExit
-			},
-		},
 		startCommand(config, true),
+		exitCommand(),
 	}
 
 	sort.Sort(cli.CommandsByName(app.Commands))
@@ -192,4 +186,14 @@ func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
 	app.CustomAppHelpTemplate = s.String()
 
 	return app, nil
+}
+
+func exitCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "exit",
+		Usage: "exit the shell",
+		Action: func(ctx *cli.Context) error {
+			return repl.ErrExit
+		},
+	}
 }
