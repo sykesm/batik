@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"github.com/sykesm/batik/pkg/timeparse"
+	"go.uber.org/zap"
 )
 
 func TestWrite(t *testing.T) {
@@ -16,7 +18,7 @@ func TestWrite(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 
-	w := Writer{buf}
+	w := NewWriter(buf, zap.NewProductionEncoderConfig(), timeparse.ParseUnixTime)
 
 	testLine := "nonlogfmt line"
 	_, err := w.Write([]byte(testLine))

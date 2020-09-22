@@ -14,45 +14,89 @@ import (
 
 	"github.com/go-logfmt/logfmt"
 	"github.com/sykesm/batik/pkg/log/pretty/color"
+	"github.com/sykesm/batik/pkg/timeparse"
+	"go.uber.org/zap/zapcore"
 )
 
-type reservedField string
-
 const (
-	TimeFormat string = time.StampMicro
+	timeFormat string = time.StampMicro
 
-	// Reserved logfmt fields
-	timeField   reservedField = "ts"
-	lvlField                  = "level"
-	nameField                 = "logger"
-	callerField               = "caller"
-	msgField                  = "msg"
+	keyColor color.Color = color.FgGreen
+	valColor             = color.FgHiWhite
 
-	KeyColor              color.Color = color.FgGreen
-	ValColor                          = color.FgHiWhite
-	LoggerColor                       = color.FgBlue
-	TimeLightBgColor                  = color.FgBlack
-	TimeDarkBgColor                   = color.FgWhite
-	MsgLightBgColor                   = color.FgBlack
-	MsgAbsentLightBgColor             = color.FgHiBlack
-	MsgDarkBgColor                    = color.FgHiWhite
-	MsgAbsentDarkBgColor              = color.FgWhite
-	DebugLevelColor                   = color.FgMagenta
-	InfoLevelColor                    = color.FgCyan
-	WarnLevelColor                    = color.FgYellow
-	ErrorLevelColor                   = color.FgRed
-	PanicLevelColor                   = color.BgRed
-	FatalLevelColor                   = color.BgHiRed
-	UnknownLevelColor                 = color.FgMagenta
+	nameColor      = color.FgBlue
+	timeColor      = color.FgWhite
+	callerColor    = color.None
+	msgColor       = color.FgHiWhite
+	msgAbsentColor = color.FgWhite
+
+	debugLevelColor   = color.FgMagenta
+	infoLevelColor    = color.FgCyan
+	warnLevelColor    = color.FgYellow
+	errorLevelColor   = color.FgRed
+	panicLevelColor   = color.BgRed
+	fatalLevelColor   = color.BgHiRed
+	unknownLevelColor = color.FgMagenta
 )
 
 // A pretty.Writer prettifies logfmt lines and writes them to the underlying writer.
 type Writer struct {
 	io.Writer
+
+	// The zapcore.EncoderConfig used by the logger for encoding logfmt lines.
+	encoderConfig zapcore.EncoderConfig
+	// Maps a reserved key to a function controlling how to colorize output for values
+	// associated with that key.
+	colorFuncs map[string]func(f string) string
+	// Function for parsing time values in a logfmt line.
+	parseTime timeparse.TimeParser
+}
+
+func NewWriter(w io.Writer, e zapcore.EncoderConfig, parseTime timeparse.TimeParser) *Writer {
+	colorFuncs := map[string]func(f string) string{
+		e.NameKey: func(v string) string { return nameColor.Sprint(v) },
+		e.LevelKey: func(v string) string {
+			var c color.Color
+			switch v {
+			case "debug":
+				c = debugLevelColor
+			case "info":
+				c = infoLevelColor
+			case "warn", "warning":
+				c = warnLevelColor
+			case "error":
+				c = errorLevelColor
+			case "fatal", "panic":
+				c = fatalLevelColor
+			default:
+				c = unknownLevelColor
+			}
+			v = strings.ToUpper(v)[:imin(4, len(v))]
+			return c.Sprint(v)
+		},
+		e.MessageKey: func(v string) string {
+			if v == "" {
+				return msgAbsentColor.Sprint("<no msg>")
+			}
+			return msgColor.Sprint(v)
+		},
+		e.CallerKey: func(v string) string { return callerColor.Sprint(v) },
+		e.TimeKey:   func(v string) string { return timeColor.Sprint(v) },
+	}
+
+	return &Writer{
+		Writer:        w,
+		encoderConfig: e,
+		colorFuncs:    colorFuncs,
+		parseTime:     parseTime,
+	}
 }
 
 // Write prettifys input logfmt lines and writes them onto the underlying writer.
 // If the lines aren't logfmt, an error is returned.
+// TODO: If the loglines are not in proper order (time, level, name, caller, message, fields),
+// or if a reserved field is missing (such as if the logger is unnamed), the Write will miss
+// subsequent fields. We should probably add workarounds to this behavior.
 func (w *Writer) Write(p []byte) (n int, err error) {
 	if !bytes.ContainsRune(p, '=') {
 		return 0, errors.New("not a logfmt string")
@@ -61,13 +105,13 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	dec := logfmt.NewDecoder(bytes.NewReader(p))
 	dec.ScanRecord()
 
-	parsedTime := parseReservedTimeField(dec, timeField)
-	parsedLvl := parseReservedStringField(dec, lvlField)
-	parsedName := parseReservedStringField(dec, nameField)
-	parsedCaller := parseReservedStringField(dec, callerField)
-	parsedMsg := parseReservedStringField(dec, msgField)
+	parsedTime := w.parseReservedTimeField(dec, w.encoderConfig.TimeKey)
+	parsedLvl := w.parseReservedStringField(dec, w.encoderConfig.LevelKey)
+	parsedName := w.parseReservedStringField(dec, w.encoderConfig.NameKey)
+	parsedCaller := w.parseReservedStringField(dec, w.encoderConfig.CallerKey)
+	parsedMsg := w.parseReservedStringField(dec, w.encoderConfig.MessageKey)
 
-	fields := parseUnreservedFields(dec)
+	fields := w.parseUnreservedFields(dec)
 
 	if dec.Err() != nil {
 		return 0, dec.Err()
@@ -97,75 +141,51 @@ func imin(a, b int) int {
 	return b
 }
 
-func parseReservedTimeField(dec *logfmt.Decoder, f reservedField) string {
-	dec.ScanKeyval()
-
-	key := dec.Key()
-	val := dec.Value()
-
-	if !bytes.Equal(key, []byte(f)) {
-		return ""
-	}
-
-	if time, ok := tryParseTime(string(val)); ok {
-		return TimeDarkBgColor.Sprint(time.Format(TimeFormat))
-	}
-
-	return ""
-}
-
-func parseReservedStringField(dec *logfmt.Decoder, f reservedField) string {
+func (w *Writer) parseReservedTimeField(dec *logfmt.Decoder, f string) string {
 	dec.ScanKeyval()
 
 	key := string(dec.Key())
 	val := string(dec.Value())
 
-	if key != string(f) {
+	if key != f {
 		return ""
 	}
 
-	var c color.Color
-	switch f {
-	case nameField:
-		c = LoggerColor
-	case lvlField:
-		switch val {
-		case "debug":
-			c = DebugLevelColor
-		case "info":
-			c = InfoLevelColor
-		case "warn", "warning":
-			c = WarnLevelColor
-		case "error":
-			c = ErrorLevelColor
-		case "fatal", "panic":
-			c = FatalLevelColor
-		default:
-			c = UnknownLevelColor
+	if t, err := w.parseTime(val); err == nil {
+		if c, ok := w.colorFuncs[key]; ok {
+			return c(t.Format(timeFormat))
 		}
-		val = strings.ToUpper(val)[:imin(4, len(val))]
-	case msgField:
-		if val == "" {
-			c = MsgAbsentDarkBgColor
-			val = "<no msg>"
-		} else {
-			c = MsgDarkBgColor
-		}
+
+		return ""
 	}
 
-	return c.Sprint(val)
+	return ""
 }
 
-func parseUnreservedFields(dec *logfmt.Decoder) []string {
+func (w *Writer) parseReservedStringField(dec *logfmt.Decoder, f string) string {
+	dec.ScanKeyval()
+
+	key := string(dec.Key())
+	val := string(dec.Value())
+
+	if key != f {
+		return ""
+	}
+
+	if c, ok := w.colorFuncs[key]; ok {
+		return c(val)
+	}
+
+	return ""
+}
+
+func (w *Writer) parseUnreservedFields(dec *logfmt.Decoder) []string {
 	var fields []string
 
 	for dec.ScanKeyval() {
-		key := dec.Key()
-		val := dec.Value()
-
-		kstr := KeyColor.Sprint(string(key))
-		vstr := ValColor.Sprint(string(val))
-		fields = append(fields, kstr+"="+vstr)
+		key := string(dec.Key())
+		val := string(dec.Value())
+		fields = append(fields, keyColor.Sprint(key)+"="+valColor.Sprint(val))
 	}
 
 	return fields

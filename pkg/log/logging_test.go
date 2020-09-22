@@ -5,12 +5,14 @@ package log
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"testing"
 
 	. "github.com/onsi/gomega"
 	zaplogfmt "github.com/sykesm/zap-logfmt"
 	"github.com/sykesm/batik/pkg/log/pretty"
+	"github.com/sykesm/batik/pkg/timeparse"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -30,7 +32,7 @@ func TestNewLogger(t *testing.T) {
 			pretty:      false,
 			leveler:     NewLeveler("info"),
 			message:     "test",
-			expectedOut: `ts=.* level=info caller=log/logging_test.go:.* msg=test`,
+			expectedOut: `"ts=[0-9\.]* level=info logger=test caller=log/logging_test\.go:83 msg=test\\n"`,
 		},
 		{
 			testName:    "logs with json",
@@ -38,7 +40,7 @@ func TestNewLogger(t *testing.T) {
 			pretty:      false,
 			leveler:     NewLeveler("info"),
 			message:     "test",
-			expectedOut: `{"level":"info","ts":.*,"caller":"log/logging_test.go:.*","msg":"test"}`,
+			expectedOut: `"{\\"level\\":\\"info\\",\\"ts\\":[0-9\.]*,\\"logger\\":\\"test\\",\\"caller\\":\\"log/logging_test\.go:83\\",\\"msg\\":\\"test\\"}\\n"`,
 		},
 		{
 			testName:    "logs with color",
@@ -46,7 +48,7 @@ func TestNewLogger(t *testing.T) {
 			pretty:      true,
 			leveler:     NewLeveler("info"),
 			message:     "test",
-			expectedOut: `\x1b.*|\x1b.*INFO.*\x1b.*|.*test.*`,
+			expectedOut: `"\\x1b\[37m[a-z,A-Z]* [0-9]* [0-9:]*\.000000\\x1b\[0m \|\\x1b\[36mINFO\\x1b\[0m\| \\x1b\[34mtest\\x1b\[0m \\x1b\[0mlog/logging_test\.go:83\\x1b\[0m \\x1b\[97mtest\\x1b\[0m \\n"`,
 		},
 		{
 			testName:    "logs under level",
@@ -54,7 +56,7 @@ func TestNewLogger(t *testing.T) {
 			pretty:      false,
 			leveler:     NewLeveler("warn"),
 			message:     "test",
-			expectedOut: "^$",
+			expectedOut: `^""$`,
 		},
 		// {
 		// 	testName:    "logs to file",
@@ -73,14 +75,14 @@ func TestNewLogger(t *testing.T) {
 			buf := &bytes.Buffer{}
 			w = buf
 			if tt.pretty {
-				w = &pretty.Writer{Writer: w}
+				w = pretty.NewWriter(w, zap.NewProductionEncoderConfig(), timeparse.ParseUnixTime)
 			}
 			ws := NewWriteSyncer(w)
-			logger := NewLogger(tt.encoder, ws, tt.leveler)
+			logger := NewLogger(tt.encoder, ws, tt.leveler).Named("test")
 
 			logger.Info(tt.message)
 
-			gt.Expect(buf.String()).To(MatchRegexp(tt.expectedOut))
+			gt.Expect(fmt.Sprintf("%q", buf.String())).To(MatchRegexp(tt.expectedOut))
 		})
 	}
 }

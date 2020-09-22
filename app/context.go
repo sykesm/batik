@@ -29,7 +29,7 @@ func GetLogger(ctx *cli.Context) (*zap.Logger, error) {
 			zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig()),
 			log.NewWriteSyncer(ctx.App.ErrWriter),
 			log.NewLeveler("info"),
-		), nil
+		).Named(ctx.App.Name), nil
 	}
 
 	l, ok := logger.(*zap.Logger)

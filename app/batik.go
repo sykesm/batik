@@ -25,6 +25,7 @@ import (
 	"github.com/sykesm/batik/pkg/log/pretty"
 	"github.com/sykesm/batik/pkg/options"
 	"github.com/sykesm/batik/pkg/repl"
+	"github.com/sykesm/batik/pkg/timeparse"
 )
 
 func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
@@ -129,7 +130,7 @@ func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore
 	f, ok := w.(*os.File)
 	switch {
 	case config.Color == "yes", config.Color == "auto" && ok && terminal.IsTerminal(int(f.Fd())):
-		w = &pretty.Writer{Writer: w}
+		w = pretty.NewWriter(w, encoderConfig, timeparse.ParseUnixTime)
 		encoder = zaplogfmt.NewEncoder(encoderConfig)
 	case config.Format == "json":
 		encoder = zapcore.NewJSONEncoder(encoderConfig)
