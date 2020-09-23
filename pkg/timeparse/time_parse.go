@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-type TimeParser func(interface{}) (time.Time, error)
-
 // ParseUnixTime parses a unix epoch passed as either a string or float64.
 // It will error on any other type of value or if the string cannot be parsed
 // to a float64.

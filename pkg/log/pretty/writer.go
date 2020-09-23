@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/go-logfmt/logfmt"
-	"github.com/sykesm/batik/pkg/log/pretty/color"
-	"github.com/sykesm/batik/pkg/timeparse"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/sykesm/batik/pkg/log/pretty/color"
 )
 
 const (
@@ -49,10 +49,13 @@ type Writer struct {
 	// associated with that key.
 	colorFuncs map[string]func(f string) string
 	// Function for parsing time values in a logfmt line.
-	parseTime timeparse.TimeParser
+	parseTime TimeParser
 }
 
-func NewWriter(w io.Writer, e zapcore.EncoderConfig, parseTime timeparse.TimeParser) *Writer {
+// A TimeParser is used to convert encoded time stamps to a time.Time.
+type TimeParser func(interface{}) (time.Time, error)
+
+func NewWriter(w io.Writer, e zapcore.EncoderConfig, parseTime TimeParser) *Writer {
 	colorFuncs := map[string]func(f string) string{
 		e.NameKey: func(v string) string { return nameColor.Sprint(v) },
 		e.LevelKey: func(v string) string {
