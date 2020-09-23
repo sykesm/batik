@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	zaplogfmt "github.com/sykesm/zap-logfmt"
 	"github.com/sykesm/batik/pkg/log/pretty"
-	"github.com/sykesm/batik/pkg/timeparse"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -32,7 +31,7 @@ func TestNewLogger(t *testing.T) {
 			pretty:      false,
 			leveler:     NewLeveler("info"),
 			message:     "test",
-			expectedOut: `"ts=[0-9\.]* level=info logger=test caller=log/logging_test\.go:83 msg=test\\n"`,
+			expectedOut: `"ts=[0-9\.]* level=info logger=test caller=log/logging_test\.go:[0-9]* msg=test\\n"`,
 		},
 		{
 			testName:    "logs with json",
@@ -40,7 +39,7 @@ func TestNewLogger(t *testing.T) {
 			pretty:      false,
 			leveler:     NewLeveler("info"),
 			message:     "test",
-			expectedOut: `"{\\"level\\":\\"info\\",\\"ts\\":[0-9\.]*,\\"logger\\":\\"test\\",\\"caller\\":\\"log/logging_test\.go:83\\",\\"msg\\":\\"test\\"}\\n"`,
+			expectedOut: `"{\\"level\\":\\"info\\",\\"ts\\":[0-9\.]*,\\"logger\\":\\"test\\",\\"caller\\":\\"log/logging_test\.go:[0-9]*\\",\\"msg\\":\\"test\\"}\\n"`,
 		},
 		{
 			testName:    "logs with color",
@@ -48,7 +47,7 @@ func TestNewLogger(t *testing.T) {
 			pretty:      true,
 			leveler:     NewLeveler("info"),
 			message:     "test",
-			expectedOut: `"\\x1b\[37m[a-z,A-Z]* [0-9]* [0-9:]*\.000000\\x1b\[0m \|\\x1b\[36mINFO\\x1b\[0m\| \\x1b\[34mtest\\x1b\[0m \\x1b\[0mlog/logging_test\.go:83\\x1b\[0m \\x1b\[97mtest\\x1b\[0m \\n"`,
+			expectedOut: `"\\x1b\[37m[a-z,A-Z]* [0-9]* [0-9:]*\.000000\\x1b\[0m \|\\x1b\[36mINFO\\x1b\[0m\| \\x1b\[34mtest\\x1b\[0m \\x1b\[0mlog/logging_test\.go:[0-9]*\\x1b\[0m \\x1b\[97mtest\\x1b\[0m \\n"`,
 		},
 		{
 			testName:    "logs under level",
@@ -75,7 +74,7 @@ func TestNewLogger(t *testing.T) {
 			buf := &bytes.Buffer{}
 			w = buf
 			if tt.pretty {
-				w = pretty.NewWriter(w, zap.NewProductionEncoderConfig(), timeparse.ParseUnixTime)
+				w = pretty.NewWriter(w, zap.NewProductionEncoderConfig(), pretty.ParseUnixTime)
 			}
 			ws := NewWriteSyncer(w)
 			logger := NewLogger(tt.encoder, ws, tt.leveler).Named("test")

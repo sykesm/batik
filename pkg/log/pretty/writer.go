@@ -53,7 +53,7 @@ type Writer struct {
 }
 
 // A TimeParser is used to convert encoded time stamps to a time.Time.
-type TimeParser func(interface{}) (time.Time, error)
+type TimeParser func(string) (time.Time, error)
 
 func NewWriter(w io.Writer, e zapcore.EncoderConfig, parseTime TimeParser) *Writer {
 	colorFuncs := map[string]func(f string) string{
