@@ -85,8 +85,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd0=
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/sykesm/zap-logfmt v0.0.3 h1:3Wrhf7+I9JEUD8B6KPtDAr9j2jrS0/EPLy7GCE1t/+U=
-github.com/sykesm/zap-logfmt v0.0.3/go.mod h1:AuBd9xQjAe3URrWT1BBDk2v2onAZHkZkWRMiYZXiZWA=
+github.com/sykesm/zap-logfmt v0.0.4 h1:U2WzRvmIWG1wDLCFY3sz8UeEmsdHQjHFNlIdmroVFaI=
+github.com/sykesm/zap-logfmt v0.0.4/go.mod h1:AuBd9xQjAe3URrWT1BBDk2v2onAZHkZkWRMiYZXiZWA=
 github.com/syndtr/goleveldb v1.0.0 h1:fBdIW9lB4Iz0n9khmH8w27SJ3QEJ7+IgjPEwGSZiFdE=
 github.com/syndtr/goleveldb v1.0.0/go.mod h1:ZVVdQEZoIme9iO1Ch2Jdy24qqXrMMOU6lpPAyBWyWuQ=
 github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 h1:mujcChM89zOHwgZBBNr5WZ77mBXP1yR+gLThGCYZgAg=
