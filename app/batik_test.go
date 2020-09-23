@@ -86,6 +86,7 @@ func TestBatikInteractive(t *testing.T) {
 		stderr  string
 	}{
 		{command: "exit", stdout: "", stderr: ""},
+		{command: "logspec", stdout: "", stderr: ""},
 		{command: "help", stdout: sa.CustomAppHelpTemplate, stderr: ""},
 		{command: "unknown-command", stdout: "", stderr: "Unknown command: unknown-command\n"},
 	}
@@ -115,17 +116,19 @@ func TestBatikInteractiveWiring(t *testing.T) {
 
 	t.Run("AvailableCommands", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
-		gt.Expect(sa.Commands).To(HaveLen(2))
+		gt.Expect(sa.Commands).To(HaveLen(3))
 		gt.Expect(sa.Commands[0].Name).To(Equal("exit"))
-		gt.Expect(sa.Commands[1].Name).To(Equal("start"))
+		gt.Expect(sa.Commands[1].Name).To(Equal("logspec"))
+		gt.Expect(sa.Commands[2].Name).To(Equal("start"))
 	})
 
 	t.Run("HelpTemplate", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 		gt.Expect(strings.Split(strings.TrimSpace(sa.CustomAppHelpTemplate), "\n")).To(ConsistOf(
 			"Commands:",
-			"    exit   exit the shell",
-			"    start  start the server",
+			"    exit     exit the shell",
+			"    logspec  change the logspec of the logger leveler to any supported log level (eg. debug, info)",
+			"    start    start the server",
 		))
 	})
 }

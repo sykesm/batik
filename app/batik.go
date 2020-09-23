@@ -72,6 +72,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 
 		atexit.Register(func() { logger.Sync() })
 		SetLogger(ctx, logger)
+		SetLeveler(ctx, leveler)
 
 		return nil
 	}
@@ -120,7 +121,7 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 	return nil
 }
 
-func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore.Encoder, zapcore.WriteSyncer, zapcore.LevelEnabler) {
+func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore.Encoder, zapcore.WriteSyncer, zap.AtomicLevel) {
 	var encoder zapcore.Encoder
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.EpochNanosTimeEncoder
@@ -164,6 +165,7 @@ func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
 
 	app.Commands = []*cli.Command{
 		startCommand(config, true),
+		logspecCommand(),
 		exitCommand(),
 	}
 
