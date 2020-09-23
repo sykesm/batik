@@ -5,6 +5,8 @@ package atexit
 
 import "sync"
 
+// AtExit maintains a stack of functions to call "at exit". This can be used to
+// implement defer-like semantics across a user defined scope.
 type AtExit struct {
 	mutex    sync.Mutex
 	handlers []func()
