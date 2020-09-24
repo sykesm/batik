@@ -52,8 +52,10 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		},
 	}
 	app.Flags = append(app.Flags, config.Logging.Flags()...)
+	app.Flags = append(app.Flags, config.Ledger.Flags()...)
 	app.Commands = []*cli.Command{
 		startCommand(config, false),
+		dbCommand(config),
 	}
 
 	// Sort the flags and commands to make it easier to find things.
@@ -89,6 +91,14 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			ctx.App.CommandNotFound(ctx, arg)
 			return cli.Exit("", exitCommandNotFound)
 		}
+
+		// Create the db and attach it to the context prior to entering the shell app so we can
+		// reuse the connection between shell app commands.
+		db, err := levelDB(ctx, config.Ledger.DataDir)
+		if err != nil {
+			return cli.Exit(errors.Wrapf(err, "failed to create server at %s", config.Ledger.DataDir), exitServerCreateFailed)
+		}
+		SetKV(ctx, db)
 
 		sa, err := shellApp(ctx, config)
 		if err != nil {
@@ -165,6 +175,7 @@ func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
 
 	app.Commands = []*cli.Command{
 		startCommand(config, true),
+		dbCommand(config),
 		logspecCommand(),
 		exitCommand(),
 	}

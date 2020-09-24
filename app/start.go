@@ -25,10 +25,7 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 		Name:        "start",
 		Description: "Establish network connections and begin processing.",
 		Usage:       "start the server",
-		Flags: append(
-			config.Server.Flags(),
-			config.Ledger.Flags()...,
-		),
+		Flags:       config.Server.Flags(),
 		Action: func(ctx *cli.Context) error {
 			logger, err := GetLogger(ctx)
 			if err != nil {
@@ -49,8 +46,8 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 				),
 			)
 
-			logger.Debug("creating database", zap.String("data_dir", config.Ledger.DataDir))
-			db, err := store.NewLevelDB(config.Ledger.DataDir)
+			logger.Debug("initializing database", zap.String("data_dir", config.Ledger.DataDir))
+			db, err := levelDB(ctx, config.Ledger.DataDir)
 			if err != nil {
 				return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
 			}

@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/sykesm/batik/pkg/log"
+	"github.com/sykesm/batik/pkg/store"
+	"github.com/sykesm/batik/pkg/tested"
 )
 
 func TestContext_Logger(t *testing.T) {
@@ -84,4 +86,29 @@ func TestContext_Leveler(t *testing.T) {
 
 	gt.Expect(buf.String()).To(MatchRegexp("msg=test-info"))
 	gt.Expect(buf.String()).To(MatchRegexp("msg=test-debug"))
+}
+
+func TestContext_KV(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	path, cleanup := tested.TempDir(t, "", "level")
+	defer cleanup()
+
+	ctx := cli.NewContext(cli.NewApp(), nil, nil)
+
+	kv := GetKV(ctx)
+	gt.Expect(kv).To(BeNil())
+
+	ctx.Context = context.WithValue(ctx.Context, kvKey, "invalidkv")
+	kv = GetKV(ctx)
+	gt.Expect(kv).To(BeNil())
+
+	newKV, err := store.NewLevelDB(path)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	SetKV(ctx, newKV)
+	gt.Expect(ctx.Context.Value(kvKey)).To(Equal(newKV))
+
+	kv = GetKV(ctx)
+	gt.Expect(kv).To(Equal(newKV))
 }

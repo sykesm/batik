@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/sykesm/batik/pkg/log"
+	"github.com/sykesm/batik/pkg/store"
 )
 
 type contextKey int
@@ -22,6 +23,7 @@ const (
 	loggerKey
 	levelerKey
 	serverKey
+	kvKey
 )
 
 // GetLogger retrieves a zap.Logger from the *cli.Context if one exists.
@@ -69,6 +71,27 @@ func GetLeveler(ctx *cli.Context) (zapcore.LevelEnabler, error) {
 // SetLeveler stores a zapcore.LevelEnabler on the *cli.Context.
 func SetLeveler(ctx *cli.Context, leveler zapcore.LevelEnabler) {
 	setOnCtx(ctx, levelerKey, leveler)
+}
+
+// GetKV retrieves a KV store instance from the *cli.Context if one exists.
+func GetKV(ctx *cli.Context) store.KV {
+	kv := retrieveFromCtx(ctx, kvKey)
+
+	if kv == nil {
+		return nil
+	}
+
+	db, ok := kv.(store.KV)
+	if !ok {
+		return nil
+	}
+
+	return db
+}
+
+// SetKV stores a store.KV on the *cli.Context.
+func SetKV(ctx *cli.Context, kv store.KV) {
+	setOnCtx(ctx, kvKey, kv)
 }
 
 // // GetServer retrieves a server from the *cli.Context if one exists.

@@ -36,9 +36,9 @@ var _ = Describe("Grpc", func() {
 		dbPath, cleanup = tested.TempDir(GinkgoT(), "", "level")
 		cmd := exec.Command(
 			batikPath,
+			"--data-dir", dbPath,
 			"start",
 			"--listen-address", address,
-			"--data-dir", dbPath,
 		)
 
 		var err error

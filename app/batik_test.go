@@ -14,6 +14,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 
 	"github.com/sykesm/batik/pkg/options"
+	"github.com/sykesm/batik/pkg/tested"
 )
 
 func TestBatikWiring(t *testing.T) {
@@ -29,12 +30,19 @@ func TestBatikWiring(t *testing.T) {
 	gt.Expect(app.Flags).NotTo(BeEmpty())
 	gt.Expect(app.Flags[0].Names()[0]).To(Equal("color"))
 	gt.Expect(app.Flags[1].Names()[0]).To(Equal("config"))
-	gt.Expect(app.Flags[2].Names()[0]).To(Equal("format"))
-	gt.Expect(app.Flags[3].Names()[0]).To(Equal("log-spec"))
+	gt.Expect(app.Flags[2].Names()[0]).To(Equal("data-dir"))
+	gt.Expect(app.Flags[3].Names()[0]).To(Equal("format"))
+	gt.Expect(app.Flags[4].Names()[0]).To(Equal("log-spec"))
 
 	// Command implementations
-	gt.Expect(app.Commands).To(HaveLen(1))
-	gt.Expect(app.Commands[0].Name).To(Equal("start"))
+	gt.Expect(app.Commands).To(HaveLen(2))
+	gt.Expect(app.Commands[0].Name).To(Equal("db"))
+	gt.Expect(app.Commands[1].Name).To(Equal("start"))
+
+	// Subcommand implementations
+	gt.Expect(app.Commands[0].Subcommands).To(HaveLen(2))
+	gt.Expect(app.Commands[0].Subcommands[0].Name).To(Equal("get"))
+	gt.Expect(app.Commands[0].Subcommands[1].Name).To(Equal("put"))
 }
 
 func TestBatikCommandNotFound(t *testing.T) {
@@ -94,12 +102,15 @@ func TestBatikInteractive(t *testing.T) {
 		t.Run(tt.command, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
+			path, cleanup := tested.TempDir(t, "", "level")
+			defer cleanup()
+
 			stdin := strings.NewReader(tt.command + "\n")
 			stdout := bytes.NewBuffer(nil)
 			stderr := bytes.NewBuffer(nil)
 
 			app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
-			err := app.Run([]string{"batik"})
+			err = app.Run([]string{"batik", "--data-dir=" + path})
 			gt.Expect(err).NotTo(HaveOccurred())
 			gt.Expect(stdout.String()).To(Equal(tt.stdout))
 			gt.Expect(stderr.String()).To(Equal(tt.stderr))
@@ -116,16 +127,22 @@ func TestBatikInteractiveWiring(t *testing.T) {
 
 	t.Run("AvailableCommands", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
-		gt.Expect(sa.Commands).To(HaveLen(3))
-		gt.Expect(sa.Commands[0].Name).To(Equal("exit"))
-		gt.Expect(sa.Commands[1].Name).To(Equal("logspec"))
-		gt.Expect(sa.Commands[2].Name).To(Equal("start"))
+		gt.Expect(sa.Commands).To(HaveLen(4))
+		gt.Expect(sa.Commands[0].Name).To(Equal("db"))
+		gt.Expect(sa.Commands[1].Name).To(Equal("exit"))
+		gt.Expect(sa.Commands[2].Name).To(Equal("logspec"))
+		gt.Expect(sa.Commands[3].Name).To(Equal("start"))
+
+		gt.Expect(sa.Commands[0].Subcommands).To(HaveLen(2))
+		gt.Expect(sa.Commands[0].Subcommands[0].Name).To(Equal("get"))
+		gt.Expect(sa.Commands[0].Subcommands[1].Name).To(Equal("put"))
 	})
 
 	t.Run("HelpTemplate", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 		gt.Expect(strings.Split(strings.TrimSpace(sa.CustomAppHelpTemplate), "\n")).To(ConsistOf(
 			"Commands:",
+			"    db       perform operations against a kv store",
 			"    exit     exit the shell",
 			"    logspec  change the logspec of the logger leveler to any supported log level (eg. debug, info)",
 			"    start    start the server",

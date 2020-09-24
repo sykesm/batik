@@ -24,11 +24,11 @@ func logspecCommand() *cli.Command {
 			}
 
 			if atomicLevel, ok := leveler.(zap.AtomicLevel); ok {
-				atomicLevel.SetLevel(log.NameToLevel(ctx.Args().Get(0)))
+				atomicLevel.SetLevel(log.NameToLevel(ctx.Args().First()))
 				return nil
 			}
 
-			return cli.Exit(errors.New("LevelEnabler is not an AtomicLevel"), exitChangeLogspecFailed)
+			return cli.Exit(errors.New("leveler is not an AtomicLevel"), exitChangeLogspecFailed)
 		},
 	}
 }
