@@ -9,8 +9,10 @@ import (
 	"github.com/tedsuo/ifrit/sigmon"
 	cli "github.com/urfave/cli/v2"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/sykesm/batik/pkg/grpccomm"
+	"github.com/sykesm/batik/pkg/grpclogging"
 	"github.com/sykesm/batik/pkg/options"
 	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
@@ -33,11 +35,18 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 				return cli.Exit(err, exitServerStartFailed)
 			}
 
+			grpcLogger := logger.Named("grpc")
 			grpcServer := grpccomm.NewServer(
 				grpccomm.ServerConfig{
 					ListenAddress: config.Server.ListenAddress,
-					Logger:        logger,
+					Logger:        grpcLogger,
 				},
+				grpc.ChainUnaryInterceptor(
+					grpclogging.UnaryServerInterceptor(grpcLogger),
+				),
+				grpc.ChainStreamInterceptor(
+					grpclogging.StreamServerInterceptor(grpcLogger),
+				),
 			)
 
 			logger.Debug("creating database", zap.String("data_dir", config.Ledger.DataDir))
