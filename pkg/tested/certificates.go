@@ -72,6 +72,14 @@ func (ca CA) IssueClientCertificate(t TestingT, subjectCN string, sans ...string
 	return CertKeyPair{Cert: cert, Key: key, Certificate: certificate}
 }
 
+func (ca CA) TLSConfig(t TestingT) *tls.Config {
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(ca.Cert)
+	return &tls.Config{
+		RootCAs: caCertPool,
+	}
+}
+
 func (ckp CertKeyPair) ServerTLSConfig(t TestingT, clientCA *tls.Certificate) *tls.Config {
 	caCertPool := x509.NewCertPool()
 	for i := 1; i < len(ckp.Certificate.Certificate); i++ {
