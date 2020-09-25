@@ -190,7 +190,7 @@ func TestTLSConfig(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			tlsConf, err := TLSConfig(tt.srv)
+			tlsConf, err := tt.srv.TLSConfig()
 			gt.Expect(tlsConf).To(Equal(tt.confMatcher))
 			gt.Expect(err).To(tt.errMatcher)
 		})

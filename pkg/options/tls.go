@@ -104,12 +104,12 @@ func (t *TLSServer) Flags() []cli.Flag {
 
 // TLSConfig returns a tls.Config based on the configuration options set for TLSServer
 // and returns error for invalid configuration options.
-func TLSConfig(srv TLSServer) (*tls.Config, error) {
-	if (srv.ServerCert == CertKeyPair{}) {
+func (t *TLSServer) TLSConfig() (*tls.Config, error) {
+	if (t.ServerCert == CertKeyPair{}) {
 		return nil, nil
 	}
 
-	cert, err := srv.ServerCert.load()
+	cert, err := t.ServerCert.load()
 	if err != nil {
 		return nil, errors.Wrap(err, "options: failed to build TLS configuration")
 	}
