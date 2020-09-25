@@ -34,16 +34,9 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 			}
 
 			grpcLogger := logger.Named("grpc")
-			gRPCOpts := config.Server.GRPC.BuildServerOptions()
+			grpcServerOptions := config.Server.GRPC.BuildServerOptions()
 
-			tlsConf, err := config.Server.TLS.TLSConfig()
-			if err != nil {
-				return cli.Exit(errors.WithMessage(err, "failed to create server"), exitServerCreateFailed)
-			}
-			if tlsConf != nil {
-				gRPCOpts = append(gRPCOpts, grpc.Creds(credentials.NewTLS(tlsConf)))
-			}
-			gRPCOpts = append(gRPCOpts,
+			grpcServerOptions = append(grpcServerOptions,
 				grpc.ChainUnaryInterceptor(
 					grpclogging.UnaryServerInterceptor(grpcLogger),
 				),
@@ -52,12 +45,20 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 				),
 			)
 
+			tlsConf, err := config.Server.TLS.TLSConfig()
+			if err != nil {
+				return cli.Exit(errors.WithMessage(err, "failed to create server"), exitServerCreateFailed)
+			}
+			if tlsConf != nil {
+				grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsConf)))
+			}
+
 			grpcServer := grpccomm.NewServer(
 				grpccomm.ServerConfig{
 					ListenAddress: config.Server.ListenAddress,
 					Logger:        grpcLogger,
 				},
-				gRPCOpts...,
+				grpcServerOptions...,
 			)
 
 			logger.Debug("initializing database", zap.String("data_dir", config.Ledger.DataDir))
