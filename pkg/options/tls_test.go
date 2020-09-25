@@ -4,16 +4,9 @@
 package options
 
 import (
-	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"flag"
 	"io/ioutil"
-	"math/big"
 	"path/filepath"
 	"testing"
 
@@ -23,6 +16,88 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/urfave/cli/v2"
 )
+
+func TestCertKeyPairTLSCertificate(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	tempDir, cleanup := tested.TempDir(t, "", "options_tls")
+	defer cleanup()
+
+	ca := tested.NewCA(t, "ca")
+	skp := ca.IssueServerCertificate(t, "server", "127.0.0.1")
+
+	certKeyPair := CertKeyPair{
+		KeyData:  string(skp.Key),
+		KeyFile:  filepath.Join(tempDir, "server.crt"),
+		CertData: string(skp.Cert),
+		CertFile: filepath.Join(tempDir, "server.key"),
+	}
+	expected := skp.Certificate
+	expected.Certificate = expected.Certificate[0:1]
+
+	err := ioutil.WriteFile(certKeyPair.CertFile, skp.Cert, 0644)
+	gt.Expect(err).NotTo(HaveOccurred())
+	err = ioutil.WriteFile(certKeyPair.KeyFile, skp.Key, 0644)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	tests := map[string]struct {
+		setup      func(*CertKeyPair)
+		expected   tls.Certificate
+		errMatcher types.GomegaMatcher
+	}{
+		"KeyData": {
+			setup:    func(c *CertKeyPair) { c.KeyFile = "" },
+			expected: expected,
+		},
+		"CertData": {
+			setup:    func(c *CertKeyPair) { c.CertFile = "" },
+			expected: expected,
+		},
+		"KeyFile": {
+			setup:    func(c *CertKeyPair) { c.KeyData = "" },
+			expected: expected,
+		},
+		"CertFile": {
+			setup:    func(c *CertKeyPair) { c.CertData = "" },
+			expected: expected,
+		},
+		"CertDataIgnored": {
+			setup:    func(c *CertKeyPair) { c.CertData = "bogus-data" },
+			expected: expected,
+		},
+		"KeyDataIgnored": {
+			setup:    func(c *CertKeyPair) { c.KeyData = "bogus-data" },
+			expected: expected,
+		},
+		"Empty": {
+			setup:      func(c *CertKeyPair) { *c = CertKeyPair{} },
+			errMatcher: MatchError(MatchRegexp("tls:.*certificate input")),
+		},
+		"BadKeyFile": {
+			setup:      func(c *CertKeyPair) { c.KeyFile = "missing.txt" },
+			errMatcher: MatchError(MatchRegexp("unable to read private key file.*missing.txt")),
+		},
+		"BadCertFile": {
+			setup:      func(c *CertKeyPair) { c.CertFile = "missing.txt" },
+			errMatcher: MatchError(MatchRegexp("unable to read certificate file.*missing.txt")),
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			ckp := certKeyPair
+			tt.setup(&ckp)
+
+			cert, err := ckp.TLSCertificate()
+			if tt.errMatcher != nil {
+				gt.Expect(err).To(tt.errMatcher)
+				return
+			}
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(cert).To(Equal(tt.expected))
+		})
+	}
+}
 
 func TestServerTLSDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
@@ -129,258 +204,48 @@ func TestServerTLSUsage(t *testing.T) {
 	}
 }
 
-func TestTLSConfig(t *testing.T) {
-	gt := NewGomegaWithT(t)
+func TestServerTLSConfig(t *testing.T) {
+	ca := tested.NewCA(t, "ca")
+	skp := ca.IssueClientCertificate(t, "server", "127.0.0.1")
+	serverCert := skp.Certificate
+	serverCert.Certificate = serverCert.Certificate[0:1]
 
-	dir, cleanup := tested.TempDir(t, "", "options_tls")
-	defer cleanup()
-
-	keyPEM, certPEM, keyFile, certFile := genCKPPem(dir, gt)
-	// create expected TLS Config from generated key/cert pair
-	cert, err := tls.X509KeyPair(certPEM, keyPEM)
-	gt.Expect(err).NotTo(HaveOccurred())
-	expectedTLSConf := &tls.Config{
-		Certificates: []tls.Certificate{cert},
+	expectedTLSConfig := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
 		MinVersion:   tls.VersionTLS12,
 	}
 
 	tests := map[string]struct {
-		srv         ServerTLS
-		confMatcher *tls.Config
-		errMatcher  types.GomegaMatcher
-	}{
-		"empty ServerTLS": {
-			srv:         ServerTLS{},
-			confMatcher: nil,
-			errMatcher:  BeNil(),
-		},
-		"both data and files": {
-			srv: ServerTLS{
-				ServerCert: CertKeyPair{
-					CertData: string(certPEM),
-					KeyData:  string(keyPEM),
-					CertFile: certFile,
-					KeyFile:  keyFile,
-				},
-			},
-			confMatcher: nil,
-			errMatcher:  MatchError("options: failed to build TLS configuration: certificate files and data were both provided but only one is allowed"),
-		},
-		"valid data": {
-			srv: ServerTLS{
-				ServerCert: CertKeyPair{
-					CertData: string(certPEM),
-					KeyData:  string(keyPEM),
-				},
-			},
-			confMatcher: expectedTLSConf,
-			errMatcher:  BeNil(),
-		},
-		"valid files": {
-			srv: ServerTLS{
-				ServerCert: CertKeyPair{
-					CertFile: certFile,
-					KeyFile:  keyFile,
-				},
-			},
-			confMatcher: expectedTLSConf,
-			errMatcher:  BeNil(),
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			tlsConf, err := tt.srv.TLSConfig()
-			gt.Expect(tlsConf).To(Equal(tt.confMatcher))
-			gt.Expect(err).To(tt.errMatcher)
-		})
-	}
-}
-
-func TestValidateCPK(t *testing.T) {
-	tests := map[string]struct {
-		ckp        CertKeyPair
+		srv        ServerTLS
+		expected   *tls.Config
 		errMatcher types.GomegaMatcher
 	}{
-		"both data and files": {
-			ckp: CertKeyPair{
-				CertData: "test",
-				KeyData:  "test",
-				CertFile: "test",
-				KeyFile:  "test",
+		"missing key pair": {expected: nil},
+		"valid key pair": {
+			srv: ServerTLS{
+				ServerCert: CertKeyPair{CertData: string(skp.Cert), KeyData: string(skp.Key)},
 			},
-			errMatcher: MatchError("certificate files and data were both provided but only one is allowed"),
+			expected: expectedTLSConfig,
 		},
-		"key file provided - missing cert": {
-			ckp: CertKeyPair{
-				KeyFile: "test",
+		"invalid key pair": {
+			srv: ServerTLS{
+				ServerCert: CertKeyPair{CertFile: "missing.txt"},
 			},
-			errMatcher: MatchError("certificate data or file was not provided"),
-		},
-		"cert file provided - missing key": {
-			ckp: CertKeyPair{
-				CertFile: "test",
-			},
-			errMatcher: MatchError("private key data or file was not provided"),
-		},
-		"key data provided - missing cert": {
-			ckp: CertKeyPair{
-				KeyData: "test",
-			},
-			errMatcher: MatchError("certificate data or file was not provided"),
-		},
-		"cert data provided - missing key": {
-			ckp: CertKeyPair{
-				CertData: "test",
-			},
-			errMatcher: MatchError("private key data or file was not provided"),
-		},
-		"cert data and key data": {
-			ckp: CertKeyPair{
-				CertData: "test",
-				KeyData:  "test",
-			},
-			errMatcher: BeNil(),
-		},
-		"cert data and key file": {
-			ckp: CertKeyPair{
-				CertData: "test",
-				KeyFile:  "test",
-			},
-			errMatcher: BeNil(),
-		},
-		"cert file and key file": {
-			ckp: CertKeyPair{
-				CertFile: "test",
-				KeyFile:  "test",
-			},
-			errMatcher: BeNil(),
-		},
-		"cert file and key data": {
-			ckp: CertKeyPair{
-				CertFile: "test",
-				KeyData:  "test",
-			},
-			errMatcher: BeNil(),
+			errMatcher: MatchError(MatchRegexp("unable to read certificate file.*missing.txt")),
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
-			err := tt.ckp.validate()
-			gt.Expect(err).To(tt.errMatcher)
-		})
-	}
-}
 
-func TestLoadCKP(t *testing.T) {
-	gt := NewGomegaWithT(t)
-
-	dir, cleanup := tested.TempDir(t, "", "options_tls")
-	defer cleanup()
-
-	keyPEM, certPEM, keyFile, certFile := genCKPPem(dir, gt)
-	// create certificate
-	cert, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		t.Fatalf("failed to load certificate: %s", err)
-	}
-
-	tests := map[string]struct {
-		ckp       CertKeyPair
-		expectErr bool
-		cert      tls.Certificate
-	}{
-		"valid files": {
-			ckp: CertKeyPair{
-				CertFile: certFile,
-				KeyFile:  keyFile,
-			},
-			expectErr: false,
-			cert:      cert,
-		},
-		"valid data": {
-			ckp: CertKeyPair{
-				CertData: string(certPEM),
-				KeyData:  string(keyPEM),
-			},
-			expectErr: false,
-			cert:      cert,
-		},
-		"invalid files": {
-			ckp: CertKeyPair{
-				CertFile: filepath.Join(dir, "doesnotexist.pem"),
-				KeyFile:  filepath.Join(dir, "doesnotexist.pem"),
-			},
-			expectErr: true,
-			cert:      tls.Certificate{},
-		},
-		"invalid data": {
-			ckp: CertKeyPair{
-				CertData: "not PEM encoded",
-				KeyData:  "not PEM encoded",
-			},
-			expectErr: true,
-			cert:      tls.Certificate{},
-		},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			cert, err := tt.ckp.load()
-			gt.Expect(cert).To(Equal(tt.cert))
-			if tt.expectErr {
-				gt.Expect(err).To(HaveOccurred())
+			tlsConf, err := tt.srv.TLSConfig()
+			if tt.errMatcher != nil {
+				gt.Expect(err).To(tt.errMatcher)
+				return
 			}
-
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(tlsConf).To(Equal(tt.expected))
 		})
 	}
-
-}
-
-// genCKPPem generates a PEM-encoded ECDSA private key and X.509 certificate pair.
-// It returns both raw bytes as well as paths to files created in directory dir.
-func genCKPPem(dir string, gt *GomegaWithT) (keyPEM, certPEM []byte, keyFile, certFile string) {
-	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	gt.Expect(err).NotTo(HaveOccurred())
-	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
-	gt.Expect(err).NotTo(HaveOccurred())
-	var privBuf bytes.Buffer
-	err = pem.Encode(
-		&privBuf,
-		&pem.Block{
-			Type:  "PRIVATE KEY",
-			Bytes: privBytes,
-		},
-	)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-	}
-	certBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	var certBuf bytes.Buffer
-	err = pem.Encode(
-		&certBuf,
-		&pem.Block{
-			Type:  "CERTIFICATE",
-			Bytes: certBytes,
-		},
-	)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	keyPEM = privBuf.Bytes()
-	certPEM = certBuf.Bytes()
-	keyFile = filepath.Join(dir, "key.pem")
-	certFile = filepath.Join(dir, "cert.pem")
-	// create key/cert files
-	err = ioutil.WriteFile(keyFile, keyPEM, 0644)
-	gt.Expect(err).NotTo(HaveOccurred())
-	err = ioutil.WriteFile(certFile, certPEM, 0644)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	return
 }

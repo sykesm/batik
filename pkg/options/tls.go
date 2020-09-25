@@ -5,14 +5,15 @@ package options
 
 import (
 	"crypto/tls"
+	"io/ioutil"
 	"regexp"
 
 	"github.com/pkg/errors"
 	cli "github.com/urfave/cli/v2"
 )
 
-// A CertKeyPair references files containing the TLS server certificate
-// and private key.
+// A CertKeyPair references files containing the TLS certificate and private
+// key.
 type CertKeyPair struct {
 	// CertFile is the name of a file containing a PEM encoded server certificate
 	// or server certificate chain. If the file contains a certificate chain, the
@@ -23,41 +24,50 @@ type CertKeyPair struct {
 	// certificate provided in CertFile.
 	KeyFile string `yaml:"key_file,omitempty" batik:"relpath"`
 	// CertData is the PEM encoded server certificate or server certifiate chain.
+	// If CertFile is set, CertData is ignored.
 	CertData string `yaml:"cert,omitempty"`
-	// KeyData is the PEM encoded private key for the server certificate.
+	// KeyData is the PEM encoded private key for the server certificate. If
+	// KeyFile is set, Keydata is ignored.
 	KeyData string `yaml:"key,omitempty"`
 }
 
-func (ckp CertKeyPair) validate() error {
-	// cannot set all four fields
-	if ckp.CertData != "" && ckp.KeyData != "" && ckp.CertFile != "" && ckp.KeyFile != "" {
-		return errors.New("certificate files and data were both provided but only one is allowed")
+func (c *CertKeyPair) certData() (data []byte, err error) {
+	switch {
+	case c.CertFile != "":
+		data, err = ioutil.ReadFile(c.CertFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to read certificate file")
+		}
+	case c.CertData != "":
+		data = []byte(c.CertData)
 	}
-	// need to specify cert file or data plus key data or file
-	if (ckp.CertData != "" || ckp.CertFile != "") && (ckp.KeyData == "" && ckp.KeyFile == "") {
-		return errors.New("private key data or file was not provided")
-	}
-	// need to specify key file or data plus cert data or file
-	if (ckp.KeyData != "" || ckp.KeyFile != "") && (ckp.CertData == "" && ckp.CertFile == "") {
-		return errors.New("certificate data or file was not provided")
-	}
-	return nil
+	return data, nil
 }
 
-func (ckp CertKeyPair) load() (cert tls.Certificate, err error) {
-	if err = ckp.validate(); err != nil {
-		return cert, err
+func (c *CertKeyPair) keyData() (data []byte, err error) {
+	switch {
+	case c.KeyFile != "":
+		data, err = ioutil.ReadFile(c.KeyFile)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to read private key file")
+		}
+	case c.KeyData != "":
+		data = []byte(c.KeyData)
 	}
+	return data, nil
+}
 
-	if ckp.CertFile != "" {
-		cert, err = tls.LoadX509KeyPair(ckp.CertFile, ckp.KeyFile)
+// TLSCertificate returns a tls.Certificate from a CertKeyPair.
+func (c *CertKeyPair) TLSCertificate() (tls.Certificate, error) {
+	cert, err := c.certData()
+	if err != nil {
+		return tls.Certificate{}, err
 	}
-
-	if ckp.CertData != "" {
-		cert, err = tls.X509KeyPair([]byte(ckp.CertData), []byte(ckp.KeyData))
+	key, err := c.keyData()
+	if err != nil {
+		return tls.Certificate{}, err
 	}
-
-	return cert, err
+	return tls.X509KeyPair(cert, key)
 }
 
 // ServerTLS exposes configuration options for network services secured
@@ -73,18 +83,18 @@ func ServerTLSDefaults() *ServerTLS {
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (t *ServerTLS) ApplyDefaults() {}
+func (s *ServerTLS) ApplyDefaults() {}
 
 // Flags exposes configuration fields as flags. The current value of the
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
-func (t *ServerTLS) Flags() []cli.Flag {
+func (s *ServerTLS) Flags() []cli.Flag {
 	def := ServerTLSDefaults()
 	return []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
 			Name:        "tls-cert-file",
-			Value:       t.ServerCert.CertFile,
-			Destination: &t.ServerCert.CertFile,
+			Value:       s.ServerCert.CertFile,
+			Destination: &s.ServerCert.CertFile,
 			TakesFile:   true,
 			Usage: flow(`File containing the PEM encoded certificate (or chain) for the server.
 				When providing a certificate chain, the chain must start with the server certificate
@@ -93,8 +103,8 @@ func (t *ServerTLS) Flags() []cli.Flag {
 		}),
 		NewStringFlag(&cli.StringFlag{
 			Name:        "tls-private-key-file",
-			Value:       t.ServerCert.KeyFile,
-			Destination: &t.ServerCert.KeyFile,
+			Value:       s.ServerCert.KeyFile,
+			Destination: &s.ServerCert.KeyFile,
 			TakesFile:   true,
 			Usage:       flow(`File containing the PEM encoded private key for the server.`),
 			DefaultText: def.ServerCert.KeyFile,
@@ -104,14 +114,14 @@ func (t *ServerTLS) Flags() []cli.Flag {
 
 // TLSConfig returns a *tls.Config from the ServerTLS options or an error if
 // the configuration is not valid.
-func (t *ServerTLS) TLSConfig() (*tls.Config, error) {
-	if (t.ServerCert == CertKeyPair{}) {
+func (s *ServerTLS) TLSConfig() (*tls.Config, error) {
+	if (s.ServerCert == CertKeyPair{}) {
 		return nil, nil
 	}
 
-	cert, err := t.ServerCert.load()
+	cert, err := s.ServerCert.TLSCertificate()
 	if err != nil {
-		return nil, errors.Wrap(err, "options: failed to build TLS configuration")
+		return nil, err
 	}
 
 	return &tls.Config{
