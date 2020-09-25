@@ -60,26 +60,26 @@ func (ckp CertKeyPair) load() (cert tls.Certificate, err error) {
 	return cert, err
 }
 
-// TLSServer exposes configuration options for network services secured
+// ServerTLS exposes configuration options for network services secured
 // by TLS.
-type TLSServer struct {
-	// ServerCert contains the TLS server certifcate and key.
+type ServerTLS struct {
+	// ServerCert contains the TLS certifcate and key for a server.
 	ServerCert CertKeyPair `yaml:",inline,omitempty"`
 }
 
-// TLSServerDefaults returns the default configuration values for TLS servers.
-func TLSServerDefaults() *TLSServer {
-	return &TLSServer{}
+// ServerTLSDefaults returns the default configuration values for TLS servers.
+func ServerTLSDefaults() *ServerTLS {
+	return &ServerTLS{}
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (t *TLSServer) ApplyDefaults() {}
+func (t *ServerTLS) ApplyDefaults() {}
 
 // Flags exposes configuration fields as flags. The current value of the
 // receiver is used as the default value of the flag so a ApplyDefaults should
 // be called before requesting flags.
-func (t *TLSServer) Flags() []cli.Flag {
-	def := TLSServerDefaults()
+func (t *ServerTLS) Flags() []cli.Flag {
+	def := ServerTLSDefaults()
 	return []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
 			Name:        "tls-cert-file",
@@ -102,9 +102,9 @@ func (t *TLSServer) Flags() []cli.Flag {
 	}
 }
 
-// TLSConfig returns a tls.Config based on the configuration options set for TLSServer
-// and returns error for invalid configuration options.
-func (t *TLSServer) TLSConfig() (*tls.Config, error) {
+// TLSConfig returns a *tls.Config from the ServerTLS options or an error if
+// the configuration is not valid.
+func (t *ServerTLS) TLSConfig() (*tls.Config, error) {
 	if (t.ServerCert == CertKeyPair{}) {
 		return nil, nil
 	}

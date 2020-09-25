@@ -16,7 +16,7 @@ type Server struct {
 	// GRPC maintains the gRPC server configuration for a server.
 	GRPC GRPCServer `yaml:"grpc,omitempty"`
 	// TLS references the TLS configuration for a server.
-	TLS TLSServer `yaml:"tls,omitempty"`
+	TLS ServerTLS `yaml:"tls,omitempty"`
 }
 
 // ServerDefault returns the default configuration values for the server component.
@@ -24,7 +24,7 @@ func ServerDefaults() *Server {
 	return &Server{
 		ListenAddress: ":9443",
 		GRPC:          *GRPCServerDefaults(),
-		TLS:           *TLSServerDefaults(),
+		TLS:           *ServerTLSDefaults(),
 	}
 }
 

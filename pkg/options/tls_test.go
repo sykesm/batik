@@ -24,35 +24,35 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func TestTLSServerDefaults(t *testing.T) {
+func TestServerTLSDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	ts := TLSServerDefaults()
-	gt.Expect(ts).To(Equal(&TLSServer{}))
+	ts := ServerTLSDefaults()
+	gt.Expect(ts).To(Equal(&ServerTLS{}))
 }
 
-func TestTLSServerApplyDefaults(t *testing.T) {
+func TestServerTLSApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
-		setup func(ts *TLSServer)
+		setup func(ts *ServerTLS)
 	}{
-		"empty": {setup: func(ts *TLSServer) { *ts = TLSServer{} }},
+		"empty": {setup: func(ts *ServerTLS) { *ts = ServerTLS{} }},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			input := TLSServerDefaults()
+			input := ServerTLSDefaults()
 			tt.setup(input)
 
 			input.ApplyDefaults()
-			gt.Expect(input).To(Equal(TLSServerDefaults()))
+			gt.Expect(input).To(Equal(ServerTLSDefaults()))
 		})
 	}
 }
 
-func TestTLSServerFlagNames(t *testing.T) {
+func TestServerTLSFlagNames(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	flags := (&TLSServer{}).Flags()
+	flags := (&ServerTLS{}).Flags()
 
 	var names []string
 	for _, f := range flags {
@@ -66,29 +66,29 @@ func TestTLSServerFlagNames(t *testing.T) {
 	))
 }
 
-func TestTLSServerFlags(t *testing.T) {
+func TestServerTLSFlags(t *testing.T) {
 	tests := map[string]struct {
 		args     []string
-		expected TLSServer
+		expected ServerTLS
 	}{
 		"no flags": {
 			[]string{},
-			TLSServer{},
+			ServerTLS{},
 		},
 		"cert file": {
 			[]string{"--tls-cert-file", "certificate.file"},
-			TLSServer{ServerCert: CertKeyPair{CertFile: "certificate.file"}},
+			ServerTLS{ServerCert: CertKeyPair{CertFile: "certificate.file"}},
 		},
 		"key file": {
 			[]string{"--tls-private-key-file", "private.key"},
-			TLSServer{ServerCert: CertKeyPair{KeyFile: "private.key"}},
+			ServerTLS{ServerCert: CertKeyPair{KeyFile: "private.key"}},
 		},
 		"cert and key files": {
 			[]string{
 				"--tls-cert-file", "certificate.file",
 				"--tls-private-key-file", "private.key",
 			},
-			TLSServer{ServerCert: CertKeyPair{
+			ServerTLS{ServerCert: CertKeyPair{
 				CertFile: "certificate.file",
 				KeyFile:  "private.key",
 			}},
@@ -99,7 +99,7 @@ func TestTLSServerFlags(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			opts := &TLSServer{}
+			opts := &ServerTLS{}
 			flagSet := flag.NewFlagSet("server-tls-test", flag.ContinueOnError)
 			for _, f := range opts.Flags() {
 				err := f.Apply(flagSet)
@@ -114,14 +114,14 @@ func TestTLSServerFlags(t *testing.T) {
 }
 
 func TestServerTLSFlagsDefaultText(t *testing.T) {
-	flags := TLSServerDefaults().Flags()
+	flags := ServerTLSDefaults().Flags()
 	assertWrappedFlagWithDefaultText(t, flags...)
 }
 
 func TestServerTLSUsage(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	opts := &TLSServer{}
+	opts := &ServerTLS{}
 	for _, f := range opts.Flags() {
 		f := f.(cli.DocGenerationFlag)
 		gt.Expect(f.GetUsage()).NotTo(ContainSubstring("\n"))
@@ -145,17 +145,17 @@ func TestTLSConfig(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		srv         TLSServer
+		srv         ServerTLS
 		confMatcher *tls.Config
 		errMatcher  types.GomegaMatcher
 	}{
-		"empty TLSServer": {
-			srv:         TLSServer{},
+		"empty ServerTLS": {
+			srv:         ServerTLS{},
 			confMatcher: nil,
 			errMatcher:  BeNil(),
 		},
 		"both data and files": {
-			srv: TLSServer{
+			srv: ServerTLS{
 				ServerCert: CertKeyPair{
 					CertData: string(certPEM),
 					KeyData:  string(keyPEM),
@@ -167,7 +167,7 @@ func TestTLSConfig(t *testing.T) {
 			errMatcher:  MatchError("options: failed to build TLS configuration: certificate files and data were both provided but only one is allowed"),
 		},
 		"valid data": {
-			srv: TLSServer{
+			srv: ServerTLS{
 				ServerCert: CertKeyPair{
 					CertData: string(certPEM),
 					KeyData:  string(keyPEM),
@@ -177,7 +177,7 @@ func TestTLSConfig(t *testing.T) {
 			errMatcher:  BeNil(),
 		},
 		"valid files": {
-			srv: TLSServer{
+			srv: ServerTLS{
 				ServerCert: CertKeyPair{
 					CertFile: certFile,
 					KeyFile:  keyFile,

@@ -63,7 +63,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 			GRPC: GRPCServer{
 				GRPC: GRPC{MaxSendMessageSize: 104857600},
 			},
-			TLS: TLSServer{
+			TLS: ServerTLS{
 				ServerCert: CertKeyPair{CertData: "PEM ME\n", KeyData: "PEM ME\n"},
 			},
 		},
@@ -86,7 +86,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 					MaxSendMessageSize: 104857600,
 				},
 			},
-			TLS: TLSServer{
+			TLS: ServerTLS{
 				ServerCert: CertKeyPair{
 					CertData: "PEM ME\n",
 					KeyData:  "PEM ME\n",

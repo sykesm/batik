@@ -17,7 +17,7 @@ func TestServerDefaults(t *testing.T) {
 	gt.Expect(server).To(Equal(&Server{
 		ListenAddress: ":9443",
 		GRPC:          *GRPCServerDefaults(),
-		TLS:           *TLSServerDefaults(),
+		TLS:           *ServerTLSDefaults(),
 	}))
 }
 
@@ -28,7 +28,7 @@ func TestServerApplyDefaults(t *testing.T) {
 		"empty":          {setup: func(s *Server) { *s = Server{} }},
 		"listen address": {setup: func(s *Server) { s.ListenAddress = "" }},
 		"GRPC":           {setup: func(s *Server) { s.GRPC = GRPCServer{} }},
-		"TLS":            {setup: func(s *Server) { s.TLS = TLSServer{} }},
+		"TLS":            {setup: func(s *Server) { s.TLS = ServerTLS{} }},
 	}
 
 	for name, tt := range tests {
@@ -84,7 +84,7 @@ func TestServerFlags(t *testing.T) {
 		},
 		"tls cert file": {
 			args:     []string{"--tls-cert-file", "file.crt"},
-			expected: Server{TLS: TLSServer{ServerCert: CertKeyPair{CertFile: "file.crt"}}},
+			expected: Server{TLS: ServerTLS{ServerCert: CertKeyPair{CertFile: "file.crt"}}},
 		},
 		"the works": {
 			args: []string{
@@ -101,7 +101,7 @@ func TestServerFlags(t *testing.T) {
 					ConnTimeout: 90 * time.Second,
 					GRPC:        GRPC{MaxRecvMessageSize: 9999, MaxSendMessageSize: 8888},
 				},
-				TLS: TLSServer{
+				TLS: ServerTLS{
 					ServerCert: CertKeyPair{CertFile: "file.crt", KeyFile: "private.key"},
 				},
 			},
