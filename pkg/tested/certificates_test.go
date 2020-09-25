@@ -62,6 +62,18 @@ func TestCertificates(t *testing.T) {
 	})
 }
 
+func TestCATLSConfig(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	ca := NewCA(t, "ca")
+	cert, err := x509.ParseCertificate(ca.Certificate.Certificate[0])
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	tlsConfig := ca.TLSConfig(t)
+	gt.Expect(tlsConfig.RootCAs.Subjects()).To(HaveLen(1))
+	gt.Expect(tlsConfig.RootCAs.Subjects()[0]).To(Equal(cert.RawSubject))
+}
+
 func TestCertificatesTLSConfig(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	serverCA := NewCA(t, "server-ca")
