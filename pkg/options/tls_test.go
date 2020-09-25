@@ -129,7 +129,7 @@ func TestServerTLSUsage(t *testing.T) {
 	}
 }
 
-func TestBuildTLSConfig(t *testing.T) {
+func TestTLSConfig(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	dir, cleanup := tested.TempDir(t, "", "options_tls")
@@ -190,7 +190,7 @@ func TestBuildTLSConfig(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			tlsConf, err := BuildTLSConfig(tt.srv)
+			tlsConf, err := TLSConfig(tt.srv)
 			gt.Expect(tlsConf).To(Equal(tt.confMatcher))
 			gt.Expect(err).To(tt.errMatcher)
 		})

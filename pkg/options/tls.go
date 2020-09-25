@@ -102,9 +102,9 @@ func (t *TLSServer) Flags() []cli.Flag {
 	}
 }
 
-// BuildTLSConfig returns a tls.Config based on the configuration options set for TLSServer
+// TLSConfig returns a tls.Config based on the configuration options set for TLSServer
 // and returns error for invalid configuration options.
-func BuildTLSConfig(srv TLSServer) (*tls.Config, error) {
+func TLSConfig(srv TLSServer) (*tls.Config, error) {
 	if (srv.ServerCert == CertKeyPair{}) {
 		return nil, nil
 	}

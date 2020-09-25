@@ -36,9 +36,9 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 			grpcLogger := logger.Named("grpc")
 			gRPCOpts := config.Server.GRPC.BuildServerOptions()
 
-			tlsConf, err := options.BuildTLSConfig(config.Server.TLS)
+			tlsConf, err := options.TLSConfig(config.Server.TLS)
 			if err != nil {
-				return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
+				return cli.Exit(errors.WithMessage(err, "failed to create server"), exitServerCreateFailed)
 			}
 			if tlsConf != nil {
 				gRPCOpts = append(gRPCOpts, grpc.Creds(credentials.NewTLS(tlsConf)))
