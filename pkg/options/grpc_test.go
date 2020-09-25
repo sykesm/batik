@@ -5,10 +5,12 @@ package options
 
 import (
 	"flag"
+	"reflect"
 	"testing"
 	"time"
 
 	. "github.com/onsi/gomega"
+	"google.golang.org/grpc"
 )
 
 func TestGRPCDefaults(t *testing.T) {
@@ -206,11 +208,22 @@ func TestGRPCServerFlagsDefaultText(t *testing.T) {
 func TestBuildServerOptions(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	gs := GRPCServer{}
-	gs.ApplyDefaults()
+	// Because of how the gRPC option functions work, the only sane way to
+	// test them is to create and start a server with the options and drive
+	// a client against it to test the limits. That's pretty heavy.
+	//
+	// A simpler, fragile, and hacky mechanism is to at least check we're
+	// using the correct option functions. These checks can't make assertions
+	// on the values - just that the correction option set is being used.
+	var setters []uintptr
+	for _, o := range GRPCServerDefaults().BuildServerOptions() {
+		p := reflect.ValueOf(o).Elem().FieldByName("f").Pointer()
+		setters = append(setters, p)
+	}
 
-	gt.Expect(gs.BuildServerOptions()).To(HaveLen(3))
-	//TODO: not sure of there is any way to actually check that the options were
-	// set correctly
-
+	gt.Expect(setters).To(ConsistOf(
+		reflect.ValueOf(grpc.MaxRecvMsgSize(0)).Elem().FieldByName("f").Pointer(),
+		reflect.ValueOf(grpc.MaxSendMsgSize(0)).Elem().FieldByName("f").Pointer(),
+		reflect.ValueOf(grpc.ConnectionTimeout(0)).Elem().FieldByName("f").Pointer(),
+	))
 }
