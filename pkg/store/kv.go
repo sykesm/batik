@@ -20,13 +20,10 @@
 package store
 
 import (
-	"errors"
 	"io"
 )
 
-var (
-	ErrNotFound = errors.New("not found")
-)
+type Key []byte
 
 type KV interface {
 	io.Closer
@@ -58,4 +55,16 @@ type WriteBatch interface {
 
 	Clear()
 	Count() int
+}
+
+// Iterator iterates over a DB.
+// The Iterator is not safe for concurrent use, but it is safe to use
+// multiple iterators concurrently, with each in a dedicated goroutine.
+// It is also safe to use an iterator concurrently with modifying its
+// underlying DB. The resultant key/value pairs are guaranteed to be
+// consistent.
+//
+// Also read Iterator documentation of the leveldb/iterator package.
+type Iterator interface {
+	Keys() ([]Key, error)
 }

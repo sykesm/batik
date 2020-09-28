@@ -23,9 +23,31 @@ import (
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/filter"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/storage"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
+
+var _ Iterator = (*leveldbIterator)(nil)
+
+type leveldbIterator struct {
+	iterator.Iterator
+}
+
+// Keys returns all keys that the iterator can iterate over.
+// The underlying returned value can safely be modified and the
+// iterator is released on return.
+func (i *leveldbIterator) Keys() ([]Key, error) {
+	defer i.Iterator.Release()
+
+	var keys []Key
+	for i.Iterator.Next() {
+		keys = append(keys, append([]byte(nil), i.Iterator.Key()...))
+	}
+
+	return keys, i.Iterator.Error()
+}
 
 var _ WriteBatch = (*leveldbWriteBatch)(nil)
 
@@ -70,7 +92,7 @@ func (l *LevelDBKV) Close() error {
 func (l *LevelDBKV) Get(key []byte) ([]byte, error) {
 	v, err := l.db.Get(key, nil)
 	if err != nil {
-		return nil, errors.Wrap(ErrNotFound, err.Error())
+		return nil, err
 	}
 
 	return v, nil
@@ -99,6 +121,22 @@ func (l *LevelDBKV) NewWriteBatch() WriteBatch {
 	return &leveldbWriteBatch{
 		batch: &leveldb.Batch{},
 		kv:    l,
+	}
+}
+
+// NewIterator returns an iterator that can be used to fetch Keys over a range
+// from the DB. Prefix allows slicing the iterator to only contains keys in the given
+// range. An empty prefix iterates over all keys in the DB.
+//
+// Values returned by the Iterator are cloned and can be safely modified.
+func (l *LevelDBKV) NewIterator(prefix []byte, ro *opt.ReadOptions) Iterator {
+	var bytesPrefix *util.Range
+	if len(prefix) > 0 {
+		bytesPrefix = util.BytesPrefix(prefix)
+	}
+
+	return &leveldbIterator{
+		Iterator: l.db.NewIterator(bytesPrefix, ro),
 	}
 }
 

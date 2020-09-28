@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/sykesm/batik/pkg/tested"
 )
 
@@ -71,8 +72,8 @@ func benchmarkLevelDB(b *testing.B, path string) {
 func testExistence(t *testing.T, kv KV) {
 	gt := NewGomegaWithT(t)
 	_, err := kv.Get([]byte("not_exist"))
-	gt.Expect(err).To(MatchError(ErrNotFound))
-	gt.Expect(errors.Is(err, ErrNotFound)).To(BeTrue())
+	gt.Expect(err).To(MatchError(leveldb.ErrNotFound))
+	gt.Expect(errors.Is(err, leveldb.ErrNotFound)).To(BeTrue())
 
 	err = kv.Put([]byte("exist"), []byte{})
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -134,15 +135,15 @@ func TestLevelDB(t *testing.T) {
 	gt.Expect(mv).To(Equal([][]byte{[]byte("val_batch1"), []byte("val_batch2")}))
 
 	_, err = db2.MultiGet([]byte("missing"), []byte("key_batch2"))
-	gt.Expect(err).To(MatchError(ErrNotFound))
-	gt.Expect(errors.Is(err, ErrNotFound)).To(BeTrue())
+	gt.Expect(err).To(MatchError(leveldb.ErrNotFound))
+	gt.Expect(errors.Is(err, leveldb.ErrNotFound)).To(BeTrue())
 
 	// Check delete
 	gt.Expect(db2.Delete([]byte("exist"))).To(Succeed())
 
 	_, err = db2.Get([]byte("exist"))
-	gt.Expect(err).To(MatchError(ErrNotFound))
-	gt.Expect(errors.Is(err, ErrNotFound)).To(BeTrue())
+	gt.Expect(err).To(MatchError(leveldb.ErrNotFound))
+	gt.Expect(errors.Is(err, leveldb.ErrNotFound)).To(BeTrue())
 }
 
 func TestLevelDBWriteBatch(t *testing.T) {
@@ -165,8 +166,8 @@ func TestLevelDBWriteBatch(t *testing.T) {
 		defer tested.Close(t, db2)
 
 		_, err = db2.Get([]byte("key_batch100000"))
-		gt.Expect(err).To(MatchError(ErrNotFound))
-		gt.Expect(errors.Is(err, ErrNotFound)).To(BeTrue())
+		gt.Expect(err).To(MatchError(leveldb.ErrNotFound))
+		gt.Expect(errors.Is(err, leveldb.ErrNotFound)).To(BeTrue())
 	})
 
 	t.Run("CommitThenClose", func(t *testing.T) {
@@ -231,5 +232,57 @@ func TestLevelDBWriteBatch(t *testing.T) {
 
 		wb.Clear()
 		gt.Expect(wb.Count()).To(Equal(0))
+	})
+}
+
+func TestLevelDBIterator(t *testing.T) {
+	path, cleanup := tested.TempDir(t, "", "level")
+	defer cleanup()
+
+	t.Run("Keys", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+		db, err := NewLevelDB(path)
+		gt.Expect(err).NotTo(HaveOccurred())
+		defer tested.Close(t, db)
+
+		err = db.Put([]byte("a"), []byte{})
+		gt.Expect(err).NotTo(HaveOccurred())
+		db.Put([]byte("b"), []byte{})
+		gt.Expect(err).NotTo(HaveOccurred())
+		db.Put([]byte("c"), []byte{})
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		iter := db.NewIterator(nil, nil)
+		keys, err := iter.Keys()
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		gt.Expect(keys).To(ConsistOf(
+			Key([]byte("a")),
+			Key([]byte("b")),
+			Key([]byte("c")),
+		))
+	})
+
+	t.Run("KeysWithPrefix", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+		db, err := NewLevelDB(path)
+		gt.Expect(err).NotTo(HaveOccurred())
+		defer tested.Close(t, db)
+
+		err = db.Put([]byte("a.a"), []byte{})
+		gt.Expect(err).NotTo(HaveOccurred())
+		db.Put([]byte("a.b"), []byte{})
+		gt.Expect(err).NotTo(HaveOccurred())
+		db.Put([]byte("b.c"), []byte{})
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		iter := db.NewIterator([]byte("a."), nil)
+		keys, err := iter.Keys()
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		gt.Expect(keys).To(ConsistOf(
+			Key([]byte("a.a")),
+			Key([]byte("a.b")),
+		))
 	})
 }
