@@ -27,20 +27,22 @@ func dbCommand(config *options.Batik) *cli.Command {
 					db, err := levelDB(ctx, config.Ledger.DataDir)
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
+						return nil
 					}
 
 					decodedKey := make([]byte, hex.DecodedLen(len(key)))
 					if _, err := hex.Decode(decodedKey, key); err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
+						return nil
 					}
 
 					val, err := db.Get(decodedKey)
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
-					} else {
-						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", hex.Dump(val))
+						return nil
 					}
 
+					fmt.Fprintf(ctx.App.ErrWriter, "%s\n", hex.Dump(val))
 					return nil
 				},
 			},
@@ -54,15 +56,18 @@ func dbCommand(config *options.Batik) *cli.Command {
 					db, err := levelDB(ctx, config.Ledger.DataDir)
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
+						return nil
 					}
 
 					decodedKey := make([]byte, hex.DecodedLen(len(key)))
 					if _, err := hex.Decode(decodedKey, key); err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
+						return nil
 					}
 					decodedVal := make([]byte, hex.DecodedLen(len(val)))
 					if _, err := hex.Decode(decodedVal, val); err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
+						return nil
 					}
 
 					if err := db.Put(decodedKey, decodedVal); err != nil {
@@ -75,22 +80,37 @@ func dbCommand(config *options.Batik) *cli.Command {
 			{
 				Name:  "keys",
 				Usage: "dump all keys in the db",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "prefix",
+						Usage:       "prefix to range over",
+						DefaultText: "",
+					},
+				},
 				Action: func(ctx *cli.Context) error {
 					db, err := levelDB(ctx, config.Ledger.DataDir)
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
+						return nil
 					}
 
-					iter := db.NewIterator(nil, nil)
+					prefix := []byte(ctx.String("prefix"))
+					decodedPrefix := make([]byte, hex.DecodedLen(len(prefix)))
+					if _, err := hex.Decode(decodedPrefix, prefix); err != nil {
+						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
+						return nil
+					}
+
+					iter := db.NewIterator(decodedPrefix, nil)
 					keys, err := iter.Keys()
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
-					} else {
-						for _, k := range keys {
-							fmt.Fprintf(ctx.App.ErrWriter, "%s\n", hex.EncodeToString(k))
-						}
+						return nil
 					}
 
+					for _, k := range keys {
+						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", hex.EncodeToString(k))
+					}
 					return nil
 				},
 			},
