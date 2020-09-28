@@ -52,9 +52,15 @@ This document contains a set of stories and work items for Batik.
 
 # DB
 
-- [ ] Configure and create a persistent DB
-- [ ] Introduce commands for interacting with db directly (get/put)
-- [ ] Introduce command to dump keys
+- [x] Configure and create a persistent DB
+- [x] Introduce commands for interacting with db directly (get/put)
+      > `db get` and `db put` subcommands available in both interactive and non interactive.
+      > `db get` expects a hex encoded string key and returns a go hex.Dump of the stored
+      > value.
+      > `db put` expects hex encoded strings for both the key and value and stores the
+      > decoded value at the decoded key.
+- [x] Introduce command to dump keys
+      > `db keys` returns a list of hex encoded string keys over the entire db.
 
 # Errors
 
