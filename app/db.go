@@ -22,21 +22,19 @@ func dbCommand(config *options.Batik) *cli.Command {
 				Name:  "get",
 				Usage: "get a value from the db",
 				Action: func(ctx *cli.Context) error {
-					key := []byte(ctx.Args().First())
-
 					db, err := levelDB(ctx, config.Ledger.DataDir)
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
 						return nil
 					}
 
-					decodedKey := make([]byte, hex.DecodedLen(len(key)))
-					if _, err := hex.Decode(decodedKey, key); err != nil {
+					key, err := hex.DecodeString(ctx.Args().First())
+					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
 						return nil
 					}
 
-					val, err := db.Get(decodedKey)
+					val, err := db.Get(key)
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
 						return nil
@@ -50,27 +48,24 @@ func dbCommand(config *options.Batik) *cli.Command {
 				Name:  "put",
 				Usage: "store a value in the db",
 				Action: func(ctx *cli.Context) error {
-					key := []byte(ctx.Args().Get(0))
-					val := []byte(ctx.Args().Get(1))
-
 					db, err := levelDB(ctx, config.Ledger.DataDir)
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
 						return nil
 					}
 
-					decodedKey := make([]byte, hex.DecodedLen(len(key)))
-					if _, err := hex.Decode(decodedKey, key); err != nil {
+					key, err := hex.DecodeString(ctx.Args().Get(0))
+					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
 						return nil
 					}
-					decodedVal := make([]byte, hex.DecodedLen(len(val)))
-					if _, err := hex.Decode(decodedVal, val); err != nil {
+					val, err := hex.DecodeString(ctx.Args().Get(1))
+					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
 						return nil
 					}
 
-					if err := db.Put(decodedKey, decodedVal); err != nil {
+					if err := db.Put(key, val); err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
 					}
 
@@ -94,14 +89,13 @@ func dbCommand(config *options.Batik) *cli.Command {
 						return nil
 					}
 
-					prefix := []byte(ctx.String("prefix"))
-					decodedPrefix := make([]byte, hex.DecodedLen(len(prefix)))
-					if _, err := hex.Decode(decodedPrefix, prefix); err != nil {
+					prefix, err := hex.DecodeString(ctx.String("prefix"))
+					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
 						return nil
 					}
 
-					iter := db.NewIterator(decodedPrefix, nil)
+					iter := db.NewIterator(prefix, nil)
 					keys, err := iter.Keys()
 					if err != nil {
 						fmt.Fprintf(ctx.App.ErrWriter, "%s\n", err)
