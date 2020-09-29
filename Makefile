@@ -42,10 +42,11 @@ integration-test integration-tests:
 	@scripts/run-integration-tests
 
 # go tool->path mapping
+gotool.ginkgo := github.com/onsi/ginkgo/ginkgo
+gotool.protoc-gen-grpc-gateway := github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 gotool.protoc-gen-go := github.com/golang/protobuf/protoc-gen-go
 gotool.prototool := github.com/uber/prototool/cmd/prototool
-gotool.ginkgo := github.com/onsi/ginkgo/ginkgo
-GOTOOLS = protoc-gen-go prototool ginkgo
+GOTOOLS = protoc-gen-grpc-gateway protoc-gen-go prototool ginkgo
 
 .PHONY: gotools
 gotools: $(patsubst %,$(GOTOOLS_BINDIR)/%, $(GOTOOLS))
