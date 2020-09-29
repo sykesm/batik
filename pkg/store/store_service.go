@@ -4,17 +4,11 @@
 package store
 
 import (
-	"bytes"
 	"context"
-	"crypto"
-	"strconv"
 	"sync"
 
 	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
-	"github.com/sykesm/batik/pkg/protomsg"
-	"github.com/sykesm/batik/pkg/transaction"
-	"google.golang.org/protobuf/proto"
 )
 
 // StoreService implements the StoreAPIServer gRPC interface.
@@ -38,20 +32,13 @@ func (s *StoreService) GetTransaction(ctx context.Context, req *sb.GetTransactio
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	tx := &tb.Transaction{}
-
-	key := transactionKey(req.Txid)
-	data, err := s.db.Get(key)
+	txs, err := LoadTransactions(s.db, [][]byte{req.Txid})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := proto.Unmarshal(data, tx); err != nil {
-		return nil, err
-	}
-
 	return &sb.GetTransactionResponse{
-		Transaction: tx,
+		Transaction: txs[0],
 	}, nil
 }
 
@@ -61,13 +48,7 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *sb.PutTransactio
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	intTx, err := transaction.Marshal(crypto.SHA256, req.Transaction)
-	if err != nil {
-		return nil, err
-	}
-
-	key := transactionKey(intTx.ID)
-	if err := s.db.Put(key, intTx.Encoded); err != nil {
+	if err := StoreTransactions(s.db, []*tb.Transaction{req.Transaction}); err != nil {
 		return nil, err
 	}
 
@@ -82,23 +63,13 @@ func (s *StoreService) GetState(ctx context.Context, req *sb.GetStateRequest) (*
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	state := &tb.ResolvedState{}
-
-	key := stateKey(req.StateRef)
-	data, err := s.db.Get(key)
+	states, err := LoadStates(s.db, []*tb.StateReference{req.StateRef})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := proto.Unmarshal(data, state); err != nil {
-		return nil, err
-	}
-
-	state.Txid = req.StateRef.Txid
-	state.OutputIndex = req.StateRef.OutputIndex
-
 	return &sb.GetStateResponse{
-		State: state,
+		State: states[0],
 	}, nil
 }
 
@@ -107,41 +78,9 @@ func (s *StoreService) PutState(ctx context.Context, req *sb.PutStateRequest) (*
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	encodedState, err := protomsg.MarshalDeterministic(req.State)
-	if err != nil {
-		return nil, err
-	}
-
-	stateRef := &tb.StateReference{
-		Txid:        req.State.Txid,
-		OutputIndex: req.State.OutputIndex,
-	}
-
-	key := stateKey(stateRef)
-	if err := s.db.Put(key, encodedState); err != nil {
+	if err := StoreStates(s.db, []*tb.ResolvedState{req.State}); err != nil {
 		return nil, err
 	}
 
 	return &sb.PutStateResponse{}, nil
-}
-
-// transactionKey returns a byte slice key of the format "tx:<txid>"
-func transactionKey(txid []byte) []byte {
-	keySlice := [][]byte{
-		[]byte("tx"),
-		txid,
-	}
-
-	return bytes.Join(keySlice, []byte(":"))
-}
-
-// stateKey returns a byte slice key of the format "state:<txid>:<tx_output_index>"
-func stateKey(stateRef *tb.StateReference) []byte {
-	keySlice := [][]byte{
-		[]byte("state"),
-		stateRef.Txid,
-		[]byte(strconv.FormatUint(stateRef.OutputIndex, 10)),
-	}
-
-	return bytes.Join(keySlice, []byte(":"))
 }
