@@ -1,0 +1,53 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+option go_package = "github.com/sykesm/batik/pkg/pb/orderer";
+
+package orderer;
+
+import "orderer/status.proto";
+
+// AtomicBroadcastAPI provides methods for interacting with an orderer instance
+// to process ordering.
+service AtomicBroadcastAPI {
+    // Broadcast receives a reply of Acknowledgement for each common.Envelope in order, indicating success or type of failure.
+    rpc Broadcast(stream BroadcastRequest) returns (stream BroadcastResponse);
+
+    // Deliver first requires an Envelope of type DELIVER_SEEK_INFO with Payload data as a mashaled SeekInfo message, then a stream of block replies is received.
+    rpc Deliver(stream DeliverRequest) returns (stream DeliverResponse);
+}
+
+
+// BroadcastRequest wraps a Payload with a signature so that the message may be authenticated.
+message BroadcastRequest {
+    // A marshaled Payload.
+    bytes payload = 1;
+    // A signature by the creator specified in the Payload header.
+    bytes signature = 2;
+}
+
+// BroadcastResponse contains information indicating whether the Broadcast was successful.
+message BroadcastResponse {
+    // Status code, which may be used to programatically respond to success/failure.
+    Status status = 1;
+    // Info string which may contain additional information about the status returned.
+    string info = 2;
+}
+
+// DeliverRequest wraps a Payload with a signature so that the message may be authenticated.
+message DeliverRequest {
+    // A marshaled Payload.
+    bytes payload = 1;
+    // A signature by the creator specified in the Payload header.
+    bytes signature = 2;
+}
+
+// DeliverResponse contains either a status or a transaction hashes.
+message DeliverResponse {
+    oneof type {
+        Status status = 1;
+        bytes txid = 2;
+    }
+}

@@ -1,0 +1,21 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+option go_package = "github.com/sykesm/batik/pkg/pb/orderer";
+
+package orderer;
+
+// These status codes are intended to resemble selected HTTP status codes.
+enum Status {
+    STATUS_INVALID = 0;
+    STATUS_SUCCESS = 200;
+    STATUS_BAD_REQUEST = 400;
+    STATUS_FORBIDDEN = 403;
+    STATUS_NOT_FOUND = 404;
+    STATUS_REQUEST_ENTITY_TOO_LARGE = 413;
+    STATUS_INTERNAL_SERVER_ERROR = 500;
+    STATUS_NOT_IMPLEMENTED = 501;
+    STATUS_SERVICE_UNAVAILABLE = 503;
+}
