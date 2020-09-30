@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
+excludes:
+  - googleapis
 lint:
   file_header:
     is_commented: true
@@ -23,3 +25,6 @@ lint:
       - FILE_OPTIONS_REQUIRE_JAVA_PACKAGE
       - FILE_OPTIONS_REQUIRE_OBJC_CLASS_PREFIX
       - FILE_OPTIONS_REQUIRE_PHP_NAMESPACE
+protoc:
+  includes:
+    - googleapis

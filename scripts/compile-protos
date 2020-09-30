@@ -6,6 +6,16 @@
 set -euo pipefail
 
 cd protos
-for dir in $(find . -name '*.proto' -exec dirname {} \; | sort -u); do
-  protoc "--go_out=plugins=grpc,paths=source_relative:../pkg/pb" "$dir"/*.proto
+for dir in $(find . -name '*.proto' -exec dirname {} \; | sort -u | grep -v googleapis); do
+  protoc \
+      --proto_path . \
+      --proto_path googleapis \
+      --go_out=plugins=grpc,paths=source_relative:../pkg/pb \
+      "$dir"/*.proto
+  protoc \
+      --proto_path . \
+      --proto_path googleapis \
+      --grpc-gateway_out=../pkg/pb \
+      --grpc-gateway_opt=logtostderr=true,paths=source_relative \
+      "$dir"/*.proto
 done
