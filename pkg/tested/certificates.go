@@ -19,6 +19,7 @@ import (
 
 type CertKeyPair struct {
 	Cert        []byte
+	CertChain   []byte
 	Key         []byte
 	Certificate tls.Certificate
 }
@@ -29,7 +30,7 @@ func NewCA(t TestingT, subjectCN string) CA {
 	cert, key := generateCA(t, subjectCN)
 	certificate, err := tls.X509KeyPair(cert, key)
 	assertNoError(t, err)
-	return CA{Cert: cert, Key: key, Certificate: certificate}
+	return CA{Cert: cert, CertChain: cert, Key: key, Certificate: certificate}
 }
 
 func (ca CA) IssueServerCertificate(t TestingT, subjectCN string, sans ...string) CertKeyPair {
@@ -46,10 +47,11 @@ func (ca CA) IssueServerCertificate(t TestingT, subjectCN string, sans ...string
 	assertNoError(t, err)
 
 	cert, key := pemEncode(t, derBytes, privateKey)
-	certificate, err := tls.X509KeyPair(join(cert, ca.Cert), key)
+	certChain := join(cert, ca.Cert)
+	certificate, err := tls.X509KeyPair(certChain, key)
 	assertNoError(t, err)
 
-	return CertKeyPair{Cert: cert, Key: key, Certificate: certificate}
+	return CertKeyPair{Cert: cert, CertChain: certChain, Key: key, Certificate: certificate}
 }
 
 func (ca CA) IssueClientCertificate(t TestingT, subjectCN string, sans ...string) CertKeyPair {
@@ -66,10 +68,11 @@ func (ca CA) IssueClientCertificate(t TestingT, subjectCN string, sans ...string
 	assertNoError(t, err)
 
 	cert, key := pemEncode(t, derBytes, privateKey)
-	certificate, err := tls.X509KeyPair(join(cert, ca.Cert), key)
+	certChain := join(cert, ca.Cert)
+	certificate, err := tls.X509KeyPair(certChain, key)
 	assertNoError(t, err)
 
-	return CertKeyPair{Cert: cert, Key: key, Certificate: certificate}
+	return CertKeyPair{Cert: cert, CertChain: certChain, Key: key, Certificate: certificate}
 }
 
 func (ca CA) TLSConfig(t TestingT) *tls.Config {

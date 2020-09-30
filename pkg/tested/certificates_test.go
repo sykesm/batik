@@ -18,6 +18,7 @@ func TestCertificates(t *testing.T) {
 
 	t.Run("CA", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
+		gt.Expect(ca.Cert).To(Equal(ca.CertChain))
 		cert, err := x509.ParseCertificate(ca.Certificate.Certificate[0])
 		gt.Expect(err).NotTo(HaveOccurred())
 
@@ -31,6 +32,7 @@ func TestCertificates(t *testing.T) {
 	t.Run("Server", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 		srv := ca.IssueServerCertificate(t, "server", "127.0.0.1", "::1", "localhost")
+		gt.Expect(srv.CertChain).To(Equal(append(srv.Cert, ca.Cert...)))
 		cert, err := x509.ParseCertificate(srv.Certificate.Certificate[0])
 		gt.Expect(err).NotTo(HaveOccurred())
 
@@ -48,6 +50,7 @@ func TestCertificates(t *testing.T) {
 	t.Run("Client", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 		clt := ca.IssueClientCertificate(t, "client", "127.0.0.1")
+		gt.Expect(clt.CertChain).To(Equal(append(clt.Cert, ca.Cert...)))
 		cert, err := x509.ParseCertificate(clt.Certificate.Certificate[0])
 		gt.Expect(err).NotTo(HaveOccurred())
 

@@ -25,18 +25,16 @@ func TestCertKeyPairTLSCertificate(t *testing.T) {
 	ca := tested.NewCA(t, "ca")
 	skp := ca.IssueServerCertificate(t, "server", "127.0.0.1")
 
-	certKeyPair := CertKeyPair{
+	ckp := CertKeyPair{
 		KeyData:  string(skp.Key),
 		KeyFile:  filepath.Join(tempDir, "server.crt"),
-		CertData: string(skp.Cert),
+		CertData: string(skp.CertChain),
 		CertFile: filepath.Join(tempDir, "server.key"),
 	}
-	expected := skp.Certificate
-	expected.Certificate = expected.Certificate[0:1]
 
-	err := ioutil.WriteFile(certKeyPair.CertFile, skp.Cert, 0644)
+	err := ioutil.WriteFile(ckp.CertFile, []byte(ckp.CertData), 0644)
 	gt.Expect(err).NotTo(HaveOccurred())
-	err = ioutil.WriteFile(certKeyPair.KeyFile, skp.Key, 0644)
+	err = ioutil.WriteFile(ckp.KeyFile, []byte(ckp.KeyData), 0644)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	tests := map[string]struct {
@@ -46,27 +44,27 @@ func TestCertKeyPairTLSCertificate(t *testing.T) {
 	}{
 		"KeyData": {
 			setup:    func(c *CertKeyPair) { c.KeyFile = "" },
-			expected: expected,
+			expected: skp.Certificate,
 		},
 		"CertData": {
 			setup:    func(c *CertKeyPair) { c.CertFile = "" },
-			expected: expected,
+			expected: skp.Certificate,
 		},
 		"KeyFile": {
 			setup:    func(c *CertKeyPair) { c.KeyData = "" },
-			expected: expected,
+			expected: skp.Certificate,
 		},
 		"CertFile": {
 			setup:    func(c *CertKeyPair) { c.CertData = "" },
-			expected: expected,
+			expected: skp.Certificate,
 		},
 		"CertDataIgnored": {
 			setup:    func(c *CertKeyPair) { c.CertData = "bogus-data" },
-			expected: expected,
+			expected: skp.Certificate,
 		},
 		"KeyDataIgnored": {
 			setup:    func(c *CertKeyPair) { c.KeyData = "bogus-data" },
-			expected: expected,
+			expected: skp.Certificate,
 		},
 		"Empty": {
 			setup:      func(c *CertKeyPair) { *c = CertKeyPair{} },
@@ -85,7 +83,7 @@ func TestCertKeyPairTLSCertificate(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
-			ckp := certKeyPair
+			ckp := ckp
 			tt.setup(&ckp)
 
 			cert, err := ckp.TLSCertificate()
