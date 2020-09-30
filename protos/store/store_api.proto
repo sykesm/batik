@@ -7,6 +7,7 @@ option go_package = "github.com/sykesm/batik/pkg/pb/store";
 
 package store;
 
+import "google/api/annotations.proto";
 import "transaction/transaction.proto";
 import "transaction/resolved.proto";
 
@@ -15,7 +16,11 @@ import "transaction/resolved.proto";
 service StoreAPI {
   // GetTransaction retrieves the associated transaction corresponding to the
   // txid passed in the GetTransactionRequest.
-  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
+  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse) {
+    option (google.api.http) = {
+      get: "/v1/store/transaction/{txid}";
+    };
+  }
   // PutTransaction hashes the transaction and then stores the
   // encoded transaction in the backing store.
   // Note: This API is temporary and intended for test. DO NOT USE.
@@ -29,7 +34,7 @@ service StoreAPI {
   // PutState stores the encoded resolved state in the backing store.
   // Note: This API is temporary and intended for test. DO NOT USE.
   rpc PutState(PutStateRequest) returns (PutStateResponse);
-};
+}
 
 // GetTransactionRequest contains a hashed transaction id.
 message GetTransactionRequest {
