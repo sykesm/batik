@@ -63,6 +63,9 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				GRPC:          GRPC{MaxSendMessageSize: 104857600},
 				ListenAddress: "127.0.0.1:7878",
 			},
+			HTTP: HTTPServer{
+				ListenAddress: "127.0.0.1:7879",
+			},
 			TLS: ServerTLS{
 				ServerCert: CertKeyPair{CertData: "PEM ME\n", KeyData: "PEM ME\n"},
 			},
@@ -85,6 +88,10 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 					MaxSendMessageSize: 104857600,
 				},
 				ListenAddress: "127.0.0.1:7878",
+			},
+			HTTP: HTTPServer{
+				ListenAddress:     "127.0.0.1:7879",
+				ReadHeaderTimeout: 30 * time.Second,
 			},
 			TLS: ServerTLS{
 				ServerCert: CertKeyPair{

@@ -16,6 +16,7 @@ func TestServerDefaults(t *testing.T) {
 	server := ServerDefaults()
 	gt.Expect(server).To(Equal(&Server{
 		GRPC: *GRPCServerDefaults(),
+		HTTP: *HTTPServerDefaults(),
 		TLS:  *ServerTLSDefaults(),
 	}))
 }
@@ -52,12 +53,17 @@ func TestServerFlagNames(t *testing.T) {
 		names = append(names, f.Names()...)
 	}
 
-	gt.Expect(flags).To(HaveLen(6))
+	gt.Expect(flags).To(HaveLen(11))
 	gt.Expect(names).To(ConsistOf(
 		"grpc-conn-timeout",
 		"grpc-listen-address",
 		"grpc-max-recv-message-size",
 		"grpc-max-send-message-size",
+		"http-listen-address",
+		"http-read-timeout",
+		"http-read-header-timeout",
+		"http-write-timeout",
+		"http-idle-timeout",
 		"tls-cert-file",
 		"tls-private-key-file",
 	))
