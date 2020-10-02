@@ -97,8 +97,8 @@ func (g *GRPCServer) ApplyDefaults() {
 }
 
 // Flags exposes configuration fields as flags. The current value of the
-// receiver is used as the default value of the flag so a ApplyDefaults should
-// be called before requesting flags.
+// receiver is used as the default value of the flag so ApplyDefaults should be
+// called before requesting flags.
 func (g *GRPCServer) Flags() []cli.Flag {
 	def := GRPCServerDefaults()
 	flags := []cli.Flag{
