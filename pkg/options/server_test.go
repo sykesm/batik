@@ -15,9 +15,8 @@ func TestServerDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	server := ServerDefaults()
 	gt.Expect(server).To(Equal(&Server{
-		ListenAddress: ":9443",
-		GRPC:          *GRPCServerDefaults(),
-		TLS:           *ServerTLSDefaults(),
+		GRPC: *GRPCServerDefaults(),
+		TLS:  *ServerTLSDefaults(),
 	}))
 }
 
@@ -25,10 +24,9 @@ func TestServerApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
 		setup func(*Server)
 	}{
-		"empty":          {setup: func(s *Server) { *s = Server{} }},
-		"listen address": {setup: func(s *Server) { s.ListenAddress = "" }},
-		"GRPC":           {setup: func(s *Server) { s.GRPC = GRPCServer{} }},
-		"TLS":            {setup: func(s *Server) { s.TLS = ServerTLS{} }},
+		"empty": {setup: func(s *Server) { *s = Server{} }},
+		"GRPC":  {setup: func(s *Server) { s.GRPC = GRPCServer{} }},
+		"TLS":   {setup: func(s *Server) { s.TLS = ServerTLS{} }},
 	}
 
 	for name, tt := range tests {
@@ -57,9 +55,9 @@ func TestServerFlagNames(t *testing.T) {
 	gt.Expect(flags).To(HaveLen(6))
 	gt.Expect(names).To(ConsistOf(
 		"grpc-conn-timeout",
+		"grpc-listen-address",
 		"grpc-max-recv-message-size",
 		"grpc-max-send-message-size",
-		"listen-address",
 		"tls-cert-file",
 		"tls-private-key-file",
 	))
@@ -74,10 +72,6 @@ func TestServerFlags(t *testing.T) {
 			args:     []string{},
 			expected: Server{},
 		},
-		"listen address": {
-			args:     []string{"--listen-address", ":1234"},
-			expected: Server{ListenAddress: ":1234"},
-		},
 		"grpc max send": {
 			args:     []string{"--grpc-max-send-message-size", "233"},
 			expected: Server{GRPC: GRPCServer{GRPC: GRPC{MaxSendMessageSize: 233}}},
@@ -88,7 +82,6 @@ func TestServerFlags(t *testing.T) {
 		},
 		"the works": {
 			args: []string{
-				"--listen-address", ":5678",
 				"--grpc-conn-timeout", "90s",
 				"--grpc-max-recv-message-size", "9999",
 				"--grpc-max-send-message-size", "8888",
@@ -96,7 +89,6 @@ func TestServerFlags(t *testing.T) {
 				"--tls-private-key-file", "private.key",
 			},
 			expected: Server{
-				ListenAddress: ":5678",
 				GRPC: GRPCServer{
 					ConnTimeout: 90 * time.Second,
 					GRPC:        GRPC{MaxRecvMessageSize: 9999, MaxSendMessageSize: 8888},

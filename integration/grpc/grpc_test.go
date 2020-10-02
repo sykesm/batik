@@ -38,7 +38,7 @@ var _ = Describe("Grpc", func() {
 			batikPath,
 			"--data-dir", dbPath,
 			"start",
-			"--listen-address", address,
+			"--grpc-listen-address", address,
 		)
 
 		var err error

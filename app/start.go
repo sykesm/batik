@@ -55,7 +55,7 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 
 			grpcServer := grpccomm.NewServer(
 				grpccomm.ServerConfig{
-					ListenAddress: config.Server.ListenAddress,
+					ListenAddress: config.Server.GRPC.ListenAddress,
 					Logger:        grpcLogger,
 				},
 				grpcServerOptions...,

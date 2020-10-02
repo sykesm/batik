@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 ---
 server:
-  listen_address: 127.0.0.1:7879
   grpc:
+    listen_address: 127.0.0.1:7878
     max_send_message_size: 104_857_600
+  http:
+    listen_address: 127.0.0.1:7879
   tls:
     key: |
       PEM ME

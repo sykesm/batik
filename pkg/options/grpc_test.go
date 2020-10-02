@@ -113,8 +113,9 @@ func TestGRPCServerDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	gs := GRPCServerDefaults()
 	gt.Expect(gs).To(Equal(&GRPCServer{
-		GRPC:        *GRPCDefaults(),
-		ConnTimeout: 30 * time.Second,
+		GRPC:          *GRPCDefaults(),
+		ConnTimeout:   30 * time.Second,
+		ListenAddress: ":9443",
 	}))
 }
 
@@ -148,9 +149,10 @@ func TestGRPCServerFlagNames(t *testing.T) {
 		names = append(names, f.Names()...)
 	}
 
-	gt.Expect(flags).To(HaveLen(3))
+	gt.Expect(flags).To(HaveLen(4))
 	gt.Expect(names).To(ConsistOf(
 		"grpc-conn-timeout",
+		"grpc-listen-address",
 		"grpc-max-recv-message-size",
 		"grpc-max-send-message-size",
 	))
@@ -178,6 +180,14 @@ func TestGRPCServerFlags(t *testing.T) {
 			expected: GRPCServer{
 				GRPC:        GRPC{MaxRecvMessageSize: 1, MaxSendMessageSize: 2},
 				ConnTimeout: time.Minute,
+			},
+		},
+		"grpc listen address": {
+			args: []string{
+				"--grpc-listen-address", "127.0.0.1:9999",
+			},
+			expected: GRPCServer{
+				ListenAddress: "127.0.0.1:9999",
 			},
 		},
 	}

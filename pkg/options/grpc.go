@@ -68,14 +68,19 @@ type GRPCServer struct {
 	// ConnTimeout limits the time a server will wait for client connections to
 	// be established.
 	ConnTimeout time.Duration `yaml:"conn_timeout,omitempty"`
+	// ListenAddress determines the addresses that the server will listen on. The
+	// address should be in a form that is compatible with net.Listen from the Go
+	// standard library.
+	ListenAddress string `yaml:"listen_address,omitempty"`
 }
 
 // GRPCServerDefaults returns the default configuration values for gRPC
 // servers.
 func GRPCServerDefaults() *GRPCServer {
 	return &GRPCServer{
-		GRPC:        *GRPCDefaults(),
-		ConnTimeout: 30 * time.Second,
+		GRPC:          *GRPCDefaults(),
+		ConnTimeout:   30 * time.Second,
+		ListenAddress: ":9443",
 	}
 }
 
@@ -85,6 +90,9 @@ func (g *GRPCServer) ApplyDefaults() {
 	g.GRPC.ApplyDefaults()
 	if g.ConnTimeout == 0 {
 		g.ConnTimeout = defaults.ConnTimeout
+	}
+	if g.ListenAddress == "" {
+		g.ListenAddress = defaults.ListenAddress
 	}
 }
 
@@ -100,6 +108,13 @@ func (g *GRPCServer) Flags() []cli.Flag {
 			Destination: &g.ConnTimeout,
 			Usage:       "FIXME: connection-timeout",
 			DefaultText: def.ConnTimeout.String(),
+		}),
+		NewStringFlag(&cli.StringFlag{
+			Name:        "grpc-listen-address",
+			Value:       g.ListenAddress,
+			Destination: &g.ListenAddress,
+			Usage:       "FIXME: grpc-listen-address",
+			DefaultText: def.ListenAddress,
 		}),
 	}
 	return append(flags, g.GRPC.Flags()...)

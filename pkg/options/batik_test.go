@@ -59,9 +59,9 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(config).To(Equal(Batik{
 		Server: Server{
-			ListenAddress: "127.0.0.1:7879",
 			GRPC: GRPCServer{
-				GRPC: GRPC{MaxSendMessageSize: 104857600},
+				GRPC:          GRPC{MaxSendMessageSize: 104857600},
+				ListenAddress: "127.0.0.1:7878",
 			},
 			TLS: ServerTLS{
 				ServerCert: CertKeyPair{CertData: "PEM ME\n", KeyData: "PEM ME\n"},
@@ -78,13 +78,13 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 	config.ApplyDefaults()
 	gt.Expect(config).To(Equal(Batik{
 		Server: Server{
-			ListenAddress: "127.0.0.1:7879",
 			GRPC: GRPCServer{
 				ConnTimeout: 30 * time.Second,
 				GRPC: GRPC{
 					MaxRecvMessageSize: 104857600,
 					MaxSendMessageSize: 104857600,
 				},
+				ListenAddress: "127.0.0.1:7878",
 			},
 			TLS: ServerTLS{
 				ServerCert: CertKeyPair{
