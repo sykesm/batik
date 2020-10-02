@@ -24,12 +24,10 @@ require (
 	github.com/urfave/cli/v2 v2.2.1-0.20200712133201-d2d2098085ce
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/mod v0.1.1-0.20191107180719-034126e5016b // indirect
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
 	golang.org/x/sys v0.0.0-20200824131525-c12d262b63d8 // indirect
 	golang.org/x/text v0.3.3 // indirect
-	golang.org/x/tools v0.0.0-20200207183749-b753a1ba74fa // indirect
-	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70
+	google.golang.org/genproto v0.0.0-20200923140941-5646d36feee1
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect

@@ -4,6 +4,12 @@
 package app
 
 import (
+	"context"
+	"net"
+	"net/http"
+	"os"
+
+	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pkg/errors"
 	"github.com/tedsuo/ifrit"
 	"github.com/tedsuo/ifrit/sigmon"
@@ -73,13 +79,54 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 			storeService := store.NewStoreService(db)
 			sb.RegisterStoreAPIServer(grpcServer.Server, storeService)
 
+			mux := gwruntime.NewServeMux()
+			sb.RegisterStoreAPIHandlerServer(context.Background(), mux, storeService)
+
+			httpServer := config.Server.HTTP.BuildServer(tlsConf)
+			httpServer.Handler = mux
+
+			httpRunner := func(signals <-chan os.Signal, ready chan<- struct{}) error {
+				lis, err := net.Listen("tcp", config.Server.HTTP.ListenAddress)
+				if err != nil {
+					return err
+				}
+
+				errCh := make(chan error, 1)
+				if httpServer.TLSConfig == nil {
+					go func() { errCh <- httpServer.Serve(lis) }()
+				} else {
+					go func() { errCh <- httpServer.ServeTLS(lis, "", "") }()
+				}
+
+				close(ready)
+				select {
+				case <-signals:
+					return nil
+				case err := <-errCh:
+					if errors.Is(err, http.ErrServerClosed) {
+						return nil
+					}
+					return err
+				}
+			}
+
 			// SetServer(ctx, server)
 
-			logger.Info("Starting server")
-			process := ifrit.Invoke(sigmon.New(grpcServer))
+			logger.Info(
+				"Starting server",
+				zap.String("grpc-address", config.Server.GRPC.ListenAddress),
+				zap.String("http-address", config.Server.HTTP.ListenAddress),
+			)
+			grpcProcess := ifrit.Invoke(sigmon.New(grpcServer))
+			httpProcess := ifrit.Invoke(sigmon.New(ifrit.RunFunc(httpRunner)))
 			logger.Info("Server started")
 			if !interactive {
-				return <-process.Wait()
+				select {
+				case err := <-grpcProcess.Wait():
+					return err
+				case err := <-httpProcess.Wait():
+					return err
+				}
 			}
 
 			return nil

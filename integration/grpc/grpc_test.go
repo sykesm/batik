@@ -6,8 +6,11 @@ package grpc
 import (
 	"context"
 	"crypto"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -15,6 +18,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	sb "github.com/sykesm/batik/pkg/pb/store"
@@ -23,22 +27,26 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
-var _ = Describe("Grpc", func() {
+var _ = Describe("gRPC", func() {
 	var (
-		session *gexec.Session
-		address string
-		dbPath  string
-		cleanup func()
+		session     *gexec.Session
+		grpcAddress string
+		httpAddress string
+		dbPath      string
+		cleanup     func()
 	)
 
 	BeforeEach(func() {
-		address = fmt.Sprintf("127.0.0.1:%d", StartPort())
+		grpcAddress = fmt.Sprintf("127.0.0.1:%d", StartPort())
+		httpAddress = fmt.Sprintf("127.0.0.1:%d", StartPort()+1)
 		dbPath, cleanup = tested.TempDir(GinkgoT(), "", "level")
 		cmd := exec.Command(
 			batikPath,
 			"--data-dir", dbPath,
+			"--color=yes",
 			"start",
-			"--grpc-listen-address", address,
+			"--grpc-listen-address", grpcAddress,
+			"--http-listen-address", httpAddress,
 		)
 
 		var err error
@@ -52,15 +60,16 @@ var _ = Describe("Grpc", func() {
 		if session != nil {
 			session.Kill().Wait(testTimeout)
 		}
-
-		cleanup()
+		if cleanup != nil {
+			cleanup()
+		}
 	})
 
 	Describe("Encode transaction api", func() {
 		It("encodes a transaction", func() {
 			testTx := newTestTransaction()
 
-			clientConn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+			clientConn, err := grpc.Dial(grpcAddress, grpc.WithInsecure(), grpc.WithBlock())
 			Expect(err).NotTo(HaveOccurred())
 
 			encodeTransactionClient := tb.NewEncodeTransactionAPIClient(clientConn)
@@ -83,7 +92,7 @@ var _ = Describe("Grpc", func() {
 		)
 
 		BeforeEach(func() {
-			clientConn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+			clientConn, err := grpc.Dial(grpcAddress, grpc.WithInsecure(), grpc.WithBlock())
 			Expect(err).NotTo(HaveOccurred())
 
 			storeServiceClient = sb.NewStoreAPIClient(clientConn)
@@ -125,6 +134,23 @@ var _ = Describe("Grpc", func() {
 					resp, err := storeServiceClient.GetTransaction(context.Background(), req)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(proto.Equal(resp.Transaction, testTx)).To(BeTrue())
+				})
+
+				// TODO: Reorganize the integration tests
+				It("works through the REST gateway", func() {
+					client := &http.Client{}
+					url := "http://" + httpAddress + "/v1/store/transaction/" + base64.URLEncoding.EncodeToString(txid)
+					resp, err := client.Get(url)
+					Expect(err).NotTo(HaveOccurred())
+					defer resp.Body.Close()
+
+					Expect(resp.StatusCode).To(Equal(http.StatusOK))
+					body, err := ioutil.ReadAll(resp.Body)
+					Expect(err).NotTo(HaveOccurred())
+
+					testJSON, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&sb.GetTransactionResponse{Transaction: testTx})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(body).To(MatchJSON(testJSON))
 				})
 			})
 		})

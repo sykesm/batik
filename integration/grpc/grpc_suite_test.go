@@ -45,5 +45,5 @@ func StartPort() int {
 
 func TestGrpc(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Grpc Suite")
+	RunSpecs(t, "gRPC Suite")
 }
