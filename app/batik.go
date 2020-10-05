@@ -8,8 +8,6 @@ import (
 	"io"
 	"os"
 	"sort"
-	"strings"
-	"text/tabwriter"
 
 	"github.com/pkg/errors"
 	zaplogfmt "github.com/sykesm/zap-logfmt"
@@ -149,63 +147,4 @@ func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore
 	}
 
 	return encoder, log.NewWriteSyncer(w), log.NewLeveler(config.LogSpec)
-}
-
-// shellApp is the interactive console application.
-func shellApp(parentCtx *cli.Context, config *options.Batik) (*cli.App, error) {
-	app := cli.NewApp()
-	app.Name = "batik"
-	app.HideVersion = true
-	app.Writer = parentCtx.App.Writer
-	app.ErrWriter = parentCtx.App.ErrWriter
-	app.CommandNotFound = func(ctx *cli.Context, name string) {
-		fmt.Fprintf(ctx.App.ErrWriter, "Unknown command: %s\n", name)
-	}
-	app.ExitErrHandler = func(ctx *cli.Context, err error) {}
-
-	app.Before = func(ctx *cli.Context) error {
-		logger, err := GetLogger(parentCtx)
-		if err != nil {
-			fmt.Fprintf(ctx.App.ErrWriter, "Failed setup: %s\n", err)
-		}
-		SetLogger(ctx, logger)
-
-		return nil
-	}
-
-	app.Commands = []*cli.Command{
-		startCommand(config, true),
-		dbCommand(config),
-		logspecCommand(),
-		exitCommand(),
-	}
-
-	sort.Sort(cli.CommandsByName(app.Commands))
-
-	// Generate the help message
-	s := strings.Builder{}
-	s.WriteString("Commands:\n")
-	w := tabwriter.NewWriter(&s, 8, 8, 2, ' ', 0)
-	for _, c := range app.VisibleCommands() {
-		if _, err := fmt.Fprintf(w, "    %s\t%s\n", c.Name, c.Usage); err != nil {
-			return nil, err
-		}
-	}
-	if err := w.Flush(); err != nil {
-		return nil, err
-	}
-
-	app.CustomAppHelpTemplate = s.String()
-
-	return app, nil
-}
-
-func exitCommand() *cli.Command {
-	return &cli.Command{
-		Name:  "exit",
-		Usage: "exit the shell",
-		Action: func(ctx *cli.Context) error {
-			return repl.ErrExit
-		},
-	}
 }
