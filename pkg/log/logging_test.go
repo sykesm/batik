@@ -11,9 +11,10 @@ import (
 
 	. "github.com/onsi/gomega"
 	zaplogfmt "github.com/sykesm/zap-logfmt"
-	"github.com/sykesm/batik/pkg/log/pretty"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/sykesm/batik/pkg/log/pretty"
 )
 
 func TestNewLogger(t *testing.T) {
@@ -47,7 +48,7 @@ func TestNewLogger(t *testing.T) {
 			pretty:      true,
 			leveler:     NewLeveler("info"),
 			message:     "test",
-			expectedOut: `"\\x1b\[37m[a-z,A-Z]* [0-9]* [0-9:]*\.000000\\x1b\[0m \|\\x1b\[36mINFO\\x1b\[0m\| \\x1b\[34mtest\\x1b\[0m \\x1b\[0mlog/logging_test\.go:[0-9]*\\x1b\[0m \\x1b\[97mtest\\x1b\[0m \\n"`,
+			expectedOut: `"\\x1b\[37m[[:alpha:]]{3}\s+[0-9]{1,2}\s+[0-9:]{8}\.\d{6}\\x1b\[0m \|\\x1b\[36mINFO\\x1b\[0m\| \\x1b\[34mtest\\x1b\[0m \\x1b\[0mlog/logging_test\.go:[0-9]*\\x1b\[0m \\x1b\[97mtest\\x1b\[0m \\n"`,
 		},
 		{
 			testName:    "logs under level",
