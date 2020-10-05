@@ -10,11 +10,7 @@
 package transaction
 
 import (
-	context "context"
 	proto "github.com/golang/protobuf/proto"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -250,90 +246,4 @@ func file_transaction_encode_transaction_api_proto_init() {
 	file_transaction_encode_transaction_api_proto_rawDesc = nil
 	file_transaction_encode_transaction_api_proto_goTypes = nil
 	file_transaction_encode_transaction_api_proto_depIdxs = nil
-}
-
-// Reference imports to suppress errors if they are not otherwise used.
-var _ context.Context
-var _ grpc.ClientConnInterface
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion6
-
-// EncodeTransactionAPIClient is the client API for EncodeTransactionAPI service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type EncodeTransactionAPIClient interface {
-	// EncodeTransaction encodes a transaction via deterministic marshal and returns
-	// the encoded bytes as well as a hash over the transaction represented as a merkle
-	// root and generated via SHA256 as the internal hashing function.
-	EncodeTransaction(ctx context.Context, in *EncodeTransactionRequest, opts ...grpc.CallOption) (*EncodeTransactionResponse, error)
-}
-
-type encodeTransactionAPIClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewEncodeTransactionAPIClient(cc grpc.ClientConnInterface) EncodeTransactionAPIClient {
-	return &encodeTransactionAPIClient{cc}
-}
-
-func (c *encodeTransactionAPIClient) EncodeTransaction(ctx context.Context, in *EncodeTransactionRequest, opts ...grpc.CallOption) (*EncodeTransactionResponse, error) {
-	out := new(EncodeTransactionResponse)
-	err := c.cc.Invoke(ctx, "/transaction.EncodeTransactionAPI/EncodeTransaction", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// EncodeTransactionAPIServer is the server API for EncodeTransactionAPI service.
-type EncodeTransactionAPIServer interface {
-	// EncodeTransaction encodes a transaction via deterministic marshal and returns
-	// the encoded bytes as well as a hash over the transaction represented as a merkle
-	// root and generated via SHA256 as the internal hashing function.
-	EncodeTransaction(context.Context, *EncodeTransactionRequest) (*EncodeTransactionResponse, error)
-}
-
-// UnimplementedEncodeTransactionAPIServer can be embedded to have forward compatible implementations.
-type UnimplementedEncodeTransactionAPIServer struct {
-}
-
-func (*UnimplementedEncodeTransactionAPIServer) EncodeTransaction(context.Context, *EncodeTransactionRequest) (*EncodeTransactionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EncodeTransaction not implemented")
-}
-
-func RegisterEncodeTransactionAPIServer(s *grpc.Server, srv EncodeTransactionAPIServer) {
-	s.RegisterService(&_EncodeTransactionAPI_serviceDesc, srv)
-}
-
-func _EncodeTransactionAPI_EncodeTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EncodeTransactionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(EncodeTransactionAPIServer).EncodeTransaction(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/transaction.EncodeTransactionAPI/EncodeTransaction",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EncodeTransactionAPIServer).EncodeTransaction(ctx, req.(*EncodeTransactionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _EncodeTransactionAPI_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "transaction.EncodeTransactionAPI",
-	HandlerType: (*EncodeTransactionAPIServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "EncodeTransaction",
-			Handler:    _EncodeTransactionAPI_EncodeTransaction_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "transaction/encode_transaction_api.proto",
 }

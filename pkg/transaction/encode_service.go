@@ -11,7 +11,9 @@ import (
 )
 
 // EncodeService implements the EncodeTransactionAPIServer gRPC interface.
-type EncodeService struct{}
+type EncodeService struct {
+	tb.UnimplementedEncodeTransactionAPIServer
+}
 
 var _ tb.EncodeTransactionAPIServer = (*EncodeService)(nil)
 

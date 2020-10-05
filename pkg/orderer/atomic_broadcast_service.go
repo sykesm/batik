@@ -6,14 +6,17 @@ package orderer
 import (
 	"runtime/debug"
 
+	"go.uber.org/zap"
+
 	"github.com/sykesm/batik/pkg/orderer/broadcast"
 	"github.com/sykesm/batik/pkg/orderer/deliver"
 	ab "github.com/sykesm/batik/pkg/pb/orderer"
-	"go.uber.org/zap"
 )
 
 // AtomicBroadcastService implements the AtomicBroadcastAPIServer gRPC interface.
 type AtomicBroadcastService struct {
+	ab.UnimplementedAtomicBroadcastAPIServer
+
 	logger *zap.Logger
 
 	bh *broadcast.Handler
