@@ -158,8 +158,6 @@ func (w *Writer) parseReservedTimeField(dec *logfmt.Decoder, f string) string {
 		if c, ok := w.colorFuncs[key]; ok {
 			return c(t.Format(timeFormat))
 		}
-
-		return ""
 	}
 
 	return ""
