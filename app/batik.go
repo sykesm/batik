@@ -132,16 +132,15 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore.Encoder, zapcore.WriteSyncer, zap.AtomicLevel) {
 	var encoder zapcore.Encoder
 	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.EpochNanosTimeEncoder
 
 	w := ctx.App.ErrWriter
 	f, ok := w.(*os.File)
 	switch {
+	case config.Format == "json":
+		encoder = zapcore.NewJSONEncoder(encoderConfig)
 	case config.Color == "yes", config.Color == "auto" && ok && terminal.IsTerminal(int(f.Fd())):
 		w = pretty.NewWriter(w, encoderConfig, pretty.ParseUnixTime)
 		encoder = zaplogfmt.NewEncoder(encoderConfig)
-	case config.Format == "json":
-		encoder = zapcore.NewJSONEncoder(encoderConfig)
 	default:
 		encoder = zaplogfmt.NewEncoder(encoderConfig)
 	}
