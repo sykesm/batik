@@ -18,7 +18,7 @@ func New() *AtExit {
 	return &AtExit{}
 }
 
-// Register a handler to run on at Exit(). Handlers are exited LIFO order.
+// Register a handler to run at Exit(). Handlers are exited LIFO order.
 func (a *AtExit) Register(handler func()) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()

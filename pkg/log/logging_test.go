@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -15,6 +17,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/sykesm/batik/pkg/log/pretty"
+	"github.com/sykesm/batik/pkg/tested"
 )
 
 func TestNewLogger(t *testing.T) {
@@ -58,13 +61,6 @@ func TestNewLogger(t *testing.T) {
 			message:     "test",
 			expectedOut: `^""$`,
 		},
-		// {
-		// 	testName:    "logs to file",
-		// 	level:       "info",
-		//  config:      Config{Writer: &os.File{}},
-		// 	message:     "test",
-		// 	expectedOut: `{"level":"info","time":".*","message":"test"}`,
-		// },
 	}
 
 	for _, tt := range tests {
@@ -83,6 +79,35 @@ func TestNewLogger(t *testing.T) {
 			logger.Info(tt.message)
 
 			gt.Expect(fmt.Sprintf("%q", buf.String())).To(MatchRegexp(tt.expectedOut))
+		})
+	}
+}
+
+func TestNewWriteSyncer(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	pr, pw, err := os.Pipe()
+	gt.Expect(err).NotTo(HaveOccurred())
+	defer tested.Close(t, pw)
+	go io.Copy(ioutil.Discard, pr)
+
+	tests := map[string]struct {
+		input io.Writer
+	}{
+		"nil":          {input: nil},
+		"file":         {input: pw},
+		"write syncer": {input: zapcore.AddSync(&bytes.Buffer{})},
+		"naked":        {input: &bytes.Buffer{}},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			gt.Expect(true).To(BeTrue())
+
+			result := NewWriteSyncer(tt.input)
+			gt.Expect(result).NotTo(BeNil())
+			gt.Expect(result.Sync()).To(Succeed())
 		})
 	}
 }

@@ -29,11 +29,16 @@ func NewWriteSyncer(w io.Writer) zapcore.WriteSyncer {
 	}
 
 	var sw zapcore.WriteSyncer
-	switch t := w.(type) {
+	switch w := w.(type) {
 	case *os.File:
-		sw = zapcore.Lock(t)
+		fi, err := w.Stat()
+		if err == nil && !fi.Mode().IsRegular() {
+			// Add no-op sync method for special files
+			sw = zapcore.AddSync(struct{ io.Writer }{w})
+		}
+		sw = zapcore.Lock(sw)
 	case zapcore.WriteSyncer:
-		sw = t
+		sw = w
 	default:
 		sw = zapcore.AddSync(w)
 	}
