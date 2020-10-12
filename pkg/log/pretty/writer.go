@@ -60,7 +60,7 @@ func NewWriter(w io.Writer, e zapcore.EncoderConfig, parseTime TimeParser) *Writ
 		e.NameKey: func(v string) string { return nameColor.Sprint(v) },
 		e.LevelKey: func(v string) string {
 			var c color.Color
-			switch v {
+			switch strings.ToLower(v) {
 			case "debug":
 				c = debugLevelColor
 			case "info":
@@ -74,7 +74,10 @@ func NewWriter(w io.Writer, e zapcore.EncoderConfig, parseTime TimeParser) *Writ
 			default:
 				c = unknownLevelColor
 			}
-			v = strings.ToUpper(v)[:imin(4, len(v))]
+			if len(v) < 4 {
+				v += "    "
+			}
+			v = strings.ToUpper(v)[:4]
 			return c.Sprint(v)
 		},
 		e.MessageKey: func(v string) string {
@@ -135,13 +138,6 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	_ = out.Flush()
 
 	return w.Writer.Write(buf.Bytes())
-}
-
-func imin(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 func (w *Writer) parseReservedTimeField(dec *logfmt.Decoder, f string) string {
