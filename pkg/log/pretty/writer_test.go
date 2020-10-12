@@ -43,11 +43,11 @@ func TestWrite(t *testing.T) {
 		w := NewWriter(buf, encoderConfig, timeParser)
 
 		testLine := `ts=1600356328.141956 level=info logger=batik caller=app/caller.go:99 msg="the message"`
-		expectedLine := fmt.Sprintf("\x1b[37m%s\x1b[0m |\x1b[36mINFO\x1b[0m| \x1b[34mbatik\x1b[0m \x1b[0mapp/caller.go:99\x1b[0m \x1b[97mthe message\x1b[0m \n", ts.Format(time.StampMicro))
+		expectedLine := fmt.Sprintf("\x1b[37m%s\x1b[0m |\x1b[36mINFO\x1b[0m| \x1b[34mbatik\x1b[0m \x1b[0mapp/caller.go:99\x1b[0m \x1b[97mthe message\x1b[0m\n", ts.Format(time.StampMicro))
 
 		n, err := w.Write([]byte(testLine))
 		gt.Expect(err).NotTo(HaveOccurred())
-		gt.Expect(n).To(Equal(110))
+		gt.Expect(n).To(Equal(109))
 		gt.Expect(buf.String()).To(Equal(expectedLine))
 	})
 }

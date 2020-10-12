@@ -71,6 +71,6 @@ const (
 	BgHiWhite
 )
 
-func (c Color) Sprint(msg string) string {
+func (c Color) Sprint(msg interface{}) string {
 	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", c, msg)
 }
