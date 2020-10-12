@@ -41,7 +41,7 @@ const (
 
 // A pretty.Writer prettifies logfmt lines and writes them to the underlying writer.
 type Writer struct {
-	io.Writer
+	w io.Writer
 
 	// The zapcore.EncoderConfig used by the logger for encoding logfmt lines.
 	encoderConfig zapcore.EncoderConfig
@@ -91,7 +91,7 @@ func NewWriter(w io.Writer, e zapcore.EncoderConfig, parseTime TimeParser) *Writ
 	}
 
 	return &Writer{
-		Writer:        w,
+		w:             w,
 		encoderConfig: e,
 		colorFuncs:    colorFuncs,
 		parseTime:     parseTime,
@@ -137,7 +137,7 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 
 	_ = out.Flush()
 
-	return w.Writer.Write(buf.Bytes())
+	return w.w.Write(buf.Bytes())
 }
 
 func (w *Writer) parseReservedTimeField(dec *logfmt.Decoder, f string) string {
