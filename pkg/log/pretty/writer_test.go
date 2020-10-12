@@ -47,7 +47,7 @@ func TestWrite(t *testing.T) {
 
 		n, err := w.Write([]byte(testLine))
 		gt.Expect(err).NotTo(HaveOccurred())
-		gt.Expect(n).To(Equal(109))
+		gt.Expect(n).To(Equal(len(testLine)), "write should return 0 <= n <= len(input)")
 		gt.Expect(buf.String()).To(Equal(expectedLine))
 	})
 }

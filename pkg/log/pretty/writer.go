@@ -164,9 +164,11 @@ func (w *Writer) Write(p []byte) (int, error) {
 		return 0, err
 	}
 
-	return w.w.Write(buf.Bytes())
+	if _, err := w.w.Write(buf.Bytes()); err != nil {
+		return 0, err
+	}
 
-
+	return len(p), nil
 }
 
 func (w *Writer) formatTime(value string) string {
