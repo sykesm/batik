@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"github.com/go-logfmt/logfmt"
@@ -122,12 +121,11 @@ func (w *Writer) Write(p []byte) (int, error) {
 		parsed = append(parsed, kv)
 	}
 
-	buf := bytes.NewBuffer(nil)
-	out := tabwriter.NewWriter(buf, 0, 1, 0, '\t', 0)
+	out := bytes.NewBuffer(nil)
 
 	// Print common header
 	if _, err := fmt.Fprintf(out,
-		"%s |%s| %s\t %s\t %s\t",
+		"%s |%s| %s %s %s",
 		h.time, h.level, h.name, h.caller, h.msg,
 	); err != nil {
 		return 0, err
@@ -159,12 +157,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 		return 0, nil
 	}
 
-	// Flush the tabwriter
-	if err := out.Flush(); err != nil {
-		return 0, err
-	}
-
-	if _, err := w.w.Write(buf.Bytes()); err != nil {
+	if _, err := w.w.Write(out.Bytes()); err != nil {
 		return 0, err
 	}
 
