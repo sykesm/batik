@@ -31,7 +31,7 @@ func TestBatikWiring(t *testing.T) {
 	gt.Expect(app.Flags[0].Names()[0]).To(Equal("color"))
 	gt.Expect(app.Flags[1].Names()[0]).To(Equal("config"))
 	gt.Expect(app.Flags[2].Names()[0]).To(Equal("data-dir"))
-	gt.Expect(app.Flags[3].Names()[0]).To(Equal("format"))
+	gt.Expect(app.Flags[3].Names()[0]).To(Equal("log-format"))
 	gt.Expect(app.Flags[4].Names()[0]).To(Equal("log-spec"))
 
 	// Command implementations

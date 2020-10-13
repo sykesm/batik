@@ -54,9 +54,9 @@ func TestLoggingFlagNames(t *testing.T) {
 
 	gt.Expect(flags).To(HaveLen(3))
 	gt.Expect(names).To(ConsistOf(
-		"log-spec",
 		"color",
-		"format",
+		"log-format",
+		"log-spec",
 	))
 }
 
@@ -69,7 +69,7 @@ func TestLoggingFlags(t *testing.T) {
 			args:     []string{},
 			expected: Logging{},
 		},
-		"log spec": {
+		"log-spec": {
 			args:     []string{"--log-spec=debug"},
 			expected: Logging{LogSpec: "debug"},
 		},
@@ -77,12 +77,12 @@ func TestLoggingFlags(t *testing.T) {
 			args:     []string{"--color=yes"},
 			expected: Logging{Color: "yes"},
 		},
-		"format": {
-			args:     []string{"--format=json"},
+		"log-format": {
+			args:     []string{"--log-format=json"},
 			expected: Logging{Format: "json"},
 		},
 		"all": {
-			args:     []string{"--log-spec=debug", "--color=yes", "--format=json"},
+			args:     []string{"--log-spec=debug", "--color=yes", "--log-format=json"},
 			expected: Logging{LogSpec: "debug", Color: "yes", Format: "json"},
 		},
 	}

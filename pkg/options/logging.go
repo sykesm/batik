@@ -49,13 +49,6 @@ func (l *Logging) Flags() []cli.Flag {
 	def := LoggingDefaults()
 	return []cli.Flag{
 		NewStringFlag(&cli.StringFlag{
-			Name:        "log-spec",
-			Value:       l.LogSpec,
-			Destination: &l.LogSpec,
-			Usage:       "FIXME: log spec",
-			DefaultText: def.LogSpec,
-		}),
-		NewStringFlag(&cli.StringFlag{
 			Name:        "color",
 			Value:       l.Color,
 			Destination: &l.Color,
@@ -63,11 +56,18 @@ func (l *Logging) Flags() []cli.Flag {
 			DefaultText: def.Color,
 		}),
 		NewStringFlag(&cli.StringFlag{
-			Name:        "format",
+			Name:        "log-format",
 			Value:       l.Format,
 			Destination: &l.Format,
 			Usage:       "FIXME: format",
 			DefaultText: def.Format,
+		}),
+		NewStringFlag(&cli.StringFlag{
+			Name:        "log-spec",
+			Value:       l.LogSpec,
+			Destination: &l.LogSpec,
+			Usage:       "FIXME: log spec",
+			DefaultText: def.LogSpec,
 		}),
 	}
 }

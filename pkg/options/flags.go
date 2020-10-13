@@ -15,7 +15,7 @@ import (
 // The app creates an instance of a configuration struct that is shared across
 // all of the subcommands. The flags used to configure elements of the config
 // structure are obtained from this configuration structure during
-// instantation. Later, when the app starts running, the configuration file is
+// instantiation. Later, when the app starts running, the configuration file is
 // read and any elements explicitly set in the configuration file are updated
 // in the runtime configuration. Finally, when the command executes, the flags
 // obtained during instantiation are added to flag sets prior to running the
