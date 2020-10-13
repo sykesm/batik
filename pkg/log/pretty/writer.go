@@ -23,11 +23,10 @@ const (
 	keyColor color.Color = color.FgGreen
 	valColor             = color.FgHiWhite
 
-	nameColor      = color.FgBlue
-	timeColor      = color.FgWhite
-	callerColor    = color.None
-	msgColor       = color.FgHiWhite
-	msgAbsentColor = color.FgWhite
+	nameColor   = color.FgBlue
+	timeColor   = color.FgWhite
+	callerColor = color.None
+	msgColor    = color.FgHiWhite
 
 	debugLevelColor   = color.FgMagenta
 	infoLevelColor    = color.FgCyan
@@ -121,10 +120,8 @@ func (w *Writer) Write(p []byte) (int, error) {
 		parsed = append(parsed, kv)
 	}
 
-	out := bytes.NewBuffer(nil)
-
 	// Print common header
-	if _, err := fmt.Fprintf(out,
+	if _, err := fmt.Fprintf(w.writer,
 		"%s |%s| %s %s %s",
 		h.time, h.level, h.name, h.caller, h.msg,
 	); err != nil {
@@ -133,7 +130,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 
 	// Print any non-header fields that have already been parsed
 	for i := range parsed {
-		if _, err := fmt.Fprintf(out, " %s=%s",
+		if _, err := fmt.Fprintf(w.writer, " %s=%s",
 			keyColor.Sprint(parsed[i].key),
 			valColor.Sprint(parsed[i].value),
 		); err != nil {
@@ -144,7 +141,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 
 	// Print all remaining fields
 	for dec.ScanKeyval() {
-		if _, err := fmt.Fprintf(out, " %s=%s",
+		if _, err := fmt.Fprintf(w.writer, " %s=%s",
 			keyColor.Sprint(dec.Key()),
 			valColor.Sprint(dec.Value()),
 		); err != nil {
@@ -153,11 +150,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 	}
 
 	// Write a newline
-	if _, err := fmt.Fprintf(out, "\n"); err != nil {
-		return 0, nil
-	}
-
-	if _, err := w.writer.Write(out.Bytes()); err != nil {
+	if _, err := fmt.Fprintf(w.writer, "\n"); err != nil {
 		return 0, err
 	}
 
@@ -201,8 +194,5 @@ func formatCaller(value string) string {
 }
 
 func formatMessage(value string) string {
-	if value == "" {
-		return msgAbsentColor.Sprint("<no msg>")
-	}
 	return msgColor.Sprint(value)
 }
