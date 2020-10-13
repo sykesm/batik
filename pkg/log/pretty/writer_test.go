@@ -5,7 +5,6 @@ package pretty
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 	"time"
 
@@ -43,7 +42,32 @@ func TestWrite(t *testing.T) {
 		w := NewWriter(buf, encoderConfig, timeParser)
 
 		testLine := `ts=1600356328.141956 level=info logger=batik caller=app/caller.go:99 msg="the message"`
-		expectedLine := fmt.Sprintf("\x1b[37m%s\x1b[0m |\x1b[36mINFO\x1b[0m| \x1b[34mbatik\x1b[0m \x1b[0mapp/caller.go:99\x1b[0m \x1b[97mthe message\x1b[0m\n", ts.Format(time.StampMicro))
+		expectedLine := "\x1b[37m" + ts.Format(time.StampMicro) + "\x1b[0m " +
+			"|\x1b[36mINFO\x1b[0m| " +
+			"\x1b[34mbatik\x1b[0m " +
+			"\x1b[0mapp/caller.go:99\x1b[0m " +
+			"\x1b[97mthe message\x1b[0m\n"
+
+		n, err := w.Write([]byte(testLine))
+		gt.Expect(err).NotTo(HaveOccurred())
+		gt.Expect(n).To(Equal(len(testLine)), "write should return 0 <= n <= len(input)")
+		gt.Expect(buf.String()).To(Equal(expectedLine))
+	})
+
+	t.Run("LogfmtExtraFields", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		buf := &bytes.Buffer{}
+		w := NewWriter(buf, encoderConfig, timeParser)
+
+		testLine := `ts=1600356328.141956 level=info logger=batik caller=app/caller.go:99 msg="the message" key1=value1 key2="[value two]"`
+		expectedLine := "\x1b[37m" + ts.Format(time.StampMicro) + "\x1b[0m " +
+			"|\x1b[36mINFO\x1b[0m| " +
+			"\x1b[34mbatik\x1b[0m " +
+			"\x1b[0mapp/caller.go:99\x1b[0m " +
+			"\x1b[97mthe message\x1b[0m " +
+			"\x1b[32mkey1\x1b[0m=\x1b[97mvalue1\x1b[0m " +
+			"\x1b[32mkey2\x1b[0m=\x1b[97m[value two]\x1b[0m\n"
 
 		n, err := w.Write([]byte(testLine))
 		gt.Expect(err).NotTo(HaveOccurred())
