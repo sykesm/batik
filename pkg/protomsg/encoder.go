@@ -27,14 +27,14 @@
 
 // Copyright IBM Corp. All Rights Reserved.
 //
-// The official implementation all goes out of its way to highlight how the
+// The official implementation goes out of its way to highlight how the
 // "deterministic" marshaling should not be relied on for stability so we'll
-// duplicate some of their reflect-based marshaling code to encode messages
-// that require stable serialization.
+// duplicate some of its reflect-based marshaling code to encode messages that
+// require stable serialization.
 //
-// This immplementation is based on the reflection based code from protobuf and
-// does not benefit from optimizations from caching the operations required to
-// marshal a message.
+// This implementation is based on the reflection based code from protobuf and
+// does not benefit from optimizations due to caching the operations required
+// to marshal a message.
 //
 // By default, the deterministic marshaling of a message message is encoded by
 // sorting the fields by the proto field number but there are some exceptions.
@@ -71,16 +71,16 @@ var useGoProto bool
 // those that require stable, deterministic marshaling implement their own
 // encoding.
 //
-// This method is a slighlty modified clone of the the "slow" encoding
-// implemented in the official protobuf package. By copying the implementation
-// we can isolate ourselves from any upstream changes and implement any
-// additional runtime checks that are necessary. This comes at a cost.
+// This method is a slightly modified clone of the "slow" encoding implemented
+// in the official protobuf package. By copying the implementation we can
+// isolate ourselves from any upstream changes and implement any additional
+// runtime checks that are necessary. This comes at a cost.
 //
 // The "slow" encoding relies on reflection and is about an order of magnitude
 // slower than the optimized implementation. This means that we should only use
-// this implementation when a persistent, stable encoding is requried.
+// this implementation when a persistent, stable encoding is required.
 //
-// Additional optimzations can be implemented as necessary. In particualr, we
+// Additional optimizations can be implemented as necessary. In particular, we
 // can implement custom marshaling for our wire types that does not rely on
 // reflection or we can can punt and use the official deterministic marshaling
 // implementation for as long as it remains stable. This requires some
