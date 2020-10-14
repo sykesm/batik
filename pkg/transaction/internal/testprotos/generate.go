@@ -3,4 +3,4 @@
 
 package testprotos
 
-//go:generate protoc -I . --go_out=paths=source_relative:. mutated/tx.proto
+//go:generate protoc -I . --go_out=. --go_opt=paths=source_relative mutated/tx.proto
