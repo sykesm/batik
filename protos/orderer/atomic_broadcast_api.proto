@@ -48,7 +48,11 @@ message DeliverRequest {
 // DeliverResponse contains either a status or a transaction hashes.
 message DeliverResponse {
     oneof type {
-        transaction.Transaction transaction = 1;
-        bytes txid = 2;
+        // Status code, which may be used to programtically respond to success/failure.
+        Status status = 1;
+        // Full transaction for delivery.
+        transaction.Transaction transaction = 2;
+        // A hashed txid representing a transaction for delivery.
+        bytes txid = 3;
     }
 }

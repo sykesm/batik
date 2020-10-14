@@ -50,6 +50,11 @@ func (bh *Handler) Handle(srv ab.AtomicBroadcastAPI_BroadcastServer) error {
 // ProcessMessage validates and enqueues a single message.
 func (bh *Handler) ProcessMessage(msg *ab.BroadcastRequest, addr string) *ab.BroadcastResponse {
 	// TODO
+	// 1. Parse request for payload and headers
+	// 2. Get chain processor for channelid based on type of transaction (ie config, etc)
+	// 3. Get sequence for tx via chain processor
+	// 4. Wait for consenter to be ready to accept next tx
+	// 5. Consenter orders the tx and appends to chain, or reconfigures if config tx
 	return &ab.BroadcastResponse{Status: ab.Status_STATUS_SUCCESS}
 }
 

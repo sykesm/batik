@@ -36,6 +36,9 @@ func (dh *Handler) Handle(srv ab.AtomicBroadcastAPI_DeliverServer) error {
 
 		resp := dh.ProcessMessage(msg, addr)
 		err = srv.Send(resp)
+		if r, ok := resp.Type.(*ab.DeliverResponse_Status); ok && r.Status != ab.Status_STATUS_SUCCESS {
+			return err
+		}
 
 		if err != nil {
 			logger.Warn("Error sending", zap.String("err", err.Error()))
@@ -46,7 +49,16 @@ func (dh *Handler) Handle(srv ab.AtomicBroadcastAPI_DeliverServer) error {
 
 func (h *Handler) ProcessMessage(msg *ab.DeliverRequest, addr string) *ab.DeliverResponse {
 	//TODO
-	return &ab.DeliverResponse{Type: &ab.DeliverResponse_Transaction{}}
+	// 1. Parse request for payload and headers
+	// 2. Get "chain" for channel id
+	// 3. Check for client authorization
+	// 4. Get seek info from payload
+	// 5. Iterate over chain of txs using seek info, for each tx:
+	//		1. Check if client authorized (is this necessary to do again?)
+	//		2. Send deliver response with tx or txid
+	// 6. Return deliver response with successful status
+	// On any failures, return deliver response with failure status
+	return &ab.DeliverResponse{Type: &ab.DeliverResponse_Status{Status: ab.Status_STATUS_SUCCESS}}
 }
 
 func extractRemoteAddress(ctx context.Context) string {
