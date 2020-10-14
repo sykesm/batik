@@ -148,7 +148,7 @@ var _ = Describe("gRPC", func() {
 					body, err := ioutil.ReadAll(resp.Body)
 					Expect(err).NotTo(HaveOccurred())
 
-					testJSON, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(&sb.GetTransactionResponse{Transaction: testTx})
+					testJSON, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(&sb.GetTransactionResponse{Transaction: testTx})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(body).To(MatchJSON(testJSON))
 				})

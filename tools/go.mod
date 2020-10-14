@@ -12,7 +12,7 @@ replace github.com/fullstorydev/grpcurl => github.com/fullstorydev/grpcurl v1.7.
 replace go.uber.org/zap => go.uber.org/zap v1.14.1
 
 require (
-	github.com/grpc-ecosystem/grpc-gateway v1.15.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.0
 	github.com/onsi/ginkgo v1.14.0
 	github.com/uber/prototool v1.10.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.0
