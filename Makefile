@@ -43,7 +43,7 @@ integration-test integration-tests:
 
 # go tool->path mapping
 gotool.ginkgo := github.com/onsi/ginkgo/ginkgo
-gotool.protoc-gen-go := github.com/golang/protobuf/protoc-gen-go
+gotool.protoc-gen-go := google.golang.org/protobuf/cmd/protoc-gen-go
 gotool.protoc-gen-go-grpc := google.golang.org/grpc/cmd/protoc-gen-go-grpc
 gotool.protoc-gen-grpc-gateway := github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
 gotool.prototool := github.com/uber/prototool/cmd/prototool
