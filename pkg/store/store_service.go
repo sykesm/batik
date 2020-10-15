@@ -14,6 +14,7 @@ import (
 // StoreService implements the StoreAPIServer gRPC interface.
 type StoreService struct {
 	sb.UnimplementedStoreAPIServer
+
 	mu sync.Locker
 	db KV
 }

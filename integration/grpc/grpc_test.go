@@ -6,9 +6,11 @@ package grpc
 import (
 	"context"
 	"crypto"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
@@ -18,6 +20,8 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -34,6 +38,8 @@ var _ = Describe("gRPC", func() {
 		httpAddress string
 		dbPath      string
 		cleanup     func()
+
+		clientConn *grpc.ClientConn
 	)
 
 	BeforeEach(func() {
@@ -54,11 +60,17 @@ var _ = Describe("gRPC", func() {
 		Expect(err).To(BeNil())
 		Eventually(session.Err, testTimeout).Should(gbytes.Say("Starting server"))
 		Eventually(session.Err, testTimeout).Should(gbytes.Say("Server started"))
+
+		clientConn, err = grpc.Dial(grpcAddress, grpc.WithInsecure(), grpc.WithBlock())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		if session != nil {
 			session.Kill().Wait(testTimeout)
+		}
+		if clientConn != nil {
+			clientConn.Close()
 		}
 		if cleanup != nil {
 			cleanup()
@@ -68,9 +80,6 @@ var _ = Describe("gRPC", func() {
 	Describe("Encode transaction api", func() {
 		It("encodes a transaction", func() {
 			testTx := newTestTransaction()
-
-			clientConn, err := grpc.Dial(grpcAddress, grpc.WithInsecure(), grpc.WithBlock())
-			Expect(err).NotTo(HaveOccurred())
 
 			encodeTransactionClient := tb.NewEncodeTransactionAPIClient(clientConn)
 			resp, err := encodeTransactionClient.EncodeTransaction(context.Background(), &tb.EncodeTransactionRequest{
@@ -84,6 +93,36 @@ var _ = Describe("gRPC", func() {
 		})
 	})
 
+	Describe("Submit Transaction API", func() {
+		var submitClient tb.SubmitTransactionAPIClient
+
+		BeforeEach(func() {
+			submitClient = tb.NewSubmitTransactionAPIClient(clientConn)
+		})
+
+		It("submits a transaction for processing and receives an unimplemented error", func() {
+			uuid := make([]byte, 16)
+			_, err := io.ReadFull(rand.Reader, uuid)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = submitClient.SubmitTransaction(context.Background(), &tb.SubmitTransactionRequest{
+				Transaction: &tb.Transaction{
+					Outputs: []*tb.State{{
+						Info:  &tb.StateInfo{Kind: "test-state"},
+						State: uuid,
+					}},
+				},
+			})
+			Expect(err).To(HaveOccurred())
+
+			s, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(s.Code()).To(Equal(codes.Unimplemented))
+			Expect(s.Message()).To(Equal("I am not a teapot"))
+			Expect(s.Details()).To(BeEmpty())
+		})
+	})
+
 	Describe("Store service api", func() {
 		var (
 			storeServiceClient sb.StoreAPIClient
@@ -92,9 +131,6 @@ var _ = Describe("gRPC", func() {
 		)
 
 		BeforeEach(func() {
-			clientConn, err := grpc.Dial(grpcAddress, grpc.WithInsecure(), grpc.WithBlock())
-			Expect(err).NotTo(HaveOccurred())
-
 			storeServiceClient = sb.NewStoreAPIClient(clientConn)
 
 			testTx = newTestTransaction()

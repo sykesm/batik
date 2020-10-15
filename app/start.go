@@ -82,6 +82,9 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 	encodeService := &transaction.EncodeService{}
 	tb.RegisterEncodeTransactionAPIServer(grpcServer.Server, encodeService)
 
+	submitService := &transaction.SubmitService{}
+	tb.RegisterSubmitTransactionAPIServer(grpcServer.Server, submitService)
+
 	storeService := store.NewStoreService(db)
 	sb.RegisterStoreAPIServer(grpcServer.Server, storeService)
 

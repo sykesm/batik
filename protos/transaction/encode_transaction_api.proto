@@ -22,6 +22,7 @@ service EncodeTransactionAPI {
 message EncodeTransactionRequest {
   Transaction transaction = 1;
 }
+
 // EncodeTransactionResponse contains the transaction ID and encoded bytes representing
 // the transaction passed in the EncodeTransactionRequest.
 message EncodeTransactionResponse {
