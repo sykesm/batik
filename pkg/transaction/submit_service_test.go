@@ -28,6 +28,7 @@ func TestSubmitTransaction(t *testing.T) {
 		"valid transaction": {
 			req: &tb.SubmitTransactionRequest{
 				Transaction: &tb.Transaction{
+					Salt: []byte("potassium permanganate (KMnO4) is a salt"),
 					Outputs: []*tb.State{{
 						Info:  &tb.StateInfo{Kind: "test-kind"},
 						State: []byte("test-state-1"),
@@ -35,7 +36,7 @@ func TestSubmitTransaction(t *testing.T) {
 				},
 			},
 			resp: &tb.SubmitTransactionResponse{
-				Txid: fromHex(t, "c6892f1044b2e7fe7731f47a58297925fed43bd797c878028392454690fa973e"),
+				Txid: fromHex(t, "5cfb2ad672e2ac73ff7d8d008bf1e8bb32224279722a5ee562f3d3a8726f277e"),
 			},
 		},
 	}

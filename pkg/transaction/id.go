@@ -5,11 +5,13 @@ package transaction
 
 import (
 	"crypto/hmac"
+	"errors"
+
+	"google.golang.org/protobuf/encoding/protowire"
 
 	"github.com/sykesm/batik/pkg/merkle"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/protomsg"
-	"google.golang.org/protobuf/encoding/protowire"
 )
 
 // IntermediateTx holds intermediate information for an encoded transaction.
@@ -23,6 +25,11 @@ type IntermediateTx struct {
 // over the transaction. An error is returned if any element of the transaction cannot
 // be marshaled into a protobuf message.
 func Marshal(h merkle.Hasher, tx *tb.Transaction) (*IntermediateTx, error) {
+	// The transaction must be salted.
+	if len(tx.Salt) < 32 {
+		return nil, errors.New("transaction salt is missing or less than 32 bytes in length")
+	}
+
 	// fieldGetters is used instead of proto reflection to get the list of fields
 	// and their associated field numbers when generating merkle hashes used for
 	// transaction ID generation.
@@ -40,9 +47,7 @@ func Marshal(h merkle.Hasher, tx *tb.Transaction) (*IntermediateTx, error) {
 	// of the encoded message.
 	var leaves [][]byte
 	var encoded []byte
-	if len(tx.Salt) != 0 {
-		encoded = append(encoded, encodedElement(1, tx.Salt)...)
-	}
+	encoded = append(encoded, encodedElement(1, tx.Salt)...)
 	for _, getField := range fieldGetters {
 		fn, list := getField(tx)
 		m, err := marshalMessages(list)
@@ -67,14 +72,13 @@ func Marshal(h merkle.Hasher, tx *tb.Transaction) (*IntermediateTx, error) {
 // The element is prepended with the protowire encoded tag of the field number
 // followed by the length of the encoded message.
 //
-// This logic loosely follows how protomsg.MarshalDeterministic encodes a proto.Message.
+// This logic loosely follows how protomsg.MarshalDeterministic encodes a
+// proto.Message.
 func encodedElement(fn uint32, m []byte) []byte {
 	var encodedElement []byte
-
 	encodedElement = append(encodedElement, byte(protowire.EncodeTag(protowire.Number(fn), protowire.BytesType)))
 	encodedElement = append(encodedElement, byte(len(m)))
 	encodedElement = append(encodedElement, m...)
-
 	return encodedElement
 }
 

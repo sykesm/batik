@@ -150,6 +150,7 @@ func TestLoadStates(t *testing.T) {
 
 func newTestTransaction() *tb.Transaction {
 	return &tb.Transaction{
+		Salt: []byte("NaCl - abcdefghijklmnopqrstuvwxyz"),
 		Inputs: []*tb.StateReference{
 			{Txid: []byte("input-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("input-transaction-id-1"), OutputIndex: 0},
@@ -182,6 +183,5 @@ func newTestTransaction() *tb.Transaction {
 			{Credential: []byte("observer-1")},
 			{Credential: []byte("observer-2")},
 		},
-		Salt: []byte("NaCl"),
 	}
 }

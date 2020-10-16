@@ -55,12 +55,14 @@ func TestSalt(t *testing.T) {
 }
 
 func TestMarshal(t *testing.T) {
+	salt := fromHex(t, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
 	noop := func(tx *transaction.Transaction) {}
-	salted := func(tx *transaction.Transaction) { tx.Salt = []byte("sodium-chloride") }
-	reset := func(tx *transaction.Transaction) { tx.Reset() }
-	emptySalted := func(tx *transaction.Transaction) { tx.Reset(); tx.Salt = []byte("sodium-chloride") }
+	salted := func(tx *transaction.Transaction) { tx.Salt = salt }
+	emptySalted := func(tx *transaction.Transaction) { tx.Reset(); tx.Salt = salt }
+	shortSalt := func(tx *transaction.Transaction) { tx.Salt = tx.Salt[0:31] }
 	noSigners := func(tx *transaction.Transaction) { tx.RequiredSigners = nil }
 	nilElement := func(tx *transaction.Transaction) { tx.Inputs[0] = nil }
+	reset := func(tx *transaction.Transaction) { tx.Reset() }
 	unknownFields := func(tx *transaction.Transaction) { tx.Inputs[0].ProtoReflect().SetUnknown([]byte("garbage")) }
 
 	var tests = map[string]struct {
@@ -68,12 +70,13 @@ func TestMarshal(t *testing.T) {
 		errMatcher types.GomegaMatcher
 		setup      func(*transaction.Transaction)
 	}{
-		"happy":         {fromHex(t, "53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f"), nil, noop},
-		"changed salt":  {fromHex(t, "a79fefe6edf500b30ab220e29de6fa22f9b1df876ce9d40a2dbee69c158ac491"), nil, salted},
-		"empty":         {fromHex(t, "38955e69c8db8963b3513c17631aebcf224c9c77017992dfe35a6dbba54b60a8"), nil, reset},
+		"happy":         {fromHex(t, "77dc6e1729583cf7f1db9863b34a8951a3bb9369ab4cf0a86340ea92a8514cf5"), nil, noop},
+		"changed salt":  {fromHex(t, "f1d081a486273dc66226a1fa30837e7583d9e0921163eac2300b350ff5ab4095"), nil, salted},
 		"salted empty":  {fromHex(t, "38955e69c8db8963b3513c17631aebcf224c9c77017992dfe35a6dbba54b60a8"), nil, emptySalted},
-		"empty vector":  {fromHex(t, "d7469b8edbbccc748143923aae7073118ba4995a3b249b956a2b6366824c6c12"), nil, noSigners},
-		"nil element":   {fromHex(t, "8b14c856d21568ba559d699bb15736bb41f83f12982c89dd33bd8d4149f8dc80"), nil, nilElement},
+		"empty vector":  {fromHex(t, "b2d9f8a592db1c411ee4ffe783c529af43172773107f5ed103535cd5e62ad1b4"), nil, noSigners},
+		"nil element":   {fromHex(t, "d0ea4beee73ffa3597f00fe207e7c19f505247510da1dce3b7149d306d6d910a"), nil, nilElement},
+		"empty":         {nil, MatchError("transaction salt is missing or less than 32 bytes in length"), reset},
+		"short salt":    {nil, MatchError("transaction salt is missing or less than 32 bytes in length"), shortSalt},
 		"unknown field": {nil, MatchError("protomsg: refusing to marshal unknown fields with length 7"), unknownFields},
 	}
 	for name, tt := range tests {
@@ -192,6 +195,7 @@ func reflectTransactionID(h merkle.Hasher, tx proto.Message) ([]byte, error) {
 
 func newTestTransaction() *transaction.Transaction {
 	return &transaction.Transaction{
+		Salt: []byte("NaCl - abcdefghijklmnopqrstuvwxyz"),
 		Inputs: []*transaction.StateReference{
 			{Txid: []byte("input-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("input-transaction-id-1"), OutputIndex: 0},
@@ -224,7 +228,6 @@ func newTestTransaction() *transaction.Transaction {
 			{Credential: []byte("observer-1")},
 			{Credential: []byte("observer-2")},
 		},
-		Salt: []byte("NaCl"),
 	}
 }
 

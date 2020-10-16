@@ -85,7 +85,7 @@ var _ = Describe("gRPC", func() {
 				Transaction: testTx,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(hex.EncodeToString(resp.Txid)).To(Equal("53e33ae87fb6cf2e4aaaabcdae3a93d578d9b7366e905dfff0446356774f726f"))
+			Expect(hex.EncodeToString(resp.Txid)).To(Equal("d213b9cad8f9d0d8316da198d4dd2bee53359c3a6b56a8f4fe4411c504678fa4"))
 
 			expectedEncoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(testTx)
 			Expect(resp.EncodedTransaction).To(Equal(expectedEncoded))
@@ -104,15 +104,27 @@ var _ = Describe("gRPC", func() {
 			_, err := io.ReadFull(rand.Reader, uuid)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = submitClient.SubmitTransaction(context.Background(), &tb.SubmitTransactionRequest{
-				Transaction: &tb.Transaction{
-					Outputs: []*tb.State{{
-						Info:  &tb.StateInfo{Kind: "test-state"},
-						State: uuid,
-					}},
-				},
-			})
+			salt := make([]byte, 32)
+			_, err = io.ReadFull(rand.Reader, salt)
 			Expect(err).NotTo(HaveOccurred())
+
+			tx := &tb.Transaction{
+				Salt: salt,
+				Outputs: []*tb.State{{
+					Info:  &tb.StateInfo{Kind: "test-state"},
+					State: uuid,
+				}},
+			}
+
+			resp, err := submitClient.SubmitTransaction(
+				context.Background(),
+				&tb.SubmitTransactionRequest{Transaction: tx},
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			itx, err := transaction.Marshal(crypto.SHA256, tx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.Txid).To(Equal(itx.ID))
 		})
 	})
 
@@ -296,6 +308,7 @@ var _ = Describe("gRPC", func() {
 
 func newTestTransaction() *tb.Transaction {
 	return &tb.Transaction{
+		Salt: []byte("0123456789abcdef0123456789abcdef"),
 		Inputs: []*tb.StateReference{
 			{Txid: []byte("input-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("input-transaction-id-1"), OutputIndex: 0},
@@ -328,7 +341,6 @@ func newTestTransaction() *tb.Transaction {
 			{Credential: []byte("observer-1")},
 			{Credential: []byte("observer-2")},
 		},
-		Salt: []byte("NaCl"),
 	}
 }
 
