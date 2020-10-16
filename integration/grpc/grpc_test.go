@@ -20,8 +20,6 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -114,13 +112,7 @@ var _ = Describe("gRPC", func() {
 					}},
 				},
 			})
-			Expect(err).To(HaveOccurred())
-
-			s, ok := status.FromError(err)
-			Expect(ok).To(BeTrue())
-			Expect(s.Code()).To(Equal(codes.Unimplemented))
-			Expect(s.Message()).To(Equal("I am not a teapot"))
-			Expect(s.Details()).To(BeEmpty())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
