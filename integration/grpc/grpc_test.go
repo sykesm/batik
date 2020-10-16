@@ -28,6 +28,7 @@ import (
 	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/tested"
+	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
@@ -169,7 +170,7 @@ var _ = Describe("gRPC", func() {
 				It("retrieves a transaction from the store", func() {
 					resp, err := storeServiceClient.GetTransaction(context.Background(), req)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(proto.Equal(resp.Transaction, testTx)).To(BeTrue())
+					Expect(resp.Transaction).To(EqualProto(testTx))
 				})
 
 				// TODO: Reorganize the integration tests
@@ -211,7 +212,7 @@ var _ = Describe("gRPC", func() {
 				}
 				resp, err := storeServiceClient.GetTransaction(context.Background(), getReq)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(proto.Equal(resp.Transaction, testTx)).To(BeTrue())
+				Expect(resp.Transaction).To(EqualProto(testTx))
 			})
 		})
 
@@ -257,7 +258,7 @@ var _ = Describe("gRPC", func() {
 				It("retrieves a state from the store", func() {
 					resp, err := storeServiceClient.GetState(context.Background(), req)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(proto.Equal(resp.State, testState)).To(BeTrue())
+					Expect(resp.State).To(EqualProto(testState))
 				})
 			})
 		})
@@ -295,7 +296,7 @@ var _ = Describe("gRPC", func() {
 				}
 				resp, err := storeServiceClient.GetState(context.Background(), getReq)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(proto.Equal(resp.State, testState)).To(BeTrue())
+				Expect(resp.State).To(EqualProto(testState))
 			})
 		})
 	})

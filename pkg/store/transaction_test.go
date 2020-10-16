@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/tested"
+	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestStoreTransactions(t *testing.T) {
@@ -63,7 +64,7 @@ func TestLoadTransactions(t *testing.T) {
 
 	txs, err := LoadTransactions(db, [][]byte{intTx.ID})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(proto.Equal(txs[0], testTx)).To(BeTrue())
+	gt.Expect(txs[0]).To(EqualProto(testTx))
 }
 
 func TestStoreStates(t *testing.T) {
@@ -144,7 +145,7 @@ func TestLoadStates(t *testing.T) {
 
 	states, err := LoadStates(db, []*tb.StateReference{testStateRef})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(proto.Equal(states[0], testState)).To(BeTrue())
+	gt.Expect(states[0]).To(EqualProto(testState))
 }
 
 func newTestTransaction() *tb.Transaction {

@@ -9,12 +9,13 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
 	sb "github.com/sykesm/batik/pkg/pb/store"
 	tb "github.com/sykesm/batik/pkg/pb/transaction"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/tested"
+	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestStoreService_GetTransaction(t *testing.T) {
@@ -46,7 +47,7 @@ func TestStoreService_GetTransaction(t *testing.T) {
 
 	resp, err = storeSvc.GetTransaction(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(proto.Equal(resp.Transaction, testTx)).To(BeTrue())
+	gt.Expect(resp.Transaction).To(EqualProto(testTx))
 }
 
 func TestStoreService_PutTransaction(t *testing.T) {
@@ -122,7 +123,7 @@ func TestStoreService_GetState(t *testing.T) {
 
 	resp, err = storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(proto.Equal(resp.State, testState)).To(BeTrue())
+	gt.Expect(resp.State).To(EqualProto(testState))
 }
 
 func TestStoreService_PutState(t *testing.T) {
