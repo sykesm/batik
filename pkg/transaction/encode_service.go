@@ -12,7 +12,9 @@ import (
 
 // EncodeService implements the EncodeTransactionAPIServer gRPC interface.
 type EncodeService struct {
-	tb.UnimplementedEncodeTransactionAPIServer
+	// Unsafe has been chosen to ensure there's a compilation failure when the
+	// implementation does not match the service interface.
+	tb.UnsafeEncodeTransactionAPIServer
 }
 
 var _ tb.EncodeTransactionAPIServer = (*EncodeService)(nil)

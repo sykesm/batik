@@ -13,9 +13,11 @@ import (
 
 // StoreService implements the StoreAPIServer gRPC interface.
 type StoreService struct {
-	sb.UnimplementedStoreAPIServer
+	// Unnsafe has been chosed to ensure there's a compilation failure when the
+	// implementation diverges from the gRPC service.
+	sb.UnsafeStoreAPIServer
 
-	mu sync.Locker
+	mu *sync.Mutex
 	db KV
 }
 

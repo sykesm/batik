@@ -14,7 +14,9 @@ import (
 
 // SubmitService implements the EncodeTransactionAPIServer gRPC interface.
 type SubmitService struct {
-	tb.UnimplementedSubmitTransactionAPIServer
+	// Unnsafe has been chosed to ensure there's a compilation failure when the
+	// implementation diverges from the gRPC service.
+	tb.UnsafeSubmitTransactionAPIServer
 }
 
 var _ tb.SubmitTransactionAPIServer = (*SubmitService)(nil)

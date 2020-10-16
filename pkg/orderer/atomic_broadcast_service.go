@@ -15,7 +15,9 @@ import (
 
 // AtomicBroadcastService implements the AtomicBroadcastAPIServer gRPC interface.
 type AtomicBroadcastService struct {
-	ab.UnimplementedAtomicBroadcastAPIServer
+	// Unsafe has been chosen to ensure there's a compilation failure when the
+	// implementation does not match the service interface.
+	ab.UnsafeAtomicBroadcastAPIServer
 
 	logger *zap.Logger
 
