@@ -170,7 +170,7 @@ var _ = Describe("gRPC", func() {
 				It("retrieves a transaction from the store", func() {
 					resp, err := storeServiceClient.GetTransaction(context.Background(), req)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp.Transaction).To(EqualProto(testTx))
+					Expect(resp.Transaction).To(ProtoEqual(testTx))
 				})
 
 				// TODO: Reorganize the integration tests
@@ -212,7 +212,7 @@ var _ = Describe("gRPC", func() {
 				}
 				resp, err := storeServiceClient.GetTransaction(context.Background(), getReq)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.Transaction).To(EqualProto(testTx))
+				Expect(resp.Transaction).To(ProtoEqual(testTx))
 			})
 		})
 
@@ -258,7 +258,7 @@ var _ = Describe("gRPC", func() {
 				It("retrieves a state from the store", func() {
 					resp, err := storeServiceClient.GetState(context.Background(), req)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp.State).To(EqualProto(testState))
+					Expect(resp.State).To(ProtoEqual(testState))
 				})
 			})
 		})
@@ -296,7 +296,7 @@ var _ = Describe("gRPC", func() {
 				}
 				resp, err := storeServiceClient.GetState(context.Background(), getReq)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.State).To(EqualProto(testState))
+				Expect(resp.State).To(ProtoEqual(testState))
 			})
 		})
 	})

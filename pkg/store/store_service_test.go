@@ -47,7 +47,7 @@ func TestStoreService_GetTransaction(t *testing.T) {
 
 	resp, err = storeSvc.GetTransaction(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(resp.Transaction).To(EqualProto(testTx))
+	gt.Expect(resp.Transaction).To(ProtoEqual(testTx))
 }
 
 func TestStoreService_PutTransaction(t *testing.T) {
@@ -123,7 +123,7 @@ func TestStoreService_GetState(t *testing.T) {
 
 	resp, err = storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(resp.State).To(EqualProto(testState))
+	gt.Expect(resp.State).To(ProtoEqual(testState))
 }
 
 func TestStoreService_PutState(t *testing.T) {

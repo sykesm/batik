@@ -64,7 +64,7 @@ func TestLoadTransactions(t *testing.T) {
 
 	txs, err := LoadTransactions(db, [][]byte{intTx.ID})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(txs[0]).To(EqualProto(testTx))
+	gt.Expect(txs[0]).To(ProtoEqual(testTx))
 }
 
 func TestStoreStates(t *testing.T) {
@@ -145,7 +145,7 @@ func TestLoadStates(t *testing.T) {
 
 	states, err := LoadStates(db, []*tb.StateReference{testStateRef})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(states[0]).To(EqualProto(testState))
+	gt.Expect(states[0]).To(ProtoEqual(testState))
 }
 
 func newTestTransaction() *tb.Transaction {

@@ -49,7 +49,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 
 	resp, err := echoServiceClient.Echo(ctx, &echo.Message{Message: "hi"})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(resp).To(EqualProto(&echo.Message{Message: "hi", Sequence: 1}))
+	gt.Expect(resp).To(ProtoEqual(&echo.Message{Message: "hi", Sequence: 1}))
 
 	tc.listener.Close()
 	gt.Eventually(serveCompleteCh).Should(Receive())
@@ -104,7 +104,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	msg, err := streamClient.Recv()
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(msg).To(EqualProto(&echo.Message{Message: "hi", Sequence: 2}))
+	gt.Expect(msg).To(ProtoEqual(&echo.Message{Message: "hi", Sequence: 2}))
 
 	err = streamClient.CloseSend()
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -160,7 +160,7 @@ func TestWithClientAuth(t *testing.T) {
 
 	resp, err := echoServiceClient.Echo(ctx, &echo.Message{Message: "hi"})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(resp).To(EqualProto(&echo.Message{Message: "hi", Sequence: 1}))
+	gt.Expect(resp).To(ProtoEqual(&echo.Message{Message: "hi", Sequence: 1}))
 
 	t.Run("DecoratedContext", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
@@ -239,7 +239,7 @@ func TestOptions(t *testing.T) {
 
 	resp, err := echoServiceClient.Echo(ctx, &echo.Message{Message: "hi"})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(resp).To(EqualProto(&echo.Message{Message: "hi", Sequence: 1}))
+	gt.Expect(resp).To(ProtoEqual(&echo.Message{Message: "hi", Sequence: 1}))
 
 	streamClient, err := echoServiceClient.EchoStream(ctx)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -248,7 +248,7 @@ func TestOptions(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	msg, err := streamClient.Recv()
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(msg).To(EqualProto(&echo.Message{Message: "hi", Sequence: 2}))
+	gt.Expect(msg).To(ProtoEqual(&echo.Message{Message: "hi", Sequence: 2}))
 
 	err = streamClient.CloseSend()
 	gt.Expect(err).NotTo(HaveOccurred())

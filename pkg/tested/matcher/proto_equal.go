@@ -10,30 +10,30 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// EqualProto is a gomega matcher for protobuf messages.
-func EqualProto(expected proto.Message) types.GomegaMatcher {
-	return &equalProtoMatcher{
+// ProtoEqual is a gomega matcher for protobuf messages.
+func ProtoEqual(expected proto.Message) types.GomegaMatcher {
+	return &protoEqualMatcher{
 		expected: expected,
 	}
 }
 
-type equalProtoMatcher struct {
+type protoEqualMatcher struct {
 	expected proto.Message
 }
 
-func (e *equalProtoMatcher) Match(actual interface{}) (bool, error) {
+func (e *protoEqualMatcher) Match(actual interface{}) (bool, error) {
 	actualMessage, ok := actual.(proto.Message)
 	if !ok {
-		return false, fmt.Errorf("EqualsProto expects a proto.Message")
+		return false, fmt.Errorf("ProtoEqual expects a proto.Message")
 	}
 
 	return proto.Equal(e.expected, actualMessage), nil
 }
 
-func (e *equalProtoMatcher) FailureMessage(actual interface{}) string {
+func (e *protoEqualMatcher) FailureMessage(actual interface{}) string {
 	return fmt.Sprintf("Expected\n\t%#vto proto.Equal\n\t%#v", actual, e.expected)
 }
 
-func (e *equalProtoMatcher) NegatedFailureMessage(actual interface{}) string {
+func (e *protoEqualMatcher) NegatedFailureMessage(actual interface{}) string {
 	return fmt.Sprintf("Expected\n\t%#vnot to proto.Equal\n\t%#v", actual, e.expected)
 }
