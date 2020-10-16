@@ -5,7 +5,6 @@ package grpclogging
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -13,17 +12,16 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/sykesm/batik/pkg/grpclogging/internal/testprotos/echo"
 	"github.com/sykesm/batik/pkg/tested"
+	. "github.com/sykesm/batik/pkg/tested/matcher"
 )
 
 func TestUnaryServerInterceptor(t *testing.T) {
@@ -453,32 +451,4 @@ func (e *echoServiceServer) EchoStream(stream echo.EchoService_EchoStreamServer)
 
 	msg.Sequence++
 	return stream.Send(msg)
-}
-
-// EqualProto is a gomega matcher for protobuf messages.
-func EqualProto(expected proto.Message) types.GomegaMatcher {
-	return &equalProtoMatcher{
-		expected: expected,
-	}
-}
-
-type equalProtoMatcher struct {
-	expected proto.Message
-}
-
-func (e *equalProtoMatcher) Match(actual interface{}) (bool, error) {
-	actualMessage, ok := actual.(proto.Message)
-	if !ok {
-		return false, fmt.Errorf("EqualsProto expects a proto.Message")
-	}
-
-	return proto.Equal(e.expected, actualMessage), nil
-}
-
-func (e *equalProtoMatcher) FailureMessage(actual interface{}) string {
-	return fmt.Sprintf("Expected\n\t%#vto proto.Equal\n\t%#v", actual, e.expected)
-}
-
-func (e *equalProtoMatcher) NegatedFailureMessage(actual interface{}) string {
-	return fmt.Sprintf("Expected\n\t%#vnot to proto.Equal\n\t%#v", actual, e.expected)
 }
