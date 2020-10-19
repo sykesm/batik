@@ -6,6 +6,7 @@ package pretty
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,15 +20,13 @@ import (
 
 func TestWrite(t *testing.T) {
 	ts := time.Now()
+	timeParser := func(s string) (time.Time, error) { return ts, nil }
 	encoderConfig := zapcore.EncoderConfig{
 		NameKey:    "logger",
 		LevelKey:   "level",
 		MessageKey: "msg",
 		CallerKey:  "caller",
 		TimeKey:    "ts",
-	}
-	timeParser := func(s string) (time.Time, error) {
-		return ts, nil
 	}
 
 	tests := map[string]struct {
@@ -41,41 +40,71 @@ func TestWrite(t *testing.T) {
 		},
 		"logfmt": {
 			input: `ts=1600356328.141956 level=info logger=batik caller=app/caller.go:99 msg="the message"`,
-			expected: "\x1b[37m" + ts.Format(time.StampMicro) + "\x1b[0m " +
-				"|\x1b[36mINFO\x1b[0m| " +
-				"\x1b[34mbatik\x1b[0m " +
-				"\x1b[0mapp/caller.go:99\x1b[0m " +
-				"\x1b[97mthe message\x1b[0m\n",
+			expected: join(" ",
+				color.FgWhite.Sprint(ts.Format(time.StampMicro)),
+				"|"+color.FgCyan.Sprint("INFO")+"|",
+				color.FgBlue.Sprint("batik"),
+				color.None.Sprint("app/caller.go:99"),
+				color.FgHiWhite.Sprint("the message"),
+			) + "\n",
 		},
 		"with fields": {
 			input: `ts=1600356328.141956 level=info logger=batik caller=app/caller.go:99 msg="the message" key1=value1 key2="[value two]"`,
-			expected: "\x1b[37m" + ts.Format(time.StampMicro) + "\x1b[0m " +
-				"|\x1b[36mINFO\x1b[0m| " +
-				"\x1b[34mbatik\x1b[0m " +
-				"\x1b[0mapp/caller.go:99\x1b[0m " +
-				"\x1b[97mthe message\x1b[0m " +
-				"\x1b[32mkey1\x1b[0m=\x1b[97mvalue1\x1b[0m " +
-				"\x1b[32mkey2\x1b[0m=\x1b[97m[value two]\x1b[0m\n",
+			expected: join(" ",
+				color.FgWhite.Sprint(ts.Format(time.StampMicro)),
+				"|"+color.FgCyan.Sprint("INFO")+"|",
+				color.FgBlue.Sprint("batik"),
+				color.None.Sprint("app/caller.go:99"),
+				color.FgHiWhite.Sprint("the message"),
+				color.FgGreen.Sprint("key1")+"="+color.FgHiWhite.Sprint("value1"),
+				color.FgGreen.Sprint("key2")+"="+color.FgHiWhite.Sprint(`"[value two]"`),
+			) + "\n",
 		},
 		"interposed fields in header": {
 			input: `ts=1600356328.141956 key1=value1 level=info logger=batik caller=app/caller.go:99 msg="the message" key2="[value two]"`,
-			expected: "\x1b[37m" + ts.Format(time.StampMicro) + "\x1b[0m " +
-				"|\x1b[36mINFO\x1b[0m| " +
-				"\x1b[34mbatik\x1b[0m " +
-				"\x1b[0mapp/caller.go:99\x1b[0m " +
-				"\x1b[97mthe message\x1b[0m " +
-				"\x1b[32mkey1\x1b[0m=\x1b[97mvalue1\x1b[0m " +
-				"\x1b[32mkey2\x1b[0m=\x1b[97m[value two]\x1b[0m\n",
+			expected: join(" ",
+				color.FgWhite.Sprint(ts.Format(time.StampMicro)),
+				"|"+color.FgCyan.Sprint("INFO")+"|",
+				color.FgBlue.Sprint("batik"),
+				color.None.Sprint("app/caller.go:99"),
+				color.FgHiWhite.Sprint("the message"),
+				color.FgGreen.Sprint("key1")+"="+color.FgHiWhite.Sprint("value1"),
+				color.FgGreen.Sprint("key2")+"="+color.FgHiWhite.Sprint(`"[value two]"`),
+			) + "\n",
 		},
 		"missing header fields": {
-			input:    `ts=1600356328.141956 level=info`,
-			expected: "\x1b[37m" + ts.Format(time.StampMicro) + "\x1b[0m |\x1b[36mINFO\x1b[0m|   \n",
+			input: `ts=1600356328.141956 level=info`,
+			expected: join(" ",
+				color.FgWhite.Sprint(ts.Format(time.StampMicro)),
+				"|"+color.FgCyan.Sprint("INFO")+"|",
+				"", // missing name
+				"", // missing caller
+				"", // missing message
+			) + "\n",
 		},
 		"missing header keys with fields": {
 			input: `ts=1600356328.141956 level=info key1=value1`,
-			expected: "\x1b[37m" + ts.Format(time.StampMicro) + "\x1b[0m " +
-				"|\x1b[36mINFO\x1b[0m|    " +
-				"\x1b[32mkey1\x1b[0m=\x1b[97mvalue1\x1b[0m\n",
+			expected: join(" ",
+				color.FgWhite.Sprint(ts.Format(time.StampMicro)),
+				"|"+color.FgCyan.Sprint("INFO")+"|",
+				"", // missing name
+				"", // missing caller
+				"", // missing message
+				color.FgGreen.Sprint("key1")+"="+color.FgHiWhite.Sprint("value1"),
+			) + "\n",
+		},
+		"special keys": {
+			input: `ts=0.0 level=info logger=b caller=c.go msg="the message" quoted="\"quotes\"" special="\n\r\t\u0000" badrune=` + "\ufffd",
+			expected: join(" ",
+				color.FgWhite.Sprint(ts.Format(time.StampMicro)),
+				"|"+color.FgCyan.Sprint("INFO")+"|",
+				color.FgBlue.Sprint("b"),
+				color.None.Sprint("c.go"),
+				color.FgHiWhite.Sprint("the message"),
+				color.FgGreen.Sprint("quoted")+"="+color.FgHiWhite.Sprint(`"\"quotes\""`),
+				color.FgGreen.Sprint("special")+"="+color.FgHiWhite.Sprint(`"\n\r\t\u0000"`),
+				color.FgGreen.Sprint("badrune")+"="+color.FgHiWhite.Sprint(`"\ufffd"`),
+			) + "\n",
 		},
 	}
 
@@ -92,7 +121,7 @@ func TestWrite(t *testing.T) {
 			}
 			gt.Expect(err).NotTo(HaveOccurred())
 			gt.Expect(n).To(Equal(len(tt.input)), "write should return 0 <= n <= len(input)")
-			gt.Expect(buf.String()).To(Equal(tt.expected))
+			gt.Expect(buf.String()).To(Equal(tt.expected), `got: "%s", want: "%s"`, buf.String(), tt.expected)
 		})
 	}
 }
@@ -167,4 +196,8 @@ func TestLevelColors(t *testing.T) {
 			gt.Expect(buf.String()).To(ContainSubstring("|" + tt.color.Sprint(tt.text) + "|"))
 		})
 	}
+}
+
+func join(sep string, bits ...string) string {
+	return strings.Join(bits, sep)
 }

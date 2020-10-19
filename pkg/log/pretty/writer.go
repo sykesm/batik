@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/go-logfmt/logfmt"
 	"go.uber.org/zap/zapcore"
@@ -132,7 +134,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 	for i := range parsed {
 		if _, err := fmt.Fprintf(w.writer, " %s=%s",
 			keyColor.Sprint(parsed[i].key),
-			valColor.Sprint(parsed[i].value),
+			valColor.Sprint(quoteString(parsed[i].value)),
 		); err != nil {
 			return 0, err
 		}
@@ -143,7 +145,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 	for dec.ScanKeyval() {
 		if _, err := fmt.Fprintf(w.writer, " %s=%s",
 			keyColor.Sprint(dec.Key()),
-			valColor.Sprint(dec.Value()),
+			valColor.Sprint(quoteString(string(dec.Value()))),
 		); err != nil {
 			return 0, err
 		}
@@ -195,4 +197,86 @@ func formatCaller(value string) string {
 
 func formatMessage(value string) string {
 	return msgColor.Sprint(value)
+}
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return &bytes.Buffer{}
+	},
+}
+
+func getBuffer() *bytes.Buffer {
+	return bufferPool.Get().(*bytes.Buffer)
+}
+
+func poolBuffer(buf *bytes.Buffer) {
+	buf.Reset()
+	bufferPool.Put(buf)
+}
+
+func needsQuotedValueRune(r rune) bool {
+	return r <= ' ' || r == '=' || r == '"' || r == utf8.RuneError
+}
+
+func quoteString(s string) string {
+	const hex = "0123456789abcdef"
+
+	if strings.IndexFunc(s, needsQuotedValueRune) == -1 {
+		return s
+	}
+
+	buf := getBuffer()
+	defer poolBuffer(buf)
+
+	buf.WriteByte('"')
+	start := 0
+	for i := 0; i < len(s); {
+		if b := s[i]; b < utf8.RuneSelf {
+			if 0x20 <= b && b != '\\' && b != '"' {
+				i++
+				continue
+			}
+			if start < i {
+				buf.WriteString(s[start:i])
+			}
+			switch b {
+			case '\\', '"':
+				buf.WriteByte('\\')
+				buf.WriteByte(b)
+			case '\n':
+				buf.WriteByte('\\')
+				buf.WriteByte('n')
+			case '\r':
+				buf.WriteByte('\\')
+				buf.WriteByte('r')
+			case '\t':
+				buf.WriteByte('\\')
+				buf.WriteByte('t')
+			default:
+				// This encodes bytes < 0x20 except for \n, \r, and \t.
+				buf.WriteString(`\u00`)
+				buf.WriteByte(hex[b>>4])
+				buf.WriteByte(hex[b&0xF])
+			}
+			i++
+			start = i
+			continue
+		}
+		c, size := utf8.DecodeRuneInString(s[i:])
+		if c == utf8.RuneError {
+			if start < i {
+				buf.WriteString(s[start:i])
+			}
+			buf.WriteString(`\ufffd`)
+			i += size
+			start = i
+			continue
+		}
+		i += size
+	}
+	if start < len(s) {
+		buf.WriteString(s[start:])
+	}
+	buf.WriteByte('"')
+	return buf.String()
 }
