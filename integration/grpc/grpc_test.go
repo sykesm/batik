@@ -80,8 +80,8 @@ var _ = Describe("gRPC", func() {
 		It("encodes a transaction", func() {
 			testTx := newTestTransaction()
 
-			encodeTransactionClient := txv1.NewEncodeTransactionAPIClient(clientConn)
-			resp, err := encodeTransactionClient.EncodeTransaction(context.Background(), &txv1.EncodeTransactionRequest{
+			encodeTransactionClient := txv1.NewEncodeAPIClient(clientConn)
+			resp, err := encodeTransactionClient.Encode(context.Background(), &txv1.EncodeRequest{
 				Transaction: testTx,
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -93,10 +93,10 @@ var _ = Describe("gRPC", func() {
 	})
 
 	Describe("Submit Transaction API", func() {
-		var submitClient txv1.SubmitTransactionAPIClient
+		var submitClient txv1.SubmitAPIClient
 
 		BeforeEach(func() {
-			submitClient = txv1.NewSubmitTransactionAPIClient(clientConn)
+			submitClient = txv1.NewSubmitAPIClient(clientConn)
 		})
 
 		It("submits a transaction for processing and receives an unimplemented error", func() {
@@ -116,9 +116,9 @@ var _ = Describe("gRPC", func() {
 				}},
 			}
 
-			resp, err := submitClient.SubmitTransaction(
+			resp, err := submitClient.Submit(
 				context.Background(),
-				&txv1.SubmitTransactionRequest{Transaction: tx},
+				&txv1.SubmitRequest{Transaction: tx},
 			)
 			Expect(err).NotTo(HaveOccurred())
 

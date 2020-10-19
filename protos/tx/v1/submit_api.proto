@@ -1,0 +1,31 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package tx.v1;
+
+option go_package = "github.com/sykesm/batik/pkg/pb/tx/v1;txv1";
+
+import "tx/v1/transaction.proto";
+
+// SubmitAPI submits transactions for validation and commit processing.
+//
+// NOTE: This service temporary and is not intended to be long lived.
+service SubmitAPI {
+  // Submit submits a transaction for validation and commit processing.
+  // NOTE: This is an implementation for prototyping.
+  rpc Submit(SubmitRequest) returns (SubmitResponse);
+};
+
+// SubmitRequest contains a Transaction.
+message SubmitRequest {
+  Transaction transaction = 1;
+}
+
+// SubmitResponse returns the unique identifier for the transaction that was
+// submitted.
+message SubmitResponse {
+  bytes txid = 1;
+}
+

@@ -80,10 +80,10 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 	}
 
 	encodeService := &transaction.EncodeService{}
-	txv1.RegisterEncodeTransactionAPIServer(grpcServer.Server, encodeService)
+	txv1.RegisterEncodeAPIServer(grpcServer.Server, encodeService)
 
 	submitService := transaction.NewSubmitService()
-	txv1.RegisterSubmitTransactionAPIServer(grpcServer.Server, submitService)
+	txv1.RegisterSubmitAPIServer(grpcServer.Server, submitService)
 
 	storeService := store.NewStoreService(db)
 	storev1.RegisterStoreAPIServer(grpcServer.Server, storeService)

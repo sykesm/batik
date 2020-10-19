@@ -14,19 +14,19 @@ import (
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 )
 
-func TestSubmitTransaction(t *testing.T) {
+func TestSubmit(t *testing.T) {
 	tests := map[string]struct {
-		req        *txv1.SubmitTransactionRequest
-		resp       *txv1.SubmitTransactionResponse
+		req        *txv1.SubmitRequest
+		resp       *txv1.SubmitResponse
 		errMatcher types.GomegaMatcher
 	}{
 		"nil transaction": {
-			req:        &txv1.SubmitTransactionRequest{},
+			req:        &txv1.SubmitRequest{},
 			resp:       nil,
 			errMatcher: HaveOccurred(),
 		},
 		"valid transaction": {
-			req: &txv1.SubmitTransactionRequest{
+			req: &txv1.SubmitRequest{
 				Transaction: &txv1.Transaction{
 					Salt: []byte("potassium permanganate (KMnO4) is a salt"),
 					Outputs: []*txv1.State{{
@@ -35,7 +35,7 @@ func TestSubmitTransaction(t *testing.T) {
 					}},
 				},
 			},
-			resp: &txv1.SubmitTransactionResponse{
+			resp: &txv1.SubmitResponse{
 				Txid: fromHex(t, "5cfb2ad672e2ac73ff7d8d008bf1e8bb32224279722a5ee562f3d3a8726f277e"),
 			},
 		},
@@ -46,7 +46,7 @@ func TestSubmitTransaction(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			ss := NewSubmitService()
-			resp, err := ss.SubmitTransaction(context.Background(), tt.req)
+			resp, err := ss.Submit(context.Background(), tt.req)
 			if tt.errMatcher != nil {
 				gt.Expect(err).To(tt.errMatcher)
 				return

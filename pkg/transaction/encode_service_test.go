@@ -13,14 +13,14 @@ import (
 	"github.com/sykesm/batik/pkg/protomsg"
 )
 
-func TestEncodeService(t *testing.T) {
+func TestEncode(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	testTx := newTestTransaction()
-	req := &txv1.EncodeTransactionRequest{Transaction: testTx}
+	req := &txv1.EncodeRequest{Transaction: testTx}
 
 	encodeSvc := &EncodeService{}
-	resp, err := encodeSvc.EncodeTransaction(context.Background(), req)
+	resp, err := encodeSvc.Encode(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(resp.Txid).To(Equal(fromHex(t, "77dc6e1729583cf7f1db9863b34a8951a3bb9369ab4cf0a86340ea92a8514cf5")))
 

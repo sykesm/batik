@@ -1,0 +1,31 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package tx.v1;
+
+option go_package = "github.com/sykesm/batik/pkg/pb/tx/v1;txv1";
+
+import "tx/v1/transaction.proto";
+
+// EncodeAPI applies canonical transaction encoding and returns the encoded
+// transaction and transaction ID.
+service EncodeAPI {
+  // Encode encodes a transaction via deterministic marshal and returns the
+  // encoded bytes as well as a hash over the transaction represented as a
+  // merkle root and generated via SHA256 as the internal hashing function.
+  rpc Encode(EncodeRequest) returns (EncodeResponse);
+};
+
+// EncodeRequest contains a Transaction.
+message EncodeRequest {
+  Transaction transaction = 1;
+}
+
+// EncodeTransactionResponse contains the transaction ID and encoded bytes
+// representing the transaction passed in the EncodeResponse.
+message EncodeResponse {
+  bytes txid = 1;
+  bytes encoded_transaction = 2;
+}
