@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
-	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
@@ -180,7 +180,7 @@ var _ = Describe("gRPC", func() {
 				// TODO: Reorganize the integration tests
 				It("works through the REST gateway", func() {
 					client := &http.Client{}
-					url := "http://" + httpAddress + "/v1/store/transaction/" + base64.URLEncoding.EncodeToString(txid)
+					url := "http://" + httpAddress + "/v1/store/tx/" + base64.URLEncoding.EncodeToString(txid)
 					resp, err := client.Get(url)
 					Expect(err).NotTo(HaveOccurred())
 					defer resp.Body.Close()

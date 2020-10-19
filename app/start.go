@@ -22,7 +22,7 @@ import (
 	"github.com/sykesm/batik/pkg/grpclogging"
 	"github.com/sykesm/batik/pkg/options"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
-	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )

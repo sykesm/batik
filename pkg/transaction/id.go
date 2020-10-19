@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 
 	"github.com/sykesm/batik/pkg/merkle"
-	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 )
 

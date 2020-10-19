@@ -8,8 +8,8 @@ option go_package = "github.com/sykesm/batik/pkg/pb/store/v1;storev1";
 package store.v1;
 
 import "google/api/annotations.proto";
-import "transaction/v1/transaction.proto";
-import "transaction/v1/resolved.proto";
+import "tx/v1/transaction.proto";
+import "tx/v1/resolved.proto";
 
 // StoreAPI provides methods for interacting with a backing store to
 // retrieve and store transactions and states.
@@ -18,7 +18,7 @@ service StoreAPI {
   // txid passed in the GetTransactionRequest.
   rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse) {
     option (google.api.http) = {
-      get: "/v1/store/transaction/{txid}";
+      get: "/v1/store/tx/{txid}";
     };
   }
   // PutTransaction hashes the transaction and then stores the
@@ -44,12 +44,12 @@ message GetTransactionRequest {
 // GetTransactionResponse contains the transaction retrieved from the backing store
 // indexed by the txid that it hashes to.
 message GetTransactionResponse {
-  transaction.v1.Transaction transaction = 1;
+  tx.v1.Transaction transaction = 1;
 }
 
-// PutTransactionRequest contains a transaction.
+// PutTransactionRequest contains a tx.
 message PutTransactionRequest {
-  transaction.v1.Transaction transaction = 1;
+  tx.v1.Transaction transaction = 1;
 }
 
 // PutTransactionResponse is an empty response returned on attempting to store
@@ -59,19 +59,19 @@ message PutTransactionResponse {}
 // GetStateRequest contains a state reference denoted by a txid and output index that can
 // be resolved to a State existing in the backing store.
 message GetStateRequest {
-  transaction.v1.StateReference state_ref = 1;
+  tx.v1.StateReference state_ref = 1;
 }
 
 // GetStateResponse contains a resolved state retrieved from the backing store indexed
 // by the state reference that points to the transaction and output index where the State
 // was originally created at.
 message GetStateResponse {
-  transaction.v1.ResolvedState state = 1;
+  tx.v1.ResolvedState state = 1;
 }
 
 // PutStateRequest contains a resolved state.
 message PutStateRequest {
-  transaction.v1.ResolvedState state = 1;
+  tx.v1.ResolvedState state = 1;
 }
 
 // PutStateResponse is an empty response returned on attempting to store

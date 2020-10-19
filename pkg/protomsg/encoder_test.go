@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/protomsg/internal/testprotos/test2"
 	"github.com/sykesm/batik/pkg/protomsg/internal/testprotos/test3"

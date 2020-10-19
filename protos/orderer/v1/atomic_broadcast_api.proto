@@ -8,7 +8,7 @@ option go_package = "github.com/sykesm/batik/pkg/pb/orderer/v1;ordererv1";
 package orderer.v1;
 
 import "orderer/v1/status.proto";
-import "transaction/v1/transaction.proto";
+import "tx/v1/transaction.proto";
 
 // AtomicBroadcastAPI provides methods for interacting with an orderer instance
 // to process ordering.
@@ -51,7 +51,7 @@ message DeliverResponse {
         // Status code, which may be used to programtically respond to success/failure.
         Status status = 1;
         // Full transaction for delivery.
-        transaction.v1.Transaction transaction = 2;
+        tx.v1.Transaction transaction = 2;
         // A hashed txid representing a transaction for delivery.
         bytes txid = 3;
     }

@@ -7,7 +7,7 @@ import (
 	"context"
 
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
-	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 )
 
 // StoreService implements the StoreAPIServer gRPC interface.

@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
-	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
