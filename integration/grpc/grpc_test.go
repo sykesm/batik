@@ -23,8 +23,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	sb "github.com/sykesm/batik/pkg/pb/store"
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
@@ -80,8 +80,8 @@ var _ = Describe("gRPC", func() {
 		It("encodes a transaction", func() {
 			testTx := newTestTransaction()
 
-			encodeTransactionClient := tb.NewEncodeTransactionAPIClient(clientConn)
-			resp, err := encodeTransactionClient.EncodeTransaction(context.Background(), &tb.EncodeTransactionRequest{
+			encodeTransactionClient := txv1.NewEncodeTransactionAPIClient(clientConn)
+			resp, err := encodeTransactionClient.EncodeTransaction(context.Background(), &txv1.EncodeTransactionRequest{
 				Transaction: testTx,
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -93,10 +93,10 @@ var _ = Describe("gRPC", func() {
 	})
 
 	Describe("Submit Transaction API", func() {
-		var submitClient tb.SubmitTransactionAPIClient
+		var submitClient txv1.SubmitTransactionAPIClient
 
 		BeforeEach(func() {
-			submitClient = tb.NewSubmitTransactionAPIClient(clientConn)
+			submitClient = txv1.NewSubmitTransactionAPIClient(clientConn)
 		})
 
 		It("submits a transaction for processing and receives an unimplemented error", func() {
@@ -108,17 +108,17 @@ var _ = Describe("gRPC", func() {
 			_, err = io.ReadFull(rand.Reader, salt)
 			Expect(err).NotTo(HaveOccurred())
 
-			tx := &tb.Transaction{
+			tx := &txv1.Transaction{
 				Salt: salt,
-				Outputs: []*tb.State{{
-					Info:  &tb.StateInfo{Kind: "test-state"},
+				Outputs: []*txv1.State{{
+					Info:  &txv1.StateInfo{Kind: "test-state"},
 					State: uuid,
 				}},
 			}
 
 			resp, err := submitClient.SubmitTransaction(
 				context.Background(),
-				&tb.SubmitTransactionRequest{Transaction: tx},
+				&txv1.SubmitTransactionRequest{Transaction: tx},
 			)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -130,13 +130,13 @@ var _ = Describe("gRPC", func() {
 
 	Describe("Store service api", func() {
 		var (
-			storeServiceClient sb.StoreAPIClient
-			testTx             *tb.Transaction
+			storeServiceClient storev1.StoreAPIClient
+			testTx             *txv1.Transaction
 			txid               []byte
 		)
 
 		BeforeEach(func() {
-			storeServiceClient = sb.NewStoreAPIClient(clientConn)
+			storeServiceClient = storev1.NewStoreAPIClient(clientConn)
 
 			testTx = newTestTransaction()
 			intTx, err := transaction.Marshal(crypto.SHA256, testTx)
@@ -145,10 +145,10 @@ var _ = Describe("gRPC", func() {
 		})
 
 		Describe("GetTransaction", func() {
-			var req *sb.GetTransactionRequest
+			var req *storev1.GetTransactionRequest
 
 			BeforeEach(func() {
-				req = &sb.GetTransactionRequest{
+				req = &storev1.GetTransactionRequest{
 					Txid: txid,
 				}
 			})
@@ -163,7 +163,7 @@ var _ = Describe("gRPC", func() {
 
 			When("the transaction exists", func() {
 				BeforeEach(func() {
-					putReq := &sb.PutTransactionRequest{
+					putReq := &storev1.PutTransactionRequest{
 						Transaction: testTx,
 					}
 
@@ -189,7 +189,7 @@ var _ = Describe("gRPC", func() {
 					body, err := ioutil.ReadAll(resp.Body)
 					Expect(err).NotTo(HaveOccurred())
 
-					testJSON, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(&sb.GetTransactionResponse{Transaction: testTx})
+					testJSON, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(&storev1.GetTransactionResponse{Transaction: testTx})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(body).To(MatchJSON(testJSON))
 				})
@@ -197,10 +197,10 @@ var _ = Describe("gRPC", func() {
 		})
 
 		Describe("PutTransaction", func() {
-			var req *sb.PutTransactionRequest
+			var req *storev1.PutTransactionRequest
 
 			BeforeEach(func() {
-				req = &sb.PutTransactionRequest{
+				req = &storev1.PutTransactionRequest{
 					Transaction: testTx,
 				}
 			})
@@ -211,7 +211,7 @@ var _ = Describe("gRPC", func() {
 				_, err := storeServiceClient.PutTransaction(context.Background(), req)
 				Expect(err).NotTo(HaveOccurred())
 
-				getReq := &sb.GetTransactionRequest{
+				getReq := &storev1.GetTransactionRequest{
 					Txid: txid,
 				}
 				resp, err := storeServiceClient.GetTransaction(context.Background(), getReq)
@@ -222,18 +222,18 @@ var _ = Describe("gRPC", func() {
 
 		Describe("GetState", func() {
 			var (
-				req       *sb.GetStateRequest
-				testState *tb.ResolvedState
+				req       *storev1.GetStateRequest
+				testState *txv1.ResolvedState
 			)
 
 			BeforeEach(func() {
-				req = &sb.GetStateRequest{
-					StateRef: &tb.StateReference{
+				req = &storev1.GetStateRequest{
+					StateRef: &txv1.StateReference{
 						Txid:        txid,
 						OutputIndex: 0,
 					},
 				}
-				testState = &tb.ResolvedState{
+				testState = &txv1.ResolvedState{
 					Txid:        txid,
 					OutputIndex: 0,
 					State:       testTx.Outputs[0].State,
@@ -251,7 +251,7 @@ var _ = Describe("gRPC", func() {
 
 			When("the state exists", func() {
 				BeforeEach(func() {
-					putReq := &sb.PutStateRequest{
+					putReq := &storev1.PutStateRequest{
 						State: testState,
 					}
 
@@ -269,19 +269,19 @@ var _ = Describe("gRPC", func() {
 
 		Describe("PutState", func() {
 			var (
-				req       *sb.PutStateRequest
-				testState *tb.ResolvedState
+				req       *storev1.PutStateRequest
+				testState *txv1.ResolvedState
 			)
 
 			BeforeEach(func() {
-				testState = &tb.ResolvedState{
+				testState = &txv1.ResolvedState{
 					Txid:        txid,
 					OutputIndex: 0,
 					State:       testTx.Outputs[0].State,
 					Info:        testTx.Outputs[0].Info,
 				}
 
-				req = &sb.PutStateRequest{
+				req = &storev1.PutStateRequest{
 					State: testState,
 				}
 			})
@@ -292,8 +292,8 @@ var _ = Describe("gRPC", func() {
 				_, err := storeServiceClient.PutState(context.Background(), req)
 				Expect(err).NotTo(HaveOccurred())
 
-				getReq := &sb.GetStateRequest{
-					StateRef: &tb.StateReference{
+				getReq := &storev1.GetStateRequest{
+					StateRef: &txv1.StateReference{
 						Txid:        txid,
 						OutputIndex: 0,
 					},
@@ -306,38 +306,38 @@ var _ = Describe("gRPC", func() {
 	})
 })
 
-func newTestTransaction() *tb.Transaction {
-	return &tb.Transaction{
+func newTestTransaction() *txv1.Transaction {
+	return &txv1.Transaction{
 		Salt: []byte("0123456789abcdef0123456789abcdef"),
-		Inputs: []*tb.StateReference{
+		Inputs: []*txv1.StateReference{
 			{Txid: []byte("input-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("input-transaction-id-1"), OutputIndex: 0},
 		},
-		References: []*tb.StateReference{
+		References: []*txv1.StateReference{
 			{Txid: []byte("ref-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("ref-transaction-id-1"), OutputIndex: 0},
 		},
-		Outputs: []*tb.State{
+		Outputs: []*txv1.State{
 			{
-				Info: &tb.StateInfo{
-					Owners: []*tb.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+				Info: &txv1.StateInfo{
+					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
 					Kind:   "state-kind-0",
 				},
 				State: []byte("state-0"),
 			},
 			{
-				Info: &tb.StateInfo{
-					Owners: []*tb.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+				Info: &txv1.StateInfo{
+					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
 					Kind:   "state-kind-1",
 				},
 				State: []byte("state-1"),
 			},
 		},
-		Parameters: []*tb.Parameter{
+		Parameters: []*txv1.Parameter{
 			{Name: "name-0", Value: []byte("value-0")},
 			{Name: "name-1", Value: []byte("value-1")},
 		},
-		RequiredSigners: []*tb.Party{
+		RequiredSigners: []*txv1.Party{
 			{Credential: []byte("observer-1")},
 			{Credential: []byte("observer-2")},
 		},

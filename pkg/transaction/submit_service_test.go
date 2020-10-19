@@ -10,32 +10,32 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 )
 
 func TestSubmitTransaction(t *testing.T) {
 	tests := map[string]struct {
-		req        *tb.SubmitTransactionRequest
-		resp       *tb.SubmitTransactionResponse
+		req        *txv1.SubmitTransactionRequest
+		resp       *txv1.SubmitTransactionResponse
 		errMatcher types.GomegaMatcher
 	}{
 		"nil transaction": {
-			req:        &tb.SubmitTransactionRequest{},
+			req:        &txv1.SubmitTransactionRequest{},
 			resp:       nil,
 			errMatcher: HaveOccurred(),
 		},
 		"valid transaction": {
-			req: &tb.SubmitTransactionRequest{
-				Transaction: &tb.Transaction{
+			req: &txv1.SubmitTransactionRequest{
+				Transaction: &txv1.Transaction{
 					Salt: []byte("potassium permanganate (KMnO4) is a salt"),
-					Outputs: []*tb.State{{
-						Info:  &tb.StateInfo{Kind: "test-kind"},
+					Outputs: []*txv1.State{{
+						Info:  &txv1.StateInfo{Kind: "test-kind"},
 						State: []byte("test-state-1"),
 					}},
 				},
 			},
-			resp: &tb.SubmitTransactionResponse{
+			resp: &txv1.SubmitTransactionResponse{
 				Txid: fromHex(t, "5cfb2ad672e2ac73ff7d8d008bf1e8bb32224279722a5ee562f3d3a8726f277e"),
 			},
 		},

@@ -9,7 +9,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
@@ -32,7 +32,7 @@ func TestStoreTransactions(t *testing.T) {
 
 	key := transactionKey(intTx.ID)
 
-	err = StoreTransactions(db, []*tb.Transaction{testTx})
+	err = StoreTransactions(db, []*txv1.Transaction{testTx})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	data, err := db.Get(key)
@@ -81,7 +81,7 @@ func TestStoreStates(t *testing.T) {
 	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	testState := &tb.ResolvedState{
+	testState := &txv1.ResolvedState{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 		Info:        testTx.Outputs[0].Info,
@@ -91,14 +91,14 @@ func TestStoreStates(t *testing.T) {
 	encodedState, err := protomsg.MarshalDeterministic(testState)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	testStateRef := &tb.StateReference{
+	testStateRef := &txv1.StateReference{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 	}
 
 	key := stateKey(testStateRef)
 
-	err = StoreStates(db, []*tb.ResolvedState{testState})
+	err = StoreStates(db, []*txv1.ResolvedState{testState})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	data, err := db.Get(key)
@@ -120,14 +120,14 @@ func TestLoadStates(t *testing.T) {
 	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	testState := &tb.ResolvedState{
+	testState := &txv1.ResolvedState{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 		Info:        testTx.Outputs[0].Info,
 		State:       testTx.Outputs[0].State,
 	}
 
-	testStateRef := &tb.StateReference{
+	testStateRef := &txv1.StateReference{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 	}
@@ -137,49 +137,49 @@ func TestLoadStates(t *testing.T) {
 
 	key := stateKey(testStateRef)
 
-	_, err = LoadStates(db, []*tb.StateReference{testStateRef})
+	_, err = LoadStates(db, []*txv1.StateReference{testStateRef})
 	gt.Expect(err).To(MatchError(MatchRegexp("leveldb: not found")))
 
 	err = db.Put(key, encodedState)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	states, err := LoadStates(db, []*tb.StateReference{testStateRef})
+	states, err := LoadStates(db, []*txv1.StateReference{testStateRef})
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(states[0]).To(ProtoEqual(testState))
 }
 
-func newTestTransaction() *tb.Transaction {
-	return &tb.Transaction{
+func newTestTransaction() *txv1.Transaction {
+	return &txv1.Transaction{
 		Salt: []byte("NaCl - abcdefghijklmnopqrstuvwxyz"),
-		Inputs: []*tb.StateReference{
+		Inputs: []*txv1.StateReference{
 			{Txid: []byte("input-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("input-transaction-id-1"), OutputIndex: 0},
 		},
-		References: []*tb.StateReference{
+		References: []*txv1.StateReference{
 			{Txid: []byte("ref-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("ref-transaction-id-1"), OutputIndex: 0},
 		},
-		Outputs: []*tb.State{
+		Outputs: []*txv1.State{
 			{
-				Info: &tb.StateInfo{
-					Owners: []*tb.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+				Info: &txv1.StateInfo{
+					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
 					Kind:   "state-kind-0",
 				},
 				State: []byte("state-0"),
 			},
 			{
-				Info: &tb.StateInfo{
-					Owners: []*tb.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+				Info: &txv1.StateInfo{
+					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
 					Kind:   "state-kind-1",
 				},
 				State: []byte("state-1"),
 			},
 		},
-		Parameters: []*tb.Parameter{
+		Parameters: []*txv1.Parameter{
 			{Name: "name-0", Value: []byte("value-0")},
 			{Name: "name-1", Value: []byte("value-1")},
 		},
-		RequiredSigners: []*tb.Party{
+		RequiredSigners: []*txv1.Party{
 			{Credential: []byte("observer-1")},
 			{Credential: []byte("observer-2")},
 		},

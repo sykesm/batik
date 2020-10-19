@@ -7,22 +7,22 @@ import (
 	"context"
 	"crypto"
 
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 )
 
 // EncodeService implements the EncodeTransactionAPIServer gRPC interface.
 type EncodeService struct {
 	// Unsafe has been chosen to ensure there's a compilation failure when the
 	// implementation does not match the service interface.
-	tb.UnsafeEncodeTransactionAPIServer
+	txv1.UnsafeEncodeTransactionAPIServer
 }
 
-var _ tb.EncodeTransactionAPIServer = (*EncodeService)(nil)
+var _ txv1.EncodeTransactionAPIServer = (*EncodeService)(nil)
 
 // EncodeTransaction encodes a transaction via deterministic marshal and returns
 // the encoded bytes as well as a hash over the transaction represented as a merkle
 // root and generated via SHA256 as the internal hashing function.
-func (e *EncodeService) EncodeTransaction(ctx context.Context, req *tb.EncodeTransactionRequest) (*tb.EncodeTransactionResponse, error) {
+func (e *EncodeService) EncodeTransaction(ctx context.Context, req *txv1.EncodeTransactionRequest) (*txv1.EncodeTransactionResponse, error) {
 	tx := req.Transaction
 
 	intTx, err := Marshal(crypto.SHA256, tx)
@@ -30,7 +30,7 @@ func (e *EncodeService) EncodeTransaction(ctx context.Context, req *tb.EncodeTra
 		return nil, err
 	}
 
-	return &tb.EncodeTransactionResponse{
+	return &txv1.EncodeTransactionResponse{
 		Txid:               intTx.ID,
 		EncodedTransaction: intTx.Encoded,
 	}, nil

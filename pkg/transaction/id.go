@@ -10,13 +10,13 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 
 	"github.com/sykesm/batik/pkg/merkle"
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 )
 
 // IntermediateTx holds intermediate information for an encoded transaction.
 type IntermediateTx struct {
-	Tx      *tb.Transaction
+	Tx      *txv1.Transaction
 	Encoded []byte
 	ID      []byte
 }
@@ -24,7 +24,7 @@ type IntermediateTx struct {
 // Marshal encodes a Transaction message and also generates a transaction ID
 // over the transaction. An error is returned if any element of the transaction cannot
 // be marshaled into a protobuf message.
-func Marshal(h merkle.Hasher, tx *tb.Transaction) (*IntermediateTx, error) {
+func Marshal(h merkle.Hasher, tx *txv1.Transaction) (*IntermediateTx, error) {
 	// The transaction must be salted.
 	if len(tx.Salt) < 32 {
 		return nil, errors.New("transaction salt is missing or less than 32 bytes in length")
@@ -33,12 +33,12 @@ func Marshal(h merkle.Hasher, tx *tb.Transaction) (*IntermediateTx, error) {
 	// fieldGetters is used instead of proto reflection to get the list of fields
 	// and their associated field numbers when generating merkle hashes used for
 	// transaction ID generation.
-	fieldGetters := []func(*tb.Transaction) (fn uint32, list interface{}){
-		func(tx *tb.Transaction) (uint32, interface{}) { return 2, tx.Inputs },
-		func(tx *tb.Transaction) (uint32, interface{}) { return 3, tx.References },
-		func(tx *tb.Transaction) (uint32, interface{}) { return 4, tx.Outputs },
-		func(tx *tb.Transaction) (uint32, interface{}) { return 5, tx.Parameters },
-		func(tx *tb.Transaction) (uint32, interface{}) { return 6, tx.RequiredSigners },
+	fieldGetters := []func(*txv1.Transaction) (fn uint32, list interface{}){
+		func(tx *txv1.Transaction) (uint32, interface{}) { return 2, tx.Inputs },
+		func(tx *txv1.Transaction) (uint32, interface{}) { return 3, tx.References },
+		func(tx *txv1.Transaction) (uint32, interface{}) { return 4, tx.Outputs },
+		func(tx *txv1.Transaction) (uint32, interface{}) { return 5, tx.Parameters },
+		func(tx *txv1.Transaction) (uint32, interface{}) { return 6, tx.RequiredSigners },
 	}
 
 	// The encoded transaction can be constructed from the encoded elements of

@@ -20,7 +20,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/sykesm/batik/pkg/merkle"
-	"github.com/sykesm/batik/pkg/pb/transaction"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/transaction/internal/testprotos/mutated"
 )
@@ -56,19 +56,19 @@ func TestSalt(t *testing.T) {
 
 func TestMarshal(t *testing.T) {
 	salt := fromHex(t, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
-	noop := func(tx *transaction.Transaction) {}
-	salted := func(tx *transaction.Transaction) { tx.Salt = salt }
-	emptySalted := func(tx *transaction.Transaction) { tx.Reset(); tx.Salt = salt }
-	shortSalt := func(tx *transaction.Transaction) { tx.Salt = tx.Salt[0:31] }
-	noSigners := func(tx *transaction.Transaction) { tx.RequiredSigners = nil }
-	nilElement := func(tx *transaction.Transaction) { tx.Inputs[0] = nil }
-	reset := func(tx *transaction.Transaction) { tx.Reset() }
-	unknownFields := func(tx *transaction.Transaction) { tx.Inputs[0].ProtoReflect().SetUnknown([]byte("garbage")) }
+	noop := func(tx *txv1.Transaction) {}
+	salted := func(tx *txv1.Transaction) { tx.Salt = salt }
+	emptySalted := func(tx *txv1.Transaction) { tx.Reset(); tx.Salt = salt }
+	shortSalt := func(tx *txv1.Transaction) { tx.Salt = tx.Salt[0:31] }
+	noSigners := func(tx *txv1.Transaction) { tx.RequiredSigners = nil }
+	nilElement := func(tx *txv1.Transaction) { tx.Inputs[0] = nil }
+	reset := func(tx *txv1.Transaction) { tx.Reset() }
+	unknownFields := func(tx *txv1.Transaction) { tx.Inputs[0].ProtoReflect().SetUnknown([]byte("garbage")) }
 
 	var tests = map[string]struct {
 		expected   []byte
 		errMatcher types.GomegaMatcher
-		setup      func(*transaction.Transaction)
+		setup      func(*txv1.Transaction)
 	}{
 		"happy":         {fromHex(t, "77dc6e1729583cf7f1db9863b34a8951a3bb9369ab4cf0a86340ea92a8514cf5"), nil, noop},
 		"changed salt":  {fromHex(t, "f1d081a486273dc66226a1fa30837e7583d9e0921163eac2300b350ff5ab4095"), nil, salted},
@@ -193,38 +193,38 @@ func reflectTransactionID(h merkle.Hasher, tx proto.Message) ([]byte, error) {
 	return merkle.Root(h, txLeaves...), nil
 }
 
-func newTestTransaction() *transaction.Transaction {
-	return &transaction.Transaction{
+func newTestTransaction() *txv1.Transaction {
+	return &txv1.Transaction{
 		Salt: []byte("NaCl - abcdefghijklmnopqrstuvwxyz"),
-		Inputs: []*transaction.StateReference{
+		Inputs: []*txv1.StateReference{
 			{Txid: []byte("input-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("input-transaction-id-1"), OutputIndex: 0},
 		},
-		References: []*transaction.StateReference{
+		References: []*txv1.StateReference{
 			{Txid: []byte("ref-transaction-id-0"), OutputIndex: 1},
 			{Txid: []byte("ref-transaction-id-1"), OutputIndex: 0},
 		},
-		Outputs: []*transaction.State{
+		Outputs: []*txv1.State{
 			{
-				Info: &transaction.StateInfo{
-					Owners: []*transaction.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+				Info: &txv1.StateInfo{
+					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
 					Kind:   "state-kind-0",
 				},
 				State: []byte("state-0"),
 			},
 			{
-				Info: &transaction.StateInfo{
-					Owners: []*transaction.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+				Info: &txv1.StateInfo{
+					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
 					Kind:   "state-kind-1",
 				},
 				State: []byte("state-1"),
 			},
 		},
-		Parameters: []*transaction.Parameter{
+		Parameters: []*txv1.Parameter{
 			{Name: "name-0", Value: []byte("value-0")},
 			{Name: "name-1", Value: []byte("value-1")},
 		},
-		RequiredSigners: []*transaction.Party{
+		RequiredSigners: []*txv1.Party{
 			{Credential: []byte("observer-1")},
 			{Credential: []byte("observer-2")},
 		},

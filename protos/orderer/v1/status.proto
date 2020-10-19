@@ -3,9 +3,9 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/sykesm/batik/pkg/pb/orderer";
+option go_package = "github.com/sykesm/batik/pkg/pb/orderer/v1;ordererv1";
 
-package orderer;
+package orderer.v1;
 
 // These status codes are intended to resemble selected HTTP status codes.
 enum Status {

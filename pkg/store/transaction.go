@@ -8,10 +8,11 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	"google.golang.org/protobuf/proto"
+
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/transaction"
-	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 	keyStates       = [...]byte{0x2}
 )
 
-func StoreTransactions(kv KV, txs []*tb.Transaction) error {
+func StoreTransactions(kv KV, txs []*txv1.Transaction) error {
 	batch := kv.NewWriteBatch()
 
 	for _, tx := range txs {
@@ -37,8 +38,8 @@ func StoreTransactions(kv KV, txs []*tb.Transaction) error {
 	return errors.WithMessage(batch.Commit(), "error committing transactions batch")
 }
 
-func LoadTransactions(kv KV, ids [][]byte) ([]*tb.Transaction, error) {
-	result := make([]*tb.Transaction, 0, len(ids))
+func LoadTransactions(kv KV, ids [][]byte) ([]*txv1.Transaction, error) {
+	result := make([]*txv1.Transaction, 0, len(ids))
 
 	for _, id := range ids {
 		payload, err := kv.Get(transactionKey(id))
@@ -46,7 +47,7 @@ func LoadTransactions(kv KV, ids [][]byte) ([]*tb.Transaction, error) {
 			return nil, errors.WithMessagef(err, "error getting tx %x from db", id)
 		}
 
-		tx := &tb.Transaction{}
+		tx := &txv1.Transaction{}
 		if err := proto.Unmarshal(payload, tx); err != nil {
 			return nil, errors.WithMessagef(err, "error unmarshaling tx %x", id)
 		}
@@ -57,7 +58,7 @@ func LoadTransactions(kv KV, ids [][]byte) ([]*tb.Transaction, error) {
 	return result, nil
 }
 
-func StoreStates(kv KV, states []*tb.ResolvedState) error {
+func StoreStates(kv KV, states []*txv1.ResolvedState) error {
 	batch := kv.NewWriteBatch()
 
 	for _, state := range states {
@@ -66,7 +67,7 @@ func StoreStates(kv KV, states []*tb.ResolvedState) error {
 			return errors.WithMessage(err, "error marshalling resolved state")
 		}
 
-		if err := batch.Put(stateKey(&tb.StateReference{Txid: state.Txid, OutputIndex: state.OutputIndex}), encodedState); err != nil {
+		if err := batch.Put(stateKey(&txv1.StateReference{Txid: state.Txid, OutputIndex: state.OutputIndex}), encodedState); err != nil {
 			return err
 		}
 	}
@@ -74,8 +75,8 @@ func StoreStates(kv KV, states []*tb.ResolvedState) error {
 	return errors.WithMessage(batch.Commit(), "error committing resolved states batch")
 }
 
-func LoadStates(kv KV, refs []*tb.StateReference) ([]*tb.ResolvedState, error) {
-	result := make([]*tb.ResolvedState, 0, len(refs))
+func LoadStates(kv KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState, error) {
+	result := make([]*txv1.ResolvedState, 0, len(refs))
 
 	for _, ref := range refs {
 		payload, err := kv.Get(stateKey(ref))
@@ -83,7 +84,7 @@ func LoadStates(kv KV, refs []*tb.StateReference) ([]*tb.ResolvedState, error) {
 			return nil, errors.WithMessagef(err, "error getting state %x from db", ref)
 		}
 
-		state := &tb.ResolvedState{
+		state := &txv1.ResolvedState{
 			Txid:        ref.Txid,
 			OutputIndex: ref.OutputIndex,
 		}
@@ -103,7 +104,7 @@ func transactionKey(txid []byte) []byte {
 }
 
 // stateKey returns a db key for a state
-func stateKey(stateRef *tb.StateReference) []byte {
+func stateKey(stateRef *txv1.StateReference) []byte {
 	return append(
 		append(keyStates[:], stateRef.Txid[:]...),
 		strconv.Itoa(int(stateRef.OutputIndex))...,

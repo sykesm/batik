@@ -21,8 +21,8 @@ import (
 	"github.com/sykesm/batik/pkg/grpccomm"
 	"github.com/sykesm/batik/pkg/grpclogging"
 	"github.com/sykesm/batik/pkg/options"
-	sb "github.com/sykesm/batik/pkg/pb/store"
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
@@ -80,16 +80,16 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 	}
 
 	encodeService := &transaction.EncodeService{}
-	tb.RegisterEncodeTransactionAPIServer(grpcServer.Server, encodeService)
+	txv1.RegisterEncodeTransactionAPIServer(grpcServer.Server, encodeService)
 
 	submitService := transaction.NewSubmitService()
-	tb.RegisterSubmitTransactionAPIServer(grpcServer.Server, submitService)
+	txv1.RegisterSubmitTransactionAPIServer(grpcServer.Server, submitService)
 
 	storeService := store.NewStoreService(db)
-	sb.RegisterStoreAPIServer(grpcServer.Server, storeService)
+	storev1.RegisterStoreAPIServer(grpcServer.Server, storeService)
 
 	mux := gwruntime.NewServeMux()
-	sb.RegisterStoreAPIHandlerServer(context.Background(), mux, storeService)
+	storev1.RegisterStoreAPIHandlerServer(context.Background(), mux, storeService)
 
 	httpServer := config.Server.HTTP.BuildServer(tlsConf)
 	httpServer.Handler = mux

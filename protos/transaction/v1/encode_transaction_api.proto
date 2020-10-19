@@ -3,11 +3,11 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/sykesm/batik/pkg/pb/transaction";
+option go_package = "github.com/sykesm/batik/pkg/pb/transaction/v1;transactionv1";
 
-package transaction;
+package transaction.v1;
 
-import "transaction/transaction.proto";
+import "transaction/v1/transaction.proto";
 
 // EncodeTransactionAPI applies canonical transaction encoding and returns the
 // encoded transaction and transaction ID.

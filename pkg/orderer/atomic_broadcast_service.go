@@ -10,7 +10,7 @@ import (
 
 	"github.com/sykesm/batik/pkg/orderer/broadcast"
 	"github.com/sykesm/batik/pkg/orderer/deliver"
-	ab "github.com/sykesm/batik/pkg/pb/orderer"
+	ab "github.com/sykesm/batik/pkg/pb/orderer/v1"
 )
 
 // AtomicBroadcastService implements the AtomicBroadcastAPIServer gRPC interface.

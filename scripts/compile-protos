@@ -6,6 +6,7 @@
 set -euo pipefail
 
 cd protos
+mkdir -p ../pkg/pb
 for dir in $(find . -name '*.proto' -exec dirname {} \; | sort -u | grep -v googleapis); do
   protoc \
       --proto_path . \

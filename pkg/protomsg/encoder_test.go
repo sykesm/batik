@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/sykesm/batik/pkg/pb/transaction"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/protomsg/internal/testprotos/test2"
 	"github.com/sykesm/batik/pkg/protomsg/internal/testprotos/test3"
@@ -26,7 +26,7 @@ import (
 
 func TestEquality(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	sr := &transaction.StateReference{
+	sr := &txv1.StateReference{
 		Txid:        []byte("abakjfjdkjfkdjkajdfkdjfkdjkdjkjakfjd"),
 		OutputIndex: 9999,
 	}

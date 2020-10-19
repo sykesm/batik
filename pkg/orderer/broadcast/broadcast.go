@@ -7,9 +7,10 @@ import (
 	"context"
 	"io"
 
-	ab "github.com/sykesm/batik/pkg/pb/orderer"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/peer"
+
+	ordererv1 "github.com/sykesm/batik/pkg/pb/orderer/v1"
 )
 
 // Handler is designed to handle connections from an AtomicBroadcastAPI gRPC service.
@@ -18,7 +19,7 @@ type Handler struct {
 }
 
 // Handle reads requests from a Broadcast stream, processes them, and returns the responses to the stream.
-func (bh *Handler) Handle(srv ab.AtomicBroadcastAPI_BroadcastServer) error {
+func (bh *Handler) Handle(srv ordererv1.AtomicBroadcastAPI_BroadcastServer) error {
 	addr := extractRemoteAddress(srv.Context())
 	logger := bh.Logger.With(zap.String("addr", addr))
 	logger.Debug("Starting new broadcast loop")
@@ -36,7 +37,7 @@ func (bh *Handler) Handle(srv ab.AtomicBroadcastAPI_BroadcastServer) error {
 
 		resp := bh.ProcessMessage(msg, addr)
 		err = srv.Send(resp)
-		if resp.Status != ab.Status_STATUS_SUCCESS {
+		if resp.Status != ordererv1.Status_STATUS_SUCCESS {
 			return err
 		}
 
@@ -48,14 +49,14 @@ func (bh *Handler) Handle(srv ab.AtomicBroadcastAPI_BroadcastServer) error {
 }
 
 // ProcessMessage validates and enqueues a single message.
-func (bh *Handler) ProcessMessage(msg *ab.BroadcastRequest, addr string) *ab.BroadcastResponse {
+func (bh *Handler) ProcessMessage(msg *ordererv1.BroadcastRequest, addr string) *ordererv1.BroadcastResponse {
 	// TODO
 	// 1. Parse request for payload and headers
 	// 2. Get chain processor for channelid based on type of transaction (ie config, etc)
 	// 3. Get sequence for tx via chain processor
 	// 4. Wait for consenter to be ready to accept next tx
 	// 5. Consenter orders the tx and appends to chain, or reconfigures if config tx
-	return &ab.BroadcastResponse{Status: ab.Status_STATUS_SUCCESS}
+	return &ordererv1.BroadcastResponse{Status: ordererv1.Status_STATUS_SUCCESS}
 }
 
 func extractRemoteAddress(ctx context.Context) string {

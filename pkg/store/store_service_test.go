@@ -10,8 +10,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	sb "github.com/sykesm/batik/pkg/pb/store"
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
@@ -36,7 +36,7 @@ func TestStoreService_GetTransaction(t *testing.T) {
 
 	key := transactionKey(intTx.ID)
 
-	req := &sb.GetTransactionRequest{
+	req := &storev1.GetTransactionRequest{
 		Txid: intTx.ID,
 	}
 	resp, err := storeSvc.GetTransaction(context.Background(), req)
@@ -68,7 +68,7 @@ func TestStoreService_PutTransaction(t *testing.T) {
 
 	key := transactionKey(intTx.ID)
 
-	req := &sb.PutTransactionRequest{
+	req := &storev1.PutTransactionRequest{
 		Transaction: testTx,
 	}
 	_, err = storeSvc.PutTransaction(context.Background(), req)
@@ -95,14 +95,14 @@ func TestStoreService_GetState(t *testing.T) {
 	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	testState := &tb.ResolvedState{
+	testState := &txv1.ResolvedState{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 		Info:        testTx.Outputs[0].Info,
 		State:       testTx.Outputs[0].State,
 	}
 
-	testStateRef := &tb.StateReference{
+	testStateRef := &txv1.StateReference{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 	}
@@ -112,7 +112,7 @@ func TestStoreService_GetState(t *testing.T) {
 
 	key := stateKey(testStateRef)
 
-	req := &sb.GetStateRequest{
+	req := &storev1.GetStateRequest{
 		StateRef: testStateRef,
 	}
 	resp, err := storeSvc.GetState(context.Background(), req)
@@ -142,7 +142,7 @@ func TestStoreService_PutState(t *testing.T) {
 	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	testState := &tb.ResolvedState{
+	testState := &txv1.ResolvedState{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 		Info:        testTx.Outputs[0].Info,
@@ -152,14 +152,14 @@ func TestStoreService_PutState(t *testing.T) {
 	encodedState, err := protomsg.MarshalDeterministic(testState)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	testStateRef := &tb.StateReference{
+	testStateRef := &txv1.StateReference{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 	}
 
 	key := stateKey(testStateRef)
 
-	req := &sb.PutStateRequest{
+	req := &storev1.PutStateRequest{
 		State: testState,
 	}
 	_, err = storeSvc.PutState(context.Background(), req)

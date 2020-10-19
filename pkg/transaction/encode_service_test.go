@@ -9,7 +9,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	tb "github.com/sykesm/batik/pkg/pb/transaction"
+	txv1 "github.com/sykesm/batik/pkg/pb/transaction/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
 )
 
@@ -17,7 +17,7 @@ func TestEncodeService(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	testTx := newTestTransaction()
-	req := &tb.EncodeTransactionRequest{Transaction: testTx}
+	req := &txv1.EncodeTransactionRequest{Transaction: testTx}
 
 	encodeSvc := &EncodeService{}
 	resp, err := encodeSvc.EncodeTransaction(context.Background(), req)

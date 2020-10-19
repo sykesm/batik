@@ -7,9 +7,10 @@ import (
 	"context"
 	"io"
 
-	ab "github.com/sykesm/batik/pkg/pb/orderer"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/peer"
+
+	ordererv1 "github.com/sykesm/batik/pkg/pb/orderer/v1"
 )
 
 // Handler is designed to handle connections from an AtomicBroadcastAPI gRPC service.
@@ -18,7 +19,7 @@ type Handler struct {
 }
 
 // Handle reads requests from a Deliver stream, processes them, and returns the responses to the stream.
-func (dh *Handler) Handle(srv ab.AtomicBroadcastAPI_DeliverServer) error {
+func (dh *Handler) Handle(srv ordererv1.AtomicBroadcastAPI_DeliverServer) error {
 	addr := extractRemoteAddress(srv.Context())
 	logger := dh.Logger.With(zap.String("addr", addr))
 	logger.Debug("Starting new deliver loop")
@@ -36,7 +37,7 @@ func (dh *Handler) Handle(srv ab.AtomicBroadcastAPI_DeliverServer) error {
 
 		resp := dh.ProcessMessage(msg, addr)
 		err = srv.Send(resp)
-		if r, ok := resp.Type.(*ab.DeliverResponse_Status); ok && r.Status != ab.Status_STATUS_SUCCESS {
+		if r, ok := resp.Type.(*ordererv1.DeliverResponse_Status); ok && r.Status != ordererv1.Status_STATUS_SUCCESS {
 			return err
 		}
 
@@ -47,7 +48,7 @@ func (dh *Handler) Handle(srv ab.AtomicBroadcastAPI_DeliverServer) error {
 	}
 }
 
-func (h *Handler) ProcessMessage(msg *ab.DeliverRequest, addr string) *ab.DeliverResponse {
+func (h *Handler) ProcessMessage(msg *ordererv1.DeliverRequest, addr string) *ordererv1.DeliverResponse {
 	//TODO
 	// 1. Parse request for payload and headers
 	// 2. Get "chain" for channel id
@@ -58,7 +59,7 @@ func (h *Handler) ProcessMessage(msg *ab.DeliverRequest, addr string) *ab.Delive
 	//		2. Send deliver response with tx or txid
 	// 6. Return deliver response with successful status
 	// On any failures, return deliver response with failure status
-	return &ab.DeliverResponse{Type: &ab.DeliverResponse_Status{Status: ab.Status_STATUS_SUCCESS}}
+	return &ordererv1.DeliverResponse{Type: &ordererv1.DeliverResponse_Status{Status: ordererv1.Status_STATUS_SUCCESS}}
 }
 
 func extractRemoteAddress(ctx context.Context) string {
