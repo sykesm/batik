@@ -3,9 +3,9 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/sykesm/batik/pkg/pb/orderer/v1;ordererv1";
-
 package orderer.v1;
+
+option go_package = "github.com/sykesm/batik/pkg/pb/orderer/v1;ordererv1";
 
 import "orderer/v1/status.proto";
 import "tx/v1/transaction.proto";

@@ -3,13 +3,13 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/sykesm/batik/pkg/pb/store/v1;storev1";
-
 package store.v1;
 
+option go_package = "github.com/sykesm/batik/pkg/pb/store/v1;storev1";
+
 import "google/api/annotations.proto";
-import "tx/v1/transaction.proto";
 import "tx/v1/resolved.proto";
+import "tx/v1/transaction.proto";
 
 // StoreAPI provides methods for interacting with a backing store to
 // retrieve and store transactions and states.

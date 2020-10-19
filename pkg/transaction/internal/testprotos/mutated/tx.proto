@@ -3,9 +3,9 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/sykesm/batik/pkg/transaction/internal/testprotos/mutated";
-
 package mutated;
+
+option go_package = "github.com/sykesm/batik/pkg/transaction/internal/testprotos/mutated";
 
 message Party {
   bytes credential = 1;

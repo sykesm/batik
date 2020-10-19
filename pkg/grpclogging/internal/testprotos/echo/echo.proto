@@ -3,9 +3,9 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/sykesm/batik/pkg/grpclogging/internal/testprotos/echo";
-
 package echo;
+
+option go_package = "github.com/sykesm/batik/pkg/grpclogging/internal/testprotos/echo";
 
 message Message {
     string message = 1;

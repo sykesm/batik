@@ -3,9 +3,9 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/sykesm/batik/pkg/pb/tx/v1;txv1";
-
 package tx.v1;
+
+option go_package = "github.com/sykesm/batik/pkg/pb/tx/v1;txv1";
 
 // A Party represents an identity that can be used to represent an owner or an
 // interested party.
