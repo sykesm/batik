@@ -1,7 +1,7 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package store
+package transaction
 
 import (
 	"crypto"
@@ -12,7 +12,7 @@ import (
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
-	"github.com/sykesm/batik/pkg/transaction"
+	"github.com/sykesm/batik/pkg/store"
 )
 
 var (
@@ -21,11 +21,11 @@ var (
 	keyStates       = [...]byte{0x2}
 )
 
-func StoreTransactions(kv KV, txs []*txv1.Transaction) error {
+func StoreTransactions(kv store.KV, txs []*txv1.Transaction) error {
 	batch := kv.NewWriteBatch()
 
 	for _, tx := range txs {
-		intTx, err := transaction.Marshal(crypto.SHA256, tx)
+		intTx, err := Marshal(crypto.SHA256, tx)
 		if err != nil {
 			return errors.WithMessage(err, "error marshaling transaction")
 		}
@@ -38,7 +38,7 @@ func StoreTransactions(kv KV, txs []*txv1.Transaction) error {
 	return errors.WithMessage(batch.Commit(), "error committing transactions batch")
 }
 
-func LoadTransactions(kv KV, ids [][]byte) ([]*txv1.Transaction, error) {
+func LoadTransactions(kv store.KV, ids [][]byte) ([]*txv1.Transaction, error) {
 	result := make([]*txv1.Transaction, 0, len(ids))
 
 	for _, id := range ids {
@@ -58,7 +58,7 @@ func LoadTransactions(kv KV, ids [][]byte) ([]*txv1.Transaction, error) {
 	return result, nil
 }
 
-func StoreStates(kv KV, states []*txv1.ResolvedState) error {
+func StoreStates(kv store.KV, states []*txv1.ResolvedState) error {
 	batch := kv.NewWriteBatch()
 
 	for _, state := range states {
@@ -75,7 +75,7 @@ func StoreStates(kv KV, states []*txv1.ResolvedState) error {
 	return errors.WithMessage(batch.Commit(), "error committing resolved states batch")
 }
 
-func LoadStates(kv KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState, error) {
+func LoadStates(kv store.KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState, error) {
 	result := make([]*txv1.ResolvedState, 0, len(refs))
 
 	for _, ref := range refs {

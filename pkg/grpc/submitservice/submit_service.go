@@ -37,14 +37,27 @@ func NewSubmitService() *SubmitService {
 //
 // NOTE: This is an implementation for prototyping.
 func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*txv1.SubmitResponse, error) {
-	inTx := req.GetTransaction()
-	if inTx == nil {
+	tx := req.GetTransaction()
+	if tx == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "transaction was not provided")
 	}
-	tx, err := transaction.Marshal(s.hasher, inTx)
+	itx, err := transaction.Marshal(s.hasher, tx)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	return &txv1.SubmitResponse{Txid: tx.ID}, nil
+	// All inputs must exist
+	for _, in := range tx.Inputs {
+		if in == nil {
+			continue
+		}
+	}
+	// All references must exist
+	for _, ref := range tx.References {
+		if ref == nil {
+			continue
+		}
+	}
+
+	return &txv1.SubmitResponse{Txid: itx.ID}, nil
 }
