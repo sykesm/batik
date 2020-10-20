@@ -1,13 +1,14 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package store
+package storeservice
 
 import (
 	"context"
 
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	"github.com/sykesm/batik/pkg/store"
 )
 
 // StoreService implements the StoreAPIServer gRPC interface.
@@ -16,12 +17,12 @@ type StoreService struct {
 	// implementation diverges from the gRPC service.
 	storev1.UnsafeStoreAPIServer
 
-	db KV
+	db store.KV
 }
 
 var _ storev1.StoreAPIServer = (*StoreService)(nil)
 
-func NewStoreService(db KV) *StoreService {
+func NewStoreService(db store.KV) *StoreService {
 	return &StoreService{
 		db: db,
 	}
@@ -30,7 +31,7 @@ func NewStoreService(db KV) *StoreService {
 // GetTransaction retrieves the associated transaction corresponding to the
 // txid passed in the GetTransactionRequest.
 func (s *StoreService) GetTransaction(ctx context.Context, req *storev1.GetTransactionRequest) (*storev1.GetTransactionResponse, error) {
-	txs, err := LoadTransactions(s.db, [][]byte{req.Txid})
+	txs, err := store.LoadTransactions(s.db, [][]byte{req.Txid})
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +44,7 @@ func (s *StoreService) GetTransaction(ctx context.Context, req *storev1.GetTrans
 // PutTransaction hashes the transaction to a txid and then stores
 // the encoded transaction in the backing store.
 func (s *StoreService) PutTransaction(ctx context.Context, req *storev1.PutTransactionRequest) (*storev1.PutTransactionResponse, error) {
-	if err := StoreTransactions(s.db, []*txv1.Transaction{req.Transaction}); err != nil {
+	if err := store.StoreTransactions(s.db, []*txv1.Transaction{req.Transaction}); err != nil {
 		return nil, err
 	}
 
@@ -55,7 +56,7 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *storev1.PutTrans
 // output index that the State was originally created at in the transaction output
 // list.
 func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateRequest) (*storev1.GetStateResponse, error) {
-	states, err := LoadStates(s.db, []*txv1.StateReference{req.StateRef})
+	states, err := store.LoadStates(s.db, []*txv1.StateReference{req.StateRef})
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +68,7 @@ func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateReques
 
 // PutState stores the encoded resolved state in the backing store.
 func (s *StoreService) PutState(ctx context.Context, req *storev1.PutStateRequest) (*storev1.PutStateResponse, error) {
-	if err := StoreStates(s.db, []*txv1.ResolvedState{req.State}); err != nil {
+	if err := store.StoreStates(s.db, []*txv1.ResolvedState{req.State}); err != nil {
 		return nil, err
 	}
 

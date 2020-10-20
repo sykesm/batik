@@ -1,7 +1,7 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package store
+package storeservice
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
-	"github.com/sykesm/batik/pkg/protomsg"
+	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
@@ -24,17 +24,16 @@ func TestStoreService_GetTransaction(t *testing.T) {
 	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
-	db, err := NewLevelDB(path)
+	db, err := store.NewLevelDB(path)
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
 	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
+
 	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
-
-	key := transactionKey(intTx.ID)
 
 	req := &storev1.GetTransactionRequest{
 		Txid: intTx.ID,
@@ -42,7 +41,7 @@ func TestStoreService_GetTransaction(t *testing.T) {
 	resp, err := storeSvc.GetTransaction(context.Background(), req)
 	gt.Expect(err).To(MatchError(MatchRegexp("leveldb: not found")))
 
-	err = db.Put(key, intTx.Encoded)
+	err = store.StoreTransactions(db, []*txv1.Transaction{testTx})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetTransaction(context.Background(), req)
@@ -56,7 +55,7 @@ func TestStoreService_PutTransaction(t *testing.T) {
 	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
-	db, err := NewLevelDB(path)
+	db, err := store.NewLevelDB(path)
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
@@ -66,17 +65,17 @@ func TestStoreService_PutTransaction(t *testing.T) {
 	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	key := transactionKey(intTx.ID)
-
 	req := &storev1.PutTransactionRequest{
 		Transaction: testTx,
 	}
 	_, err = storeSvc.PutTransaction(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	data, err := db.Get(key)
+	result, err := storeSvc.GetTransaction(context.Background(), &storev1.GetTransactionRequest{
+		Txid: intTx.ID,
+	})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(data).To(Equal(intTx.Encoded))
+	gt.Expect(result.Transaction).To(ProtoEqual(testTx))
 }
 
 func TestStoreService_GetState(t *testing.T) {
@@ -85,7 +84,7 @@ func TestStoreService_GetState(t *testing.T) {
 	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
-	db, err := NewLevelDB(path)
+	db, err := store.NewLevelDB(path)
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
@@ -107,18 +106,13 @@ func TestStoreService_GetState(t *testing.T) {
 		OutputIndex: 0,
 	}
 
-	encodedState, err := protomsg.MarshalDeterministic(testState)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	key := stateKey(testStateRef)
-
 	req := &storev1.GetStateRequest{
 		StateRef: testStateRef,
 	}
 	resp, err := storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).To(MatchError(MatchRegexp("leveldb: not found")))
 
-	err = db.Put(key, encodedState)
+	err = store.StoreStates(db, []*txv1.ResolvedState{testState})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetState(context.Background(), req)
@@ -132,7 +126,7 @@ func TestStoreService_PutState(t *testing.T) {
 	path, cleanup := tested.TempDir(t, "", "level")
 	defer cleanup()
 
-	db, err := NewLevelDB(path)
+	db, err := store.NewLevelDB(path)
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
@@ -149,15 +143,10 @@ func TestStoreService_PutState(t *testing.T) {
 		State:       testTx.Outputs[0].State,
 	}
 
-	encodedState, err := protomsg.MarshalDeterministic(testState)
-	gt.Expect(err).NotTo(HaveOccurred())
-
 	testStateRef := &txv1.StateReference{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 	}
-
-	key := stateKey(testStateRef)
 
 	req := &storev1.PutStateRequest{
 		State: testState,
@@ -165,7 +154,46 @@ func TestStoreService_PutState(t *testing.T) {
 	_, err = storeSvc.PutState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	data, err := db.Get(key)
+	states, err := store.LoadStates(db, []*txv1.StateReference{testStateRef})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(data).To(Equal(encodedState))
+	gt.Expect(states).To(HaveLen(1))
+	gt.Expect(states[0]).To(ProtoEqual(testState))
+}
+
+func newTestTransaction() *txv1.Transaction {
+	return &txv1.Transaction{
+		Salt: []byte("NaCl - abcdefghijklmnopqrstuvwxyz"),
+		Inputs: []*txv1.StateReference{
+			{Txid: []byte("input-transaction-id-0"), OutputIndex: 1},
+			{Txid: []byte("input-transaction-id-1"), OutputIndex: 0},
+		},
+		References: []*txv1.StateReference{
+			{Txid: []byte("ref-transaction-id-0"), OutputIndex: 1},
+			{Txid: []byte("ref-transaction-id-1"), OutputIndex: 0},
+		},
+		Outputs: []*txv1.State{
+			{
+				Info: &txv1.StateInfo{
+					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+					Kind:   "state-kind-0",
+				},
+				State: []byte("state-0"),
+			},
+			{
+				Info: &txv1.StateInfo{
+					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+					Kind:   "state-kind-1",
+				},
+				State: []byte("state-1"),
+			},
+		},
+		Parameters: []*txv1.Parameter{
+			{Name: "name-0", Value: []byte("value-0")},
+			{Name: "name-1", Value: []byte("value-1")},
+		},
+		RequiredSigners: []*txv1.Party{
+			{Credential: []byte("observer-1")},
+			{Credential: []byte("observer-2")},
+		},
+	}
 }

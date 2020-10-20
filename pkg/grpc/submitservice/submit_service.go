@@ -1,7 +1,7 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package transaction
+package submitservice
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/sykesm/batik/pkg/merkle"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	"github.com/sykesm/batik/pkg/transaction"
 )
 
 // SubmitService implements the EncodeAPIServer gRPC interface.
@@ -40,7 +41,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	if inTx == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "transaction was not provided")
 	}
-	tx, err := Marshal(s.hasher, inTx)
+	tx, err := transaction.Marshal(s.hasher, inTx)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}

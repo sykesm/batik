@@ -18,13 +18,14 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/sykesm/batik/pkg/grpc/encodeservice"
+	"github.com/sykesm/batik/pkg/grpc/storeservice"
+	"github.com/sykesm/batik/pkg/grpc/submitservice"
 	"github.com/sykesm/batik/pkg/grpccomm"
 	"github.com/sykesm/batik/pkg/grpclogging"
 	"github.com/sykesm/batik/pkg/options"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
-	"github.com/sykesm/batik/pkg/store"
-	"github.com/sykesm/batik/pkg/transaction"
 )
 
 func startCommand(config *options.Batik, interactive bool) *cli.Command {
@@ -79,13 +80,13 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 		return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
 	}
 
-	encodeService := &transaction.EncodeService{}
+	encodeService := &encodeservice.EncodeService{}
 	txv1.RegisterEncodeAPIServer(grpcServer.Server, encodeService)
 
-	submitService := transaction.NewSubmitService()
+	submitService := submitservice.NewSubmitService()
 	txv1.RegisterSubmitAPIServer(grpcServer.Server, submitService)
 
-	storeService := store.NewStoreService(db)
+	storeService := storeservice.NewStoreService(db)
 	storev1.RegisterStoreAPIServer(grpcServer.Server, storeService)
 
 	mux := gwruntime.NewServeMux()

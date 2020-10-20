@@ -1,13 +1,14 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package transaction
+package encodeservice
 
 import (
 	"context"
 	"crypto"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	"github.com/sykesm/batik/pkg/transaction"
 )
 
 // EncodeService implements the EncodeAPIServer gRPC interface.
@@ -25,7 +26,7 @@ var _ txv1.EncodeAPIServer = (*EncodeService)(nil)
 func (e *EncodeService) Encode(ctx context.Context, req *txv1.EncodeRequest) (*txv1.EncodeResponse, error) {
 	tx := req.Transaction
 
-	intTx, err := Marshal(crypto.SHA256, tx)
+	intTx, err := transaction.Marshal(crypto.SHA256, tx)
 	if err != nil {
 		return nil, err
 	}

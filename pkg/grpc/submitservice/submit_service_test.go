@@ -1,10 +1,11 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package transaction
+package submitservice
 
 import (
 	"context"
+	"encoding/hex"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -55,4 +56,12 @@ func TestSubmit(t *testing.T) {
 			gt.Expect(resp).To(ProtoEqual(tt.resp))
 		})
 	}
+}
+
+func fromHex(t *testing.T, s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		t.Fatalf("failed to decode %q as hex string", s)
+	}
+	return b
 }
