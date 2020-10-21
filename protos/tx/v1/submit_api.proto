@@ -20,7 +20,7 @@ service SubmitAPI {
 
 // SubmitRequest contains a Transaction.
 message SubmitRequest {
-  Transaction transaction = 1;
+  SignedTransaction signed_transaction = 1;
 }
 
 // SubmitResponse returns the unique identifier for the transaction that was

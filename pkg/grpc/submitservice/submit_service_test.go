@@ -28,12 +28,14 @@ func TestSubmit(t *testing.T) {
 		},
 		"valid transaction": {
 			req: &txv1.SubmitRequest{
-				Transaction: &txv1.Transaction{
-					Salt: []byte("potassium permanganate (KMnO4) is a salt"),
-					Outputs: []*txv1.State{{
-						Info:  &txv1.StateInfo{Kind: "test-kind"},
-						State: []byte("test-state-1"),
-					}},
+				SignedTransaction: &txv1.SignedTransaction{
+					Transaction: &txv1.Transaction{
+						Salt: []byte("potassium permanganate (KMnO4) is a salt"),
+						Outputs: []*txv1.State{{
+							Info:  &txv1.StateInfo{Kind: "test-kind"},
+							State: []byte("test-state-1"),
+						}},
+					},
 				},
 			},
 			resp: &txv1.SubmitResponse{

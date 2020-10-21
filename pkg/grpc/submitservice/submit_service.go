@@ -37,7 +37,11 @@ func NewSubmitService() *SubmitService {
 //
 // NOTE: This is an implementation for prototyping.
 func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*txv1.SubmitResponse, error) {
-	tx := req.GetTransaction()
+	signedTx := req.GetSignedTransaction()
+	if signedTx == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "signed transaction was not provided")
+	}
+	tx := signedTx.GetTransaction()
 	if tx == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "transaction was not provided")
 	}

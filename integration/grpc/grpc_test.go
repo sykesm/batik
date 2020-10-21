@@ -99,7 +99,7 @@ var _ = Describe("gRPC", func() {
 			submitClient = txv1.NewSubmitAPIClient(clientConn)
 		})
 
-		It("submits a transaction for processing and receives an unimplemented error", func() {
+		It("submits a summy transaction for processing", func() {
 			uuid := make([]byte, 16)
 			_, err := io.ReadFull(rand.Reader, uuid)
 			Expect(err).NotTo(HaveOccurred())
@@ -118,7 +118,11 @@ var _ = Describe("gRPC", func() {
 
 			resp, err := submitClient.Submit(
 				context.Background(),
-				&txv1.SubmitRequest{Transaction: tx},
+				&txv1.SubmitRequest{
+					SignedTransaction: &txv1.SignedTransaction{
+						Transaction: tx,
+					},
+				},
 			)
 			Expect(err).NotTo(HaveOccurred())
 

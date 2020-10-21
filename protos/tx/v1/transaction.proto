@@ -57,3 +57,18 @@ message Transaction {
   repeated Parameter parameters = 5;
   repeated Party required_signers = 6;
 }
+
+// A signed transaction is transaction with attached signatures. The signatures
+// should be over the unique transaction ID generated from hashing the
+// deterministic marshaling of the transaction.
+message SignedTransaction {
+  Transaction transaction = 1;
+  repeated Signature signatures = 2;
+}
+
+// A signature holds a signer's public key and its signature over a transaction
+// ID.
+message Signature {
+  bytes public_key = 1;
+  bytes signature = 2;
+}
