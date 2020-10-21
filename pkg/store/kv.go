@@ -20,20 +20,15 @@
 package store
 
 import (
+	"errors"
 	"io"
 )
 
-// ErrNotFound is a sentinal error that indicates a key was not found.
-type NotFoundError struct {
-	Err error
-}
+// A NotFoundError indicates that a resource was not found.
+type NotFoundError struct{ Err error }
 
-func (n *NotFoundError) Error() string { return "kv: not found" }
+func (n *NotFoundError) Error() string { return n.Err.Error() }
 func (n *NotFoundError) Unwrap() error { return n.Err }
-
-type kvError string
-
-func (e kvError) Error() string { return string(e) }
 
 type Key []byte
 
@@ -79,4 +74,11 @@ type WriteBatch interface {
 // Also read Iterator documentation of the leveldb/iterator package.
 type Iterator interface {
 	Keys() ([]Key, error)
+}
+
+// IsNotFound returns a boolean indicating whether the error indicates
+// that the resource was not found in the store.
+func IsNotFound(err error) bool {
+	var nfe *NotFoundError
+	return errors.As(err, &nfe)
 }

@@ -57,7 +57,7 @@ func TestLoadTransactions(t *testing.T) {
 	key := transactionKey(intTx.ID)
 
 	_, err = LoadTransactions(db, [][]byte{intTx.ID})
-	gt.Expect(err).To(MatchError(ContainSubstring("kv: not found")))
+	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
 	err = db.Put(key, intTx.Encoded)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -138,7 +138,7 @@ func TestLoadStates(t *testing.T) {
 	key := stateKey(testStateRef)
 
 	_, err = LoadStates(db, []*txv1.StateReference{testStateRef})
-	gt.Expect(err).To(MatchError(ContainSubstring("kv: not found")))
+	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
 	err = db.Put(key, encodedState)
 	gt.Expect(err).NotTo(HaveOccurred())

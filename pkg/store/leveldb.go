@@ -92,7 +92,7 @@ func (l *LevelDBKV) Close() error {
 func (l *LevelDBKV) Get(key []byte) ([]byte, error) {
 	v, err := l.db.Get(key, nil)
 	if errors.Is(err, leveldb.ErrNotFound) {
-		return nil, &NotFoundError{Err: err}
+		return nil, notFound(err)
 	}
 	if err != nil {
 		return nil, err
@@ -178,4 +178,8 @@ func NewLevelDB(dir string) (*LevelDBKV, error) { // nolint:golint
 		dir: dir,
 		db:  db,
 	}, nil
+}
+
+func notFound(err error) error {
+	return &NotFoundError{Err: err}
 }

@@ -55,18 +55,69 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	// All inputs must exist
-	for _, in := range tx.Inputs {
-		if in == nil {
-			continue
-		}
+	// Check if the transaction already exists
+	_, err = transaction.LoadTransaction(s.kv, itx.ID)
+	if !store.IsNotFound(err) {
+		return nil, status.Errorf(codes.AlreadyExists, "transaction %x already exists", itx.ID)
 	}
-	// All references must exist
-	for _, ref := range tx.References {
-		if ref == nil {
-			continue
-		}
+
+	_, err = resolve(s.kv, tx)
+	if err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "state resolution for transaction %x failed: %s", itx.ID, err)
+	}
+
+	// TODO: The data store should be using the intermediate tx with the marshaled state
+	err = transaction.StoreTransactions(s.kv, []*txv1.Transaction{tx})
+	if err != nil {
+		return nil, status.Errorf(codes.Unknown, "storing transaction %x failed: %s", itx.ID, err)
 	}
 
 	return &txv1.SubmitResponse{Txid: itx.ID}, nil
+}
+
+// A Resolved transaction is a Transaction where state references have been
+// resolved and populated with data from the ledger.
+type ResolvedTransaction struct {
+	Salt            []byte
+	Inputs          []*txv1.State
+	References      []*txv1.State
+	Outputs         []*txv1.State
+	Parameters      []*txv1.Parameter
+	RequiredSigners []*txv1.Party
+}
+
+func resolve(kv store.KV, tx *txv1.Transaction) (*ResolvedTransaction, error) {
+	resolved := &ResolvedTransaction{
+		Salt:            tx.Salt,
+		Outputs:         tx.Outputs,
+		Parameters:      tx.Parameters,
+		RequiredSigners: tx.RequiredSigners,
+	}
+
+	inputs, err := transaction.LoadStates(kv, tx.Inputs)
+	if err != nil {
+		return nil, err
+	}
+	for _, input := range inputs {
+		resolved.Inputs = append(resolved.Inputs, &txv1.State{
+			Info:  input.Info,
+			State: input.State,
+		})
+	}
+	refs, err := transaction.LoadStates(kv, tx.References)
+	if err != nil {
+		return nil, err
+	}
+	for _, ref := range refs {
+		resolved.References = append(resolved.References, &txv1.State{
+			Info:  ref.Info,
+			State: ref.State,
+		})
+	}
+
+	return resolved, nil
+}
+
+func verifySignature(pk crypto.PublicKey, signature, hash []byte) bool {
+	return false
 }

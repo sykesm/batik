@@ -94,12 +94,14 @@ var _ = Describe("gRPC", func() {
 
 	Describe("Submit Transaction API", func() {
 		var submitClient txv1.SubmitAPIClient
+		var storeClient storev1.StoreAPIClient
 
 		BeforeEach(func() {
 			submitClient = txv1.NewSubmitAPIClient(clientConn)
+			storeClient = storev1.NewStoreAPIClient(clientConn)
 		})
 
-		It("submits a summy transaction for processing", func() {
+		It("submits a dummy transaction for processing", func() {
 			uuid := make([]byte, 16)
 			_, err := io.ReadFull(rand.Reader, uuid)
 			Expect(err).NotTo(HaveOccurred())
@@ -129,6 +131,13 @@ var _ = Describe("gRPC", func() {
 			itx, err := transaction.Marshal(crypto.SHA256, tx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.Txid).To(Equal(itx.ID))
+
+			result, err := storeClient.GetTransaction(
+				context.Background(),
+				&storev1.GetTransactionRequest{Txid: resp.Txid},
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(ProtoEqual(&storev1.GetTransactionResponse{Transaction: tx}))
 		})
 	})
 
@@ -160,7 +169,7 @@ var _ = Describe("gRPC", func() {
 			When("the transaction does not exist", func() {
 				It("returns an error", func() {
 					resp, err := storeServiceClient.GetTransaction(context.Background(), req)
-					Expect(err).To(MatchError(ContainSubstring("kv: not found")))
+					Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 					Expect(resp).To(BeNil())
 				})
 			})
@@ -248,7 +257,7 @@ var _ = Describe("gRPC", func() {
 			When("the state does not exist", func() {
 				It("returns an error", func() {
 					resp, err := storeServiceClient.GetState(context.Background(), req)
-					Expect(err).To(MatchError(ContainSubstring("kv: not found")))
+					Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 					Expect(resp).To(BeNil())
 				})
 			})
