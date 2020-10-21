@@ -61,6 +61,10 @@ This document contains a set of stories and work items for Batik.
       > decoded value at the decoded key.
 - [x] Introduce command to dump keys
       > `db keys` returns a list of hex encoded string keys over the entire db.
+- [ ] Create and manage data access errors consistently. In particular, when a
+      value does not exist, we need an error that clearly indicates that. When
+      a value cannot be unmarshaled into a message, we need a different error.
+      The first case is likely normal while the second should be fatal for us.
 
 # Errors
 

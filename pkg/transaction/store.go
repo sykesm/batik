@@ -40,22 +40,26 @@ func StoreTransactions(kv store.KV, txs []*txv1.Transaction) error {
 
 func LoadTransactions(kv store.KV, ids [][]byte) ([]*txv1.Transaction, error) {
 	result := make([]*txv1.Transaction, 0, len(ids))
-
 	for _, id := range ids {
-		payload, err := kv.Get(transactionKey(id))
+		tx, err := LoadTransaction(kv, id)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "error getting tx %x from db", id)
+			return nil, err
 		}
-
-		tx := &txv1.Transaction{}
-		if err := proto.Unmarshal(payload, tx); err != nil {
-			return nil, errors.WithMessagef(err, "error unmarshaling tx %x", id)
-		}
-
 		result = append(result, tx)
 	}
-
 	return result, nil
+}
+
+func LoadTransaction(kv store.KV, id []byte) (*txv1.Transaction, error) {
+	payload, err := kv.Get(transactionKey(id))
+	if err != nil {
+		return nil, errors.WithMessagef(err, "error getting tx %x from db", id)
+	}
+	var tx txv1.Transaction
+	if err := proto.Unmarshal(payload, &tx); err != nil {
+		return nil, errors.WithMessagef(err, "error unmarshaling tx %x", id)
+	}
+	return &tx, nil
 }
 
 func StoreStates(kv store.KV, states []*txv1.ResolvedState) error {

@@ -91,6 +91,9 @@ func (l *LevelDBKV) Close() error {
 
 func (l *LevelDBKV) Get(key []byte) ([]byte, error) {
 	v, err := l.db.Get(key, nil)
+	if errors.Is(err, leveldb.ErrNotFound) {
+		return nil, &NotFoundError{Err: err}
+	}
 	if err != nil {
 		return nil, err
 	}

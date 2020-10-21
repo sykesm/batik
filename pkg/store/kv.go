@@ -23,6 +23,18 @@ import (
 	"io"
 )
 
+// ErrNotFound is a sentinal error that indicates a key was not found.
+type NotFoundError struct {
+	Err error
+}
+
+func (n *NotFoundError) Error() string { return "kv: not found" }
+func (n *NotFoundError) Unwrap() error { return n.Err }
+
+type kvError string
+
+func (e kvError) Error() string { return string(e) }
+
 type Key []byte
 
 type KV interface {

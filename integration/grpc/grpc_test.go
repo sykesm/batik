@@ -160,7 +160,7 @@ var _ = Describe("gRPC", func() {
 			When("the transaction does not exist", func() {
 				It("returns an error", func() {
 					resp, err := storeServiceClient.GetTransaction(context.Background(), req)
-					Expect(err).To(MatchError(MatchRegexp("leveldb: not found")))
+					Expect(err).To(MatchError(ContainSubstring("kv: not found")))
 					Expect(resp).To(BeNil())
 				})
 			})
@@ -248,7 +248,7 @@ var _ = Describe("gRPC", func() {
 			When("the state does not exist", func() {
 				It("returns an error", func() {
 					resp, err := storeServiceClient.GetState(context.Background(), req)
-					Expect(err).To(MatchError(MatchRegexp("leveldb: not found")))
+					Expect(err).To(MatchError(ContainSubstring("kv: not found")))
 					Expect(resp).To(BeNil())
 				})
 			})

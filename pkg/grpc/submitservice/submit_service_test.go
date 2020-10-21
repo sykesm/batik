@@ -12,6 +12,8 @@ import (
 	"github.com/onsi/gomega/types"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	"github.com/sykesm/batik/pkg/store"
+	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 )
 
@@ -48,7 +50,11 @@ func TestSubmit(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			ss := NewSubmitService()
+			kv, err := store.NewLevelDB("")
+			gt.Expect(err).NotTo(HaveOccurred())
+			defer tested.Close(t, kv)
+
+			ss := NewSubmitService(kv)
 			resp, err := ss.Submit(context.Background(), tt.req)
 			if tt.errMatcher != nil {
 				gt.Expect(err).To(tt.errMatcher)

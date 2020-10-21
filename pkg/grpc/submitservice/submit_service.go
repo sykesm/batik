@@ -12,6 +12,7 @@ import (
 
 	"github.com/sykesm/batik/pkg/merkle"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
@@ -20,16 +21,20 @@ type SubmitService struct {
 	// Unnsafe has been chosed to ensure there's a compilation failure when the
 	// implementation diverges from the gRPC service.
 	txv1.UnsafeSubmitAPIServer
-	// The hash algorithm used to build and validate the transaction ID.
+	// hasher implements the hash algorithm used to build and validate the
+	// transaction ID.
 	hasher merkle.Hasher
+	// kv is a reference to the key value store backing this service
+	kv store.KV
 }
 
 var _ txv1.SubmitAPIServer = (*SubmitService)(nil)
 
 // NewSubmitService creates a new instance of the SubmitService.
-func NewSubmitService() *SubmitService {
+func NewSubmitService(kv store.KV) *SubmitService {
 	return &SubmitService{
 		hasher: crypto.SHA256,
+		kv:     kv,
 	}
 }
 
