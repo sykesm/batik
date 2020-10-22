@@ -66,8 +66,26 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 		return nil, status.Errorf(codes.FailedPrecondition, "state resolution for transaction %x failed: %s", itx.ID, err)
 	}
 
+	// TODO: Store of transaction and states *must* be atomic and implemented in the storage layer
+	// instead of here.
+
 	// TODO: The data store should be using the intermediate tx with the marshaled state
 	err = transaction.StoreTransactions(s.kv, []*txv1.Transaction{tx})
+	if err != nil {
+		return nil, status.Errorf(codes.Unknown, "storing transaction %x failed: %s", itx.ID, err)
+	}
+
+	var resolvedOutputs []*txv1.ResolvedState
+	for i := range tx.Outputs {
+		resolvedOutputs = append(resolvedOutputs, &txv1.ResolvedState{
+			Txid:        itx.ID,
+			OutputIndex: uint64(i),
+			Info:        tx.Outputs[i].Info,
+			State:       tx.Outputs[i].State,
+		})
+	}
+
+	err = transaction.StoreStates(s.kv, resolvedOutputs)
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "storing transaction %x failed: %s", itx.ID, err)
 	}

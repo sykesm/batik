@@ -146,9 +146,7 @@ var _ = Describe("gRPC", func() {
 			_, err = submitClient.Submit(
 				context.Background(),
 				&txv1.SubmitRequest{
-					SignedTransaction: &txv1.SignedTransaction{
-						Transaction: tx,
-					},
+					SignedTransaction: &txv1.SignedTransaction{Transaction: tx},
 				},
 			)
 			Expect(err).To(HaveOccurred())
@@ -156,6 +154,26 @@ var _ = Describe("gRPC", func() {
 			Expect(ok).To(BeTrue())
 			Expect(st.Code()).To(Equal(codes.AlreadyExists))
 			Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx.ID)))
+
+			By("consuming the output")
+			salt = make([]byte, 32)
+			_, err = io.ReadFull(rand.Reader, salt)
+			Expect(err).NotTo(HaveOccurred())
+
+			tx = &txv1.Transaction{
+				Salt: salt,
+				Inputs: []*txv1.StateReference{{
+					Txid:        itx.ID,
+					OutputIndex: 0,
+				}},
+			}
+			resp, err = submitClient.Submit(
+				context.Background(),
+				&txv1.SubmitRequest{
+					SignedTransaction: &txv1.SignedTransaction{Transaction: tx},
+				},
+			)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
