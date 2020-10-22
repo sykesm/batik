@@ -20,6 +20,8 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
@@ -128,6 +130,7 @@ var _ = Describe("gRPC", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
+			By("retrieving the transaciton")
 			itx, err := transaction.Marshal(crypto.SHA256, tx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.Txid).To(Equal(itx.ID))
@@ -138,6 +141,21 @@ var _ = Describe("gRPC", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(ProtoEqual(&storev1.GetTransactionResponse{Transaction: tx}))
+
+			By("resubmitting the transaciton")
+			_, err = submitClient.Submit(
+				context.Background(),
+				&txv1.SubmitRequest{
+					SignedTransaction: &txv1.SignedTransaction{
+						Transaction: tx,
+					},
+				},
+			)
+			Expect(err).To(HaveOccurred())
+			st, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(st.Code()).To(Equal(codes.AlreadyExists))
+			Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx.ID)))
 		})
 	})
 
