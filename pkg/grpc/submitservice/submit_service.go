@@ -58,12 +58,12 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	// Check if the transaction already exists
 	_, err = transaction.LoadTransaction(s.kv, itx.ID)
 	if !store.IsNotFound(err) {
-		return nil, status.Errorf(codes.AlreadyExists, "transaction %x already exists", itx.ID)
+		return nil, status.Errorf(codes.AlreadyExists, "transaction %s already exists", itx.ID)
 	}
 
 	_, err = resolve(s.kv, tx)
 	if err != nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "state resolution for transaction %x failed: %s", itx.ID, err)
+		return nil, status.Errorf(codes.FailedPrecondition, "state resolution for transaction %s failed: %s", itx.ID, err)
 	}
 
 	// TODO: Store of transaction and states *must* be atomic.
@@ -72,7 +72,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 
 	err = transaction.StoreTransactions(s.kv, []*txv1.Transaction{tx})
 	if err != nil {
-		return nil, status.Errorf(codes.Unknown, "storing transaction %x failed: %s", itx.ID, err)
+		return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
 	}
 
 	var resolvedOutputs []*txv1.ResolvedState
@@ -87,7 +87,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 
 	err = transaction.StoreStates(s.kv, resolvedOutputs)
 	if err != nil {
-		return nil, status.Errorf(codes.Unknown, "storing transaction %x failed: %s", itx.ID, err)
+		return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
 	}
 
 	err = transaction.ConsumeStates(s.kv, tx.Inputs)

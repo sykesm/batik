@@ -66,7 +66,7 @@ func TestMarshal(t *testing.T) {
 	unknownFields := func(tx *txv1.Transaction) { tx.Inputs[0].ProtoReflect().SetUnknown([]byte("garbage")) }
 
 	var tests = map[string]struct {
-		expected   []byte
+		expected   ID
 		errMatcher types.GomegaMatcher
 		setup      func(*txv1.Transaction)
 	}{
@@ -156,7 +156,7 @@ func TestReflectDetectsChanges(t *testing.T) {
 // its runtime cost. By using reflection in test, we can detect breaking
 // changes to the structure of the transaction message that may require
 // modifications to the production code.
-func reflectTransactionID(h merkle.Hasher, tx proto.Message) ([]byte, error) {
+func reflectTransactionID(h merkle.Hasher, tx proto.Message) (ID, error) {
 	m := tx.ProtoReflect()
 
 	// Retrieve the message fields and sort them by their field number.

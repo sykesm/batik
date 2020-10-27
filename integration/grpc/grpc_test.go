@@ -133,7 +133,7 @@ var _ = Describe("gRPC", func() {
 			By("retrieving the transaciton")
 			itx, err := transaction.Marshal(crypto.SHA256, tx)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Txid).To(Equal(itx.ID))
+			Expect(resp.Txid).To(Equal(itx.ID.Bytes()))
 
 			result, err := storeClient.GetTransaction(
 				context.Background(),

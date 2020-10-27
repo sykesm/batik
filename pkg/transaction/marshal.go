@@ -5,6 +5,7 @@ package transaction
 
 import (
 	"crypto/hmac"
+	"encoding/hex"
 	"errors"
 
 	"google.golang.org/protobuf/encoding/protowire"
@@ -14,11 +15,30 @@ import (
 	"github.com/sykesm/batik/pkg/protomsg"
 )
 
+// ID is a transaction identifier. A transaction ID is a merkle hash that
+// uniquely identifies a transaction based on its contents.
+type ID []byte
+
+// ID implements fmt.Stringer and returns the hex encoded representation of ID.
+func (id ID) String() string {
+	return hex.EncodeToString(id)
+}
+
+// Bytes returns the ID as a byte slice.
+func (id ID) Bytes() []byte {
+	return []byte(id)
+}
+
+// NewID creates a new ID from a byte slice.
+func NewID(id []byte) ID {
+	return ID(id)
+}
+
 // IntermediateTx holds intermediate information for an encoded transaction.
 type IntermediateTx struct {
 	Tx      *txv1.Transaction
+	ID      ID
 	Encoded []byte
-	ID      []byte
 }
 
 // Marshal encodes a Transaction message and also generates a transaction ID
