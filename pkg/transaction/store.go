@@ -15,12 +15,6 @@ import (
 	"github.com/sykesm/batik/pkg/store"
 )
 
-var (
-	// Global prefixes.
-	keyTransactions = [...]byte{0x1}
-	keyStates       = [...]byte{0x2}
-)
-
 func StoreTransactions(kv store.KV, txs []*txv1.Transaction) error {
 	batch := kv.NewWriteBatch()
 
@@ -102,15 +96,50 @@ func LoadStates(kv store.KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState
 	return result, nil
 }
 
+func ConsumeStates(kv store.KV, refs []*txv1.StateReference) error {
+	batch := kv.NewWriteBatch()
+	for _, ref := range refs {
+		state, err := kv.Get(stateKey(ref))
+		if err != nil {
+			return err
+		}
+		err = batch.Delete(stateKey(ref))
+		if err != nil {
+			return err
+		}
+		err = batch.Put(consumedStateKey(ref), state)
+		if err != nil {
+			return err
+		}
+	}
+	return errors.WithMessage(batch.Commit(), "error consuming states batch")
+}
+
+var (
+	// Global prefixes.
+	keyTransactions   = [...]byte{0x1}
+	keyStates         = [...]byte{0x2}
+	keyConsumedStates = [...]byte{0x3}
+)
+
 // transactionKey returns a db key for a transaction
 func transactionKey(txid []byte) []byte {
 	return append(keyTransactions[:], txid[:]...)
 }
 
+// TODO: Use variable length encoding for index to save ~7 bytes per key
+
 // stateKey returns a db key for a state
 func stateKey(stateRef *txv1.StateReference) []byte {
 	return append(
 		append(keyStates[:], stateRef.Txid[:]...),
+		strconv.Itoa(int(stateRef.OutputIndex))...,
+	)
+}
+
+func consumedStateKey(stateRef *txv1.StateReference) []byte {
+	return append(
+		append(keyConsumedStates[:], stateRef.Txid[:]...),
 		strconv.Itoa(int(stateRef.OutputIndex))...,
 	)
 }
