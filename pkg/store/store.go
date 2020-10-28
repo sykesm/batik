@@ -1,7 +1,7 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package transaction
+package store
 
 import (
 	"crypto"
@@ -12,14 +12,14 @@ import (
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
-	"github.com/sykesm/batik/pkg/store"
+	"github.com/sykesm/batik/pkg/transaction"
 )
 
-func StoreTransactions(kv store.KV, txs []*txv1.Transaction) error {
+func StoreTransactions(kv KV, txs []*txv1.Transaction) error {
 	batch := kv.NewWriteBatch()
 
 	for _, tx := range txs {
-		intTx, err := Marshal(crypto.SHA256, tx)
+		intTx, err := transaction.Marshal(crypto.SHA256, tx)
 		if err != nil {
 			return errors.WithMessage(err, "error marshaling transaction")
 		}
@@ -32,7 +32,7 @@ func StoreTransactions(kv store.KV, txs []*txv1.Transaction) error {
 	return errors.WithMessage(batch.Commit(), "error committing transactions batch")
 }
 
-func LoadTransactions(kv store.KV, ids [][]byte) ([]*txv1.Transaction, error) {
+func LoadTransactions(kv KV, ids [][]byte) ([]*txv1.Transaction, error) {
 	result := make([]*txv1.Transaction, 0, len(ids))
 	for _, id := range ids {
 		tx, err := LoadTransaction(kv, id)
@@ -44,7 +44,7 @@ func LoadTransactions(kv store.KV, ids [][]byte) ([]*txv1.Transaction, error) {
 	return result, nil
 }
 
-func LoadTransaction(kv store.KV, id []byte) (*txv1.Transaction, error) {
+func LoadTransaction(kv KV, id []byte) (*txv1.Transaction, error) {
 	payload, err := kv.Get(transactionKey(id))
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting tx %x from db", id)
@@ -56,7 +56,7 @@ func LoadTransaction(kv store.KV, id []byte) (*txv1.Transaction, error) {
 	return &tx, nil
 }
 
-func StoreStates(kv store.KV, states []*txv1.ResolvedState) error {
+func StoreStates(kv KV, states []*txv1.ResolvedState) error {
 	batch := kv.NewWriteBatch()
 
 	for _, state := range states {
@@ -73,7 +73,7 @@ func StoreStates(kv store.KV, states []*txv1.ResolvedState) error {
 	return errors.WithMessage(batch.Commit(), "error committing resolved states batch")
 }
 
-func LoadStates(kv store.KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState, error) {
+func LoadStates(kv KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState, error) {
 	result := make([]*txv1.ResolvedState, 0, len(refs))
 
 	for _, ref := range refs {
@@ -96,7 +96,7 @@ func LoadStates(kv store.KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState
 	return result, nil
 }
 
-func ConsumeStates(kv store.KV, refs []*txv1.StateReference) error {
+func ConsumeStates(kv KV, refs []*txv1.StateReference) error {
 	batch := kv.NewWriteBatch()
 	for _, ref := range refs {
 		state, err := kv.Get(stateKey(ref))

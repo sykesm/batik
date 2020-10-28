@@ -56,7 +56,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	}
 
 	// Check if the transaction already exists
-	_, err = transaction.LoadTransaction(s.kv, itx.ID)
+	_, err = store.LoadTransaction(s.kv, itx.ID)
 	if !store.IsNotFound(err) {
 		return nil, status.Errorf(codes.AlreadyExists, "transaction %s already exists", itx.ID)
 	}
@@ -70,7 +70,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	// TODO: Consumed outputs must be marked as consumed.
 	// TODO: The data store should be using the intermediate tx with the marshaled state
 
-	err = transaction.StoreTransactions(s.kv, []*txv1.Transaction{tx})
+	err = store.StoreTransactions(s.kv, []*txv1.Transaction{tx})
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
 	}
@@ -85,12 +85,12 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 		})
 	}
 
-	err = transaction.StoreStates(s.kv, resolvedOutputs)
+	err = store.StoreStates(s.kv, resolvedOutputs)
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
 	}
 
-	err = transaction.ConsumeStates(s.kv, tx.Inputs)
+	err = store.ConsumeStates(s.kv, tx.Inputs)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func resolve(kv store.KV, tx *txv1.Transaction) (*ResolvedTransaction, error) {
 		RequiredSigners: tx.RequiredSigners,
 	}
 
-	inputs, err := transaction.LoadStates(kv, tx.Inputs)
+	inputs, err := store.LoadStates(kv, tx.Inputs)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func resolve(kv store.KV, tx *txv1.Transaction) (*ResolvedTransaction, error) {
 			State: input.State,
 		})
 	}
-	refs, err := transaction.LoadStates(kv, tx.References)
+	refs, err := store.LoadStates(kv, tx.References)
 	if err != nil {
 		return nil, err
 	}

@@ -41,7 +41,7 @@ func TestStoreService_GetTransaction(t *testing.T) {
 	resp, err := storeSvc.GetTransaction(context.Background(), req)
 	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
-	err = transaction.StoreTransactions(db, []*txv1.Transaction{testTx})
+	err = store.StoreTransactions(db, []*txv1.Transaction{testTx})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetTransaction(context.Background(), req)
@@ -112,7 +112,7 @@ func TestStoreService_GetState(t *testing.T) {
 	resp, err := storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
-	err = transaction.StoreStates(db, []*txv1.ResolvedState{testState})
+	err = store.StoreStates(db, []*txv1.ResolvedState{testState})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetState(context.Background(), req)
@@ -154,7 +154,7 @@ func TestStoreService_PutState(t *testing.T) {
 	_, err = storeSvc.PutState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	states, err := transaction.LoadStates(db, []*txv1.StateReference{testStateRef})
+	states, err := store.LoadStates(db, []*txv1.StateReference{testStateRef})
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(states).To(HaveLen(1))
 	gt.Expect(states[0]).To(ProtoEqual(testState))
