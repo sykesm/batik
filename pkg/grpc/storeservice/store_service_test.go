@@ -153,7 +153,7 @@ func TestStoreService_PutState(t *testing.T) {
 	_, err = storeSvc.PutState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	state, err := store.GetState(db, transaction.StateID{TxID: testState.Txid, OutputIndex: testState.OutputIndex})
+	state, err := storeSvc.repo.GetState(transaction.StateID{TxID: testState.Txid, OutputIndex: testState.OutputIndex})
 	resolvedState := &txv1.ResolvedState{
 		Txid:        state.ID.TxID,
 		OutputIndex: state.ID.OutputIndex,

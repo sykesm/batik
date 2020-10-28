@@ -20,6 +20,7 @@ type Repository interface {
 	PutTransaction(*transaction.Transaction) error
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
 	PutState(*transaction.State) error
+	GetState(transaction.StateID) (*transaction.State, error)
 }
 
 // SubmitService implements the EncodeAPIServer gRPC interface.
@@ -70,7 +71,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 		return nil, status.Errorf(codes.AlreadyExists, "transaction %s already exists", itx.ID)
 	}
 
-	_, err = resolve(s.kv, tx)
+	_, err = resolve(s.repo, tx)
 	if err != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "state resolution for transaction %s failed: %s", itx.ID, err)
 	}
@@ -112,7 +113,7 @@ type ResolvedTransaction struct {
 	RequiredSigners []*txv1.Party
 }
 
-func resolve(kv store.KV, tx *txv1.Transaction) (*ResolvedTransaction, error) {
+func resolve(repo Repository, tx *txv1.Transaction) (*ResolvedTransaction, error) {
 	resolved := &ResolvedTransaction{
 		Salt:            tx.Salt,
 		Outputs:         tx.Outputs,
@@ -123,7 +124,7 @@ func resolve(kv store.KV, tx *txv1.Transaction) (*ResolvedTransaction, error) {
 	var inputs []*transaction.State
 	for _, input := range tx.Inputs {
 		stateID := transaction.StateID{TxID: input.Txid, OutputIndex: input.OutputIndex}
-		state, err := store.GetState(kv, stateID)
+		state, err := repo.GetState(stateID)
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +133,7 @@ func resolve(kv store.KV, tx *txv1.Transaction) (*ResolvedTransaction, error) {
 	var refs []*transaction.State
 	for _, ref := range tx.References {
 		stateID := transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}
-		state, err := store.GetState(kv, stateID)
+		state, err := repo.GetState(stateID)
 		if err != nil {
 			return nil, err
 		}
