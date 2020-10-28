@@ -20,18 +20,10 @@ import (
 
 func TestStoreService_GetTransaction(t *testing.T) {
 	gt := NewGomegaWithT(t)
-
-	path, cleanup := tested.TempDir(t, "", "level")
+	storeSvc, cleanup := newStoreService(t)
 	defer cleanup()
 
-	db, err := store.NewLevelDB(path)
-	gt.Expect(err).NotTo(HaveOccurred())
-	defer tested.Close(t, db)
-
-	storeSvc := NewStoreService(db)
-
 	testTx := newTestTransaction()
-
 	intTx, err := transaction.New(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -51,15 +43,8 @@ func TestStoreService_GetTransaction(t *testing.T) {
 
 func TestStoreService_PutTransaction(t *testing.T) {
 	gt := NewGomegaWithT(t)
-
-	path, cleanup := tested.TempDir(t, "", "level")
+	storeSvc, cleanup := newStoreService(t)
 	defer cleanup()
-
-	db, err := store.NewLevelDB(path)
-	gt.Expect(err).NotTo(HaveOccurred())
-	defer tested.Close(t, db)
-
-	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
 	intTx, err := transaction.New(crypto.SHA256, testTx)
@@ -80,15 +65,8 @@ func TestStoreService_PutTransaction(t *testing.T) {
 
 func TestStoreService_GetState(t *testing.T) {
 	gt := NewGomegaWithT(t)
-
-	path, cleanup := tested.TempDir(t, "", "level")
+	storeSvc, cleanup := newStoreService(t)
 	defer cleanup()
-
-	db, err := store.NewLevelDB(path)
-	gt.Expect(err).NotTo(HaveOccurred())
-	defer tested.Close(t, db)
-
-	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
 	intTx, err := transaction.New(crypto.SHA256, testTx)
@@ -126,15 +104,8 @@ func TestStoreService_GetState(t *testing.T) {
 
 func TestStoreService_PutState(t *testing.T) {
 	gt := NewGomegaWithT(t)
-
-	path, cleanup := tested.TempDir(t, "", "level")
+	storeSvc, cleanup := newStoreService(t)
 	defer cleanup()
-
-	db, err := store.NewLevelDB(path)
-	gt.Expect(err).NotTo(HaveOccurred())
-	defer tested.Close(t, db)
-
-	storeSvc := NewStoreService(db)
 
 	testTx := newTestTransaction()
 	intTx, err := transaction.New(crypto.SHA256, testTx)
@@ -162,6 +133,21 @@ func TestStoreService_PutState(t *testing.T) {
 	}
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(resolvedState).To(ProtoEqual(testState))
+}
+
+func newStoreService(t *testing.T) (*StoreService, func()) {
+	path, cleanup := tested.TempDir(t, "", "level")
+
+	db, err := store.NewLevelDB(path)
+	NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred())
+
+	repo := store.NewRepository(db)
+	storeSvc := NewStoreService(repo)
+
+	return storeSvc, func() {
+		tested.Close(t, db)
+		cleanup()
+	}
 }
 
 func newTestTransaction() *txv1.Transaction {

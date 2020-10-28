@@ -16,6 +16,8 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
+// A Repository abstracts the data persistence layer for transactions and
+// states.
 type Repository interface {
 	PutTransaction(*transaction.Transaction) error
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
@@ -32,20 +34,17 @@ type SubmitService struct {
 	// hasher implements the hash algorithm used to build and validate the
 	// transaction ID.
 	hasher merkle.Hasher
-	// kv is a reference to the key value store backing this service
-	kv store.KV
-
+	// repo is a reference to the transaction state repository.
 	repo Repository
 }
 
 var _ txv1.SubmitAPIServer = (*SubmitService)(nil)
 
 // NewSubmitService creates a new instance of the SubmitService.
-func NewSubmitService(kv store.KV) *SubmitService {
+func NewSubmitService(repo Repository) *SubmitService {
 	return &SubmitService{
 		hasher: crypto.SHA256,
-		kv:     kv,
-		repo:   &store.TransactionRepository{KV: kv},
+		repo:   repo,
 	}
 }
 

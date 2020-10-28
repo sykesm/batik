@@ -26,6 +26,7 @@ import (
 	"github.com/sykesm/batik/pkg/options"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	"github.com/sykesm/batik/pkg/store"
 )
 
 func startCommand(config *options.Batik, interactive bool) *cli.Command {
@@ -80,13 +81,15 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 		return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
 	}
 
+	transactionRepo := store.NewRepository(db)
+
 	encodeService := &encodeservice.EncodeService{}
 	txv1.RegisterEncodeAPIServer(grpcServer.Server, encodeService)
 
-	submitService := submitservice.NewSubmitService(db)
+	submitService := submitservice.NewSubmitService(transactionRepo)
 	txv1.RegisterSubmitAPIServer(grpcServer.Server, submitService)
 
-	storeService := storeservice.NewStoreService(db)
+	storeService := storeservice.NewStoreService(transactionRepo)
 	storev1.RegisterStoreAPIServer(grpcServer.Server, storeService)
 
 	mux := gwruntime.NewServeMux()

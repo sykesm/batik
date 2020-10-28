@@ -13,7 +13,6 @@ import (
 	"github.com/sykesm/batik/pkg/merkle"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
-	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
@@ -30,18 +29,16 @@ type StoreService struct {
 	// implementation diverges from the gRPC service.
 	storev1.UnsafeStoreAPIServer
 
-	db     store.KV
 	hasher merkle.Hasher
 	repo   Repository
 }
 
 var _ storev1.StoreAPIServer = (*StoreService)(nil)
 
-func NewStoreService(db store.KV) *StoreService {
+func NewStoreService(repo Repository) *StoreService {
 	return &StoreService{
-		db:     db,
 		hasher: crypto.SHA256,
-		repo:   &store.TransactionRepository{KV: db},
+		repo:   repo,
 	}
 }
 

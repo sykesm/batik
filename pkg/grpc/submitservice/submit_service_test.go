@@ -54,7 +54,9 @@ func TestSubmit(t *testing.T) {
 			gt.Expect(err).NotTo(HaveOccurred())
 			defer tested.Close(t, kv)
 
-			ss := NewSubmitService(kv)
+			repo := store.NewRepository(kv)
+
+			ss := NewSubmitService(repo)
 			resp, err := ss.Submit(context.Background(), tt.req)
 			if tt.errMatcher != nil {
 				gt.Expect(err).To(tt.errMatcher)

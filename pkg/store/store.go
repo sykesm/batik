@@ -18,6 +18,12 @@ type TransactionRepository struct {
 	KV KV
 }
 
+func NewRepository(kv KV) *TransactionRepository {
+	return &TransactionRepository{
+		KV: kv,
+	}
+}
+
 func (t *TransactionRepository) PutTransaction(tx *transaction.Transaction) error {
 	err := t.KV.Put(transactionKey(tx.ID), tx.Encoded)
 	if err != nil {
