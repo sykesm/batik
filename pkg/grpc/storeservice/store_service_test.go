@@ -112,7 +112,7 @@ func TestStoreService_GetState(t *testing.T) {
 	resp, err := storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
-	err = store.PutState(db, &transaction.State{
+	err = storeSvc.repo.PutState(&transaction.State{
 		ID:        transaction.StateID{TxID: testState.Txid, OutputIndex: testState.OutputIndex},
 		StateInfo: testState.Info,
 		Data:      testState.State,

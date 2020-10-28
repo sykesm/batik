@@ -42,13 +42,13 @@ func (t *TransactionRepository) GetTransaction(id transaction.ID) (*transaction.
 	}, nil
 }
 
-func PutState(kv KV, state *transaction.State) error {
+func (t *TransactionRepository) PutState(state *transaction.State) error {
 	info, err := protomsg.MarshalDeterministic(state.StateInfo)
 	if err != nil {
 		return errors.WithMessage(err, "error marshalling state info")
 	}
 
-	batch := kv.NewWriteBatch()
+	batch := t.KV.NewWriteBatch()
 	if err := batch.Put(stateKey(state.ID), state.Data); err != nil {
 		return err
 	}

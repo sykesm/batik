@@ -19,6 +19,7 @@ import (
 type Repository interface {
 	PutTransaction(*transaction.Transaction) error
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
+	PutState(*transaction.State) error
 }
 
 // SubmitService implements the EncodeAPIServer gRPC interface.
@@ -86,7 +87,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 			Data:      tx.Outputs[i].State,
 		}
 
-		err = store.PutState(s.kv, state)
+		err = s.repo.PutState(state)
 		if err != nil {
 			return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
 		}

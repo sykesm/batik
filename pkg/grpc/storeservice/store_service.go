@@ -19,6 +19,7 @@ import (
 type Repository interface {
 	PutTransaction(*transaction.Transaction) error
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
+	PutState(*transaction.State) error
 }
 
 // StoreService implements the StoreAPIServer gRPC interface.
@@ -92,7 +93,7 @@ func (s *StoreService) PutState(ctx context.Context, req *storev1.PutStateReques
 		StateInfo: req.State.Info,
 		Data:      req.State.State,
 	}
-	if err := store.PutState(s.db, state); err != nil {
+	if err := s.repo.PutState(state); err != nil {
 		return nil, err
 	}
 
