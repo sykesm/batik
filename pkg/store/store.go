@@ -15,17 +15,17 @@ import (
 )
 
 type TransactionRepository struct {
-	KV KV
+	kv KV
 }
 
 func NewRepository(kv KV) *TransactionRepository {
 	return &TransactionRepository{
-		KV: kv,
+		kv: kv,
 	}
 }
 
 func (t *TransactionRepository) PutTransaction(tx *transaction.Transaction) error {
-	err := t.KV.Put(transactionKey(tx.ID), tx.Encoded)
+	err := t.kv.Put(transactionKey(tx.ID), tx.Encoded)
 	if err != nil {
 		return errors.WithMessagef(err, "failed to put transaction %s", tx.ID)
 	}
@@ -33,7 +33,7 @@ func (t *TransactionRepository) PutTransaction(tx *transaction.Transaction) erro
 }
 
 func (t *TransactionRepository) GetTransaction(id transaction.ID) (*transaction.Transaction, error) {
-	payload, err := t.KV.Get(transactionKey(id))
+	payload, err := t.kv.Get(transactionKey(id))
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting tx %x from db", id)
 	}
@@ -54,7 +54,7 @@ func (t *TransactionRepository) PutState(state *transaction.State) error {
 		return errors.WithMessage(err, "error marshalling state info")
 	}
 
-	batch := t.KV.NewWriteBatch()
+	batch := t.kv.NewWriteBatch()
 	if err := batch.Put(stateKey(state.ID), state.Data); err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (t *TransactionRepository) PutState(state *transaction.State) error {
 }
 
 func (t *TransactionRepository) GetState(stateID transaction.StateID) (*transaction.State, error) {
-	infoPayload, err := t.KV.Get(stateInfoKey(stateID))
+	infoPayload, err := t.kv.Get(stateInfoKey(stateID))
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting state info for %s from db", stateID)
 	}
@@ -75,7 +75,7 @@ func (t *TransactionRepository) GetState(stateID transaction.StateID) (*transact
 		return nil, errors.WithMessagef(err, "error unmarshaling state info for ref %s", stateID)
 	}
 
-	payload, err := t.KV.Get(stateKey(stateID))
+	payload, err := t.kv.Get(stateKey(stateID))
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting state %s from db", stateID)
 	}
@@ -90,9 +90,9 @@ func (t *TransactionRepository) GetState(stateID transaction.StateID) (*transact
 }
 
 func (t *TransactionRepository) ConsumeStates(stateIDs ...transaction.StateID) error {
-	batch := t.KV.NewWriteBatch()
+	batch := t.kv.NewWriteBatch()
 	for _, id := range stateIDs {
-		state, err := t.KV.Get(stateKey(id))
+		state, err := t.kv.Get(stateKey(id))
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func (t *TransactionRepository) ConsumeStates(stateIDs ...transaction.StateID) e
 		if err != nil {
 			return err
 		}
-		err = t.KV.Delete(stateKey(id))
+		err = t.kv.Delete(stateKey(id))
 		if err != nil {
 			return err
 		}
