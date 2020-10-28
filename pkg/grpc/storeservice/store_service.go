@@ -45,13 +45,13 @@ func NewStoreService(db store.KV) *StoreService {
 // GetTransaction retrieves the associated transaction corresponding to the
 // txid passed in the GetTransactionRequest.
 func (s *StoreService) GetTransaction(ctx context.Context, req *storev1.GetTransactionRequest) (*storev1.GetTransactionResponse, error) {
-	txs, err := store.LoadTransactions(s.db, [][]byte{req.Txid})
+	tx, err := store.LoadTransaction(s.db, req.Txid)
 	if err != nil {
 		return nil, err
 	}
 
 	return &storev1.GetTransactionResponse{
-		Transaction: txs[0],
+		Transaction: tx,
 	}, nil
 }
 

@@ -26,18 +26,6 @@ func (t *TransactionRepository) PutTransaction(tx *transaction.Transaction) erro
 	return nil
 }
 
-func LoadTransactions(kv KV, ids [][]byte) ([]*txv1.Transaction, error) {
-	result := make([]*txv1.Transaction, 0, len(ids))
-	for _, id := range ids {
-		tx, err := LoadTransaction(kv, id)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, tx)
-	}
-	return result, nil
-}
-
 func LoadTransaction(kv KV, id []byte) (*txv1.Transaction, error) {
 	payload, err := kv.Get(transactionKey(id))
 	if err != nil {
