@@ -19,7 +19,7 @@ func StoreTransactions(kv KV, txs []*txv1.Transaction) error {
 	batch := kv.NewWriteBatch()
 
 	for _, tx := range txs {
-		intTx, err := transaction.Marshal(crypto.SHA256, tx)
+		intTx, err := transaction.New(crypto.SHA256, tx)
 		if err != nil {
 			return errors.WithMessage(err, "error marshaling transaction")
 		}

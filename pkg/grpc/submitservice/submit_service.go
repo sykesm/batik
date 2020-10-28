@@ -50,7 +50,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	if tx == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "transaction was not provided")
 	}
-	itx, err := transaction.Marshal(s.hasher, tx)
+	itx, err := transaction.New(s.hasher, tx)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}

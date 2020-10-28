@@ -131,7 +131,7 @@ var _ = Describe("gRPC", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("retrieving the transaciton")
-			itx, err := transaction.Marshal(crypto.SHA256, tx)
+			itx, err := transaction.New(crypto.SHA256, tx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.Txid).To(Equal(itx.ID.Bytes()))
 
@@ -205,7 +205,7 @@ var _ = Describe("gRPC", func() {
 			Expect(ok).To(BeTrue())
 			Expect(st.Code()).To(Equal(codes.FailedPrecondition))
 
-			itx2, err := transaction.Marshal(crypto.SHA256, tx)
+			itx2, err := transaction.New(crypto.SHA256, tx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx2.ID)))
 		})
@@ -222,7 +222,7 @@ var _ = Describe("gRPC", func() {
 			storeServiceClient = storev1.NewStoreAPIClient(clientConn)
 
 			testTx = newTestTransaction()
-			intTx, err := transaction.Marshal(crypto.SHA256, testTx)
+			intTx, err := transaction.New(crypto.SHA256, testTx)
 			Expect(err).NotTo(HaveOccurred())
 			txid = intTx.ID
 		})

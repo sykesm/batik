@@ -34,17 +34,17 @@ func NewID(id []byte) ID {
 	return ID(id)
 }
 
-// IntermediateTx holds intermediate information for an encoded transaction.
-type IntermediateTx struct {
+// Transaction holds intermediate information for an encoded transaction.
+type Transaction struct {
 	Tx      *txv1.Transaction
 	ID      ID
 	Encoded []byte
 }
 
-// Marshal encodes a Transaction message and also generates a transaction ID
-// over the transaction. An error is returned if any element of the transaction cannot
-// be marshaled into a protobuf message.
-func Marshal(h merkle.Hasher, tx *txv1.Transaction) (*IntermediateTx, error) {
+// New creates a Transaction from a protocol buffer message and also generates
+// a transaction ID over the transaction. An error is returned if any element
+// of the transaction cannot be marshaled into a protobuf message.
+func New(h merkle.Hasher, tx *txv1.Transaction) (*Transaction, error) {
 	// The transaction must be salted.
 	if len(tx.Salt) < 32 {
 		return nil, errors.New("transaction salt is missing or less than 32 bytes in length")
@@ -81,7 +81,7 @@ func Marshal(h merkle.Hasher, tx *txv1.Transaction) (*IntermediateTx, error) {
 		leaves = append(leaves, merkle.Root(h, m...))
 	}
 
-	return &IntermediateTx{
+	return &Transaction{
 		Tx:      tx,
 		Encoded: encoded,
 		ID:      merkle.Root(h, leaves...),

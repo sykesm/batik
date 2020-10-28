@@ -85,7 +85,7 @@ func TestMarshal(t *testing.T) {
 
 			tx := newTestTransaction()
 			tt.setup(tx)
-			intTx, err := Marshal(crypto.SHA256, tx)
+			intTx, err := New(crypto.SHA256, tx)
 			if tt.errMatcher != nil {
 				gt.Expect(err).To(tt.errMatcher)
 				return
@@ -107,7 +107,7 @@ func TestMarshal(t *testing.T) {
 
 func TestIDMatchesReflected(t *testing.T) {
 	gt := NewGomegaWithT(t)
-	intTx, err := Marshal(crypto.SHA256, newTestTransaction())
+	intTx, err := New(crypto.SHA256, newTestTransaction())
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	reflected, err := reflectTransactionID(crypto.SHA256, newTestTransaction())
@@ -119,7 +119,7 @@ func TestIDMatchesReflected(t *testing.T) {
 func TestReflectDetectsChanges(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	intTx, err := Marshal(crypto.SHA256, newTestTransaction())
+	intTx, err := New(crypto.SHA256, newTestTransaction())
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	encoded, err := protomsg.MarshalDeterministic(newTestTransaction())

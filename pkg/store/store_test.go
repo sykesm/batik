@@ -28,7 +28,7 @@ func TestStoreTransactions(t *testing.T) {
 	defer tested.Close(t, db)
 
 	testTx := newTestTransaction()
-	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
+	intTx, err := transaction.New(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	key := transactionKey(intTx.ID)
@@ -52,7 +52,7 @@ func TestLoadTransactions(t *testing.T) {
 	defer tested.Close(t, db)
 
 	testTx := newTestTransaction()
-	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
+	intTx, err := transaction.New(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	key := transactionKey(intTx.ID)
@@ -79,7 +79,7 @@ func TestStoreStates(t *testing.T) {
 	defer tested.Close(t, db)
 
 	testTx := newTestTransaction()
-	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
+	intTx, err := transaction.New(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	testState := &txv1.ResolvedState{
@@ -118,7 +118,7 @@ func TestLoadStates(t *testing.T) {
 	defer tested.Close(t, db)
 
 	testTx := newTestTransaction()
-	intTx, err := transaction.Marshal(crypto.SHA256, testTx)
+	intTx, err := transaction.New(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	testState := &txv1.ResolvedState{

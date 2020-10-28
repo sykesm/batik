@@ -26,7 +26,7 @@ var _ txv1.EncodeAPIServer = (*EncodeService)(nil)
 func (e *EncodeService) Encode(ctx context.Context, req *txv1.EncodeRequest) (*txv1.EncodeResponse, error) {
 	tx := req.Transaction
 
-	intTx, err := transaction.Marshal(crypto.SHA256, tx)
+	intTx, err := transaction.New(crypto.SHA256, tx)
 	if err != nil {
 		return nil, err
 	}
