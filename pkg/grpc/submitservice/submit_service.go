@@ -119,19 +119,30 @@ func resolve(kv store.KV, tx *txv1.Transaction) (*ResolvedTransaction, error) {
 		RequiredSigners: tx.RequiredSigners,
 	}
 
-	inputs, err := store.LoadStates(kv, tx.Inputs)
-	if err != nil {
-		return nil, err
+	var inputs []*txv1.ResolvedState
+	for _, input := range tx.Inputs {
+		stateID := transaction.StateID{TxID: input.Txid, OutputIndex: input.OutputIndex}
+		rs, err := store.GetState(kv, stateID)
+		if err != nil {
+			return nil, err
+		}
+		inputs = append(inputs, rs)
 	}
+	var refs []*txv1.ResolvedState
+	for _, ref := range tx.References {
+		stateID := transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}
+		rs, err := store.GetState(kv, stateID)
+		if err != nil {
+			return nil, err
+		}
+		refs = append(refs, rs)
+	}
+
 	for _, input := range inputs {
 		resolved.Inputs = append(resolved.Inputs, &txv1.State{
 			Info:  input.Info,
 			State: input.State,
 		})
-	}
-	refs, err := store.LoadStates(kv, tx.References)
-	if err != nil {
-		return nil, err
 	}
 	for _, ref := range refs {
 		resolved.References = append(resolved.References, &txv1.State{

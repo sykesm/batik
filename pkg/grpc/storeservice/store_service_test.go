@@ -147,21 +147,15 @@ func TestStoreService_PutState(t *testing.T) {
 		State:       testTx.Outputs[0].State,
 	}
 
-	testStateRef := &txv1.StateReference{
-		Txid:        intTx.ID,
-		OutputIndex: 0,
-	}
-
 	req := &storev1.PutStateRequest{
 		State: testState,
 	}
 	_, err = storeSvc.PutState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	states, err := store.LoadStates(db, []*txv1.StateReference{testStateRef})
+	state, err := store.GetState(db, transaction.StateID{TxID: testState.Txid, OutputIndex: testState.OutputIndex})
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(states).To(HaveLen(1))
-	gt.Expect(states[0]).To(ProtoEqual(testState))
+	gt.Expect(state).To(ProtoEqual(testState))
 }
 
 func newTestTransaction() *txv1.Transaction {

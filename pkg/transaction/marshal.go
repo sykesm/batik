@@ -7,6 +7,7 @@ import (
 	"crypto/hmac"
 	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"google.golang.org/protobuf/encoding/protowire"
 
@@ -49,6 +50,10 @@ type Transaction struct {
 type StateID struct {
 	TxID        ID
 	OutputIndex uint64
+}
+
+func (s StateID) String() string {
+	return fmt.Sprintf("%s:%08x", s.TxID, s.OutputIndex)
 }
 
 type State struct {

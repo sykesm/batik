@@ -59,36 +59,29 @@ func PutState(kv KV, state *transaction.State) error {
 	return errors.WithMessage(batch.Commit(), "error committing resolved states batch")
 }
 
-func LoadStates(kv KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState, error) {
-	result := make([]*txv1.ResolvedState, 0, len(refs))
-
-	for _, ref := range refs {
-		stateID := transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}
-		infoPayload, err := kv.Get(stateInfoKey(stateID))
-		if err != nil {
-			return nil, errors.WithMessagef(err, "error getting state info for %s from db", ref)
-		}
-		var stateInfo txv1.StateInfo
-		if err := proto.Unmarshal(infoPayload, &stateInfo); err != nil {
-			return nil, errors.WithMessagef(err, "error unmarshaling state info for ref %s", ref)
-		}
-
-		payload, err := kv.Get(stateKey(stateID))
-		if err != nil {
-			return nil, errors.WithMessagef(err, "error getting state %s from db", ref)
-		}
-
-		state := &txv1.ResolvedState{
-			Txid:        ref.Txid,
-			OutputIndex: ref.OutputIndex,
-			Info:        &stateInfo,
-			State:       payload,
-		}
-
-		result = append(result, state)
+func GetState(kv KV, stateID transaction.StateID) (*txv1.ResolvedState, error) {
+	infoPayload, err := kv.Get(stateInfoKey(stateID))
+	if err != nil {
+		return nil, errors.WithMessagef(err, "error getting state info for %s from db", stateID)
+	}
+	var stateInfo txv1.StateInfo
+	if err := proto.Unmarshal(infoPayload, &stateInfo); err != nil {
+		return nil, errors.WithMessagef(err, "error unmarshaling state info for ref %s", stateID)
 	}
 
-	return result, nil
+	payload, err := kv.Get(stateKey(stateID))
+	if err != nil {
+		return nil, errors.WithMessagef(err, "error getting state %s from db", stateID)
+	}
+
+	state := &txv1.ResolvedState{
+		Txid:        stateID.TxID,
+		OutputIndex: stateID.OutputIndex,
+		Info:        &stateInfo,
+		State:       payload,
+	}
+
+	return state, nil
 }
 
 func ConsumeStates(kv KV, refs []*txv1.StateReference) error {

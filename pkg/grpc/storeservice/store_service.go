@@ -12,7 +12,6 @@ import (
 
 	"github.com/sykesm/batik/pkg/merkle"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
-	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
@@ -75,13 +74,14 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *storev1.PutTrans
 // output index that the State was originally created at in the transaction output
 // list.
 func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateRequest) (*storev1.GetStateResponse, error) {
-	states, err := store.LoadStates(s.db, []*txv1.StateReference{req.StateRef})
+	stateID := transaction.StateID{TxID: req.StateRef.Txid, OutputIndex: req.StateRef.OutputIndex}
+	state, err := store.GetState(s.db, stateID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &storev1.GetStateResponse{
-		State: states[0],
+		State: state,
 	}, nil
 }
 
