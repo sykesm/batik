@@ -74,28 +74,22 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 		return nil, status.Errorf(codes.FailedPrecondition, "state resolution for transaction %s failed: %s", itx.ID, err)
 	}
 
-	// TODO: Store of transaction and states *must* be atomic.
-	// TODO: Consumed outputs must be marked as consumed.
-	// TODO: The data store should be using the intermediate tx with the marshaled state
-
 	err = s.repo.PutTransaction(itx)
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
 	}
 
-	var resolvedOutputs []*txv1.ResolvedState
 	for i := range tx.Outputs {
-		resolvedOutputs = append(resolvedOutputs, &txv1.ResolvedState{
-			Txid:        itx.ID,
-			OutputIndex: uint64(i),
-			Info:        tx.Outputs[i].Info,
-			State:       tx.Outputs[i].State,
-		})
-	}
+		state := &transaction.State{
+			ID:        transaction.StateID{TxID: itx.ID, OutputIndex: uint64(i)},
+			StateInfo: tx.Outputs[i].Info,
+			Data:      tx.Outputs[i].State,
+		}
 
-	err = store.StoreStates(s.kv, resolvedOutputs)
-	if err != nil {
-		return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
+		err = store.PutState(s.kv, state)
+		if err != nil {
+			return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
+		}
 	}
 
 	err = store.ConsumeStates(s.kv, tx.Inputs)

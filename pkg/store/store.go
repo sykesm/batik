@@ -36,24 +36,24 @@ func (t *TransactionRepository) GetTransaction(id transaction.ID) (*transaction.
 		return nil, errors.WithMessagef(err, "error unmarshaling tx %x", id)
 	}
 	return &transaction.Transaction{
-		Tx:      &tx,
 		ID:      transaction.NewID(id),
+		Tx:      &tx,
 		Encoded: payload,
 	}, nil
 }
 
-func StoreStates(kv KV, states []*txv1.ResolvedState) error {
+func PutState(kv KV, state *transaction.State) error {
+	info, err := protomsg.MarshalDeterministic(state.StateInfo)
+	if err != nil {
+		return errors.WithMessage(err, "error marshalling state info")
+	}
+
 	batch := kv.NewWriteBatch()
-
-	for _, state := range states {
-		encodedState, err := protomsg.MarshalDeterministic(state)
-		if err != nil {
-			return errors.WithMessage(err, "error marshalling resolved state")
-		}
-
-		if err := batch.Put(stateKey(&txv1.StateReference{Txid: state.Txid, OutputIndex: state.OutputIndex}), encodedState); err != nil {
-			return err
-		}
+	if err := batch.Put(stateKey(state.ID), state.Data); err != nil {
+		return err
+	}
+	if err := batch.Put(stateInfoKey(state.ID), info); err != nil {
+		return err
 	}
 
 	return errors.WithMessage(batch.Commit(), "error committing resolved states batch")
@@ -63,17 +63,26 @@ func LoadStates(kv KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState, erro
 	result := make([]*txv1.ResolvedState, 0, len(refs))
 
 	for _, ref := range refs {
-		payload, err := kv.Get(stateKey(ref))
+		stateID := transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}
+		infoPayload, err := kv.Get(stateInfoKey(stateID))
 		if err != nil {
-			return nil, errors.WithMessagef(err, "error getting state %x from db", ref)
+			return nil, errors.WithMessagef(err, "error getting state info for %s from db", ref)
+		}
+		var stateInfo txv1.StateInfo
+		if err := proto.Unmarshal(infoPayload, &stateInfo); err != nil {
+			return nil, errors.WithMessagef(err, "error unmarshaling state info for ref %s", ref)
+		}
+
+		payload, err := kv.Get(stateKey(stateID))
+		if err != nil {
+			return nil, errors.WithMessagef(err, "error getting state %s from db", ref)
 		}
 
 		state := &txv1.ResolvedState{
 			Txid:        ref.Txid,
 			OutputIndex: ref.OutputIndex,
-		}
-		if err := proto.Unmarshal(payload, state); err != nil {
-			return nil, errors.WithMessagef(err, "error unmarshaling state for ref %x", ref)
+			Info:        &stateInfo,
+			State:       payload,
 		}
 
 		result = append(result, state)
@@ -85,11 +94,11 @@ func LoadStates(kv KV, refs []*txv1.StateReference) ([]*txv1.ResolvedState, erro
 func ConsumeStates(kv KV, refs []*txv1.StateReference) error {
 	batch := kv.NewWriteBatch()
 	for _, ref := range refs {
-		state, err := kv.Get(stateKey(ref))
+		state, err := kv.Get(stateKey(transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}))
 		if err != nil {
 			return err
 		}
-		err = batch.Delete(stateKey(ref))
+		err = kv.Delete(stateKey(transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}))
 		if err != nil {
 			return err
 		}
@@ -105,7 +114,8 @@ var (
 	// Global prefixes.
 	keyTransactions   = [...]byte{0x1}
 	keyStates         = [...]byte{0x2}
-	keyConsumedStates = [...]byte{0x3}
+	keyStateInfos     = [...]byte{0x3}
+	keyConsumedStates = [...]byte{0x4}
 )
 
 // transactionKey returns a db key for a transaction
@@ -113,13 +123,19 @@ func transactionKey(txid []byte) []byte {
 	return append(keyTransactions[:], txid[:]...)
 }
 
-// TODO: Use variable length encoding for index to save ~7 bytes per key
+// stateKey returns a db key for a state
+func stateKey(id transaction.StateID) []byte {
+	return append(
+		append(keyStates[:], id.TxID[:]...),
+		strconv.Itoa(int(id.OutputIndex))...,
+	)
+}
 
 // stateKey returns a db key for a state
-func stateKey(stateRef *txv1.StateReference) []byte {
+func stateInfoKey(id transaction.StateID) []byte {
 	return append(
-		append(keyStates[:], stateRef.Txid[:]...),
-		strconv.Itoa(int(stateRef.OutputIndex))...,
+		append(keyStateInfos[:], id.TxID[:]...),
+		strconv.Itoa(int(id.OutputIndex))...,
 	)
 }
 

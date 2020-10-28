@@ -4,98 +4,17 @@
 package store
 
 import (
-	"crypto"
 	"encoding/hex"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
-	"github.com/sykesm/batik/pkg/protomsg"
-	"github.com/sykesm/batik/pkg/tested"
-	. "github.com/sykesm/batik/pkg/tested/matcher"
-	"github.com/sykesm/batik/pkg/transaction"
 )
 
-func TestStoreStates(t *testing.T) {
+func TestPending(t *testing.T) {
 	gt := NewGomegaWithT(t)
-
-	path, cleanup := tested.TempDir(t, "", "level")
-	defer cleanup()
-
-	db, err := NewLevelDB(path)
-	gt.Expect(err).NotTo(HaveOccurred())
-	defer tested.Close(t, db)
-
-	testTx := newTestTransaction()
-	intTx, err := transaction.New(crypto.SHA256, testTx)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	testState := &txv1.ResolvedState{
-		Txid:        intTx.ID,
-		OutputIndex: 0,
-		Info:        testTx.Outputs[0].Info,
-		State:       testTx.Outputs[0].State,
-	}
-
-	encodedState, err := protomsg.MarshalDeterministic(testState)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	testStateRef := &txv1.StateReference{
-		Txid:        intTx.ID,
-		OutputIndex: 0,
-	}
-
-	key := stateKey(testStateRef)
-
-	err = StoreStates(db, []*txv1.ResolvedState{testState})
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	data, err := db.Get(key)
-	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(data).To(Equal(encodedState))
-}
-
-func TestLoadStates(t *testing.T) {
-	gt := NewGomegaWithT(t)
-
-	path, cleanup := tested.TempDir(t, "", "level")
-	defer cleanup()
-
-	db, err := NewLevelDB(path)
-	gt.Expect(err).NotTo(HaveOccurred())
-	defer tested.Close(t, db)
-
-	testTx := newTestTransaction()
-	intTx, err := transaction.New(crypto.SHA256, testTx)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	testState := &txv1.ResolvedState{
-		Txid:        intTx.ID,
-		OutputIndex: 0,
-		Info:        testTx.Outputs[0].Info,
-		State:       testTx.Outputs[0].State,
-	}
-
-	testStateRef := &txv1.StateReference{
-		Txid:        intTx.ID,
-		OutputIndex: 0,
-	}
-
-	encodedState, err := protomsg.MarshalDeterministic(testState)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	key := stateKey(testStateRef)
-
-	_, err = LoadStates(db, []*txv1.StateReference{testStateRef})
-	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
-
-	err = db.Put(key, encodedState)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	states, err := LoadStates(db, []*txv1.StateReference{testStateRef})
-	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(states[0]).To(ProtoEqual(testState))
+	gt.Expect(true).To(BeTrue())
 }
 
 func newTestTransaction() *txv1.Transaction {

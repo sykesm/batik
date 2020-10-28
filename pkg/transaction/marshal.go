@@ -19,6 +19,16 @@ import (
 // uniquely identifies a transaction based on its contents.
 type ID []byte
 
+// NewID creates a new ID from a byte slice.
+func NewID(b []byte) ID {
+	var id []byte
+	if b != nil {
+		id = make([]byte, len(b), len(b))
+		copy(id, b)
+	}
+	return ID(id)
+}
+
 // ID implements fmt.Stringer and returns the hex encoded representation of ID.
 func (id ID) String() string {
 	return hex.EncodeToString(id)
@@ -29,16 +39,22 @@ func (id ID) Bytes() []byte {
 	return []byte(id)
 }
 
-// NewID creates a new ID from a byte slice.
-func NewID(id []byte) ID {
-	return ID(id)
-}
-
 // Transaction holds intermediate information for an encoded transaction.
 type Transaction struct {
-	Tx      *txv1.Transaction
 	ID      ID
+	Tx      *txv1.Transaction
 	Encoded []byte
+}
+
+type StateID struct {
+	TxID        ID
+	OutputIndex uint64
+}
+
+type State struct {
+	ID        StateID
+	StateInfo *txv1.StateInfo
+	Data      []byte
 }
 
 // New creates a Transaction from a protocol buffer message and also generates
