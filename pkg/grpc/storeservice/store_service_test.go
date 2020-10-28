@@ -154,8 +154,14 @@ func TestStoreService_PutState(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	state, err := store.GetState(db, transaction.StateID{TxID: testState.Txid, OutputIndex: testState.OutputIndex})
+	resolvedState := &txv1.ResolvedState{
+		Txid:        state.ID.TxID,
+		OutputIndex: state.ID.OutputIndex,
+		Info:        state.StateInfo,
+		State:       state.Data,
+	}
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(state).To(ProtoEqual(testState))
+	gt.Expect(resolvedState).To(ProtoEqual(testState))
 }
 
 func newTestTransaction() *txv1.Transaction {

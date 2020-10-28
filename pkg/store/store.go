@@ -59,7 +59,7 @@ func (t *TransactionRepository) PutState(state *transaction.State) error {
 	return errors.WithMessage(batch.Commit(), "error committing resolved states batch")
 }
 
-func GetState(kv KV, stateID transaction.StateID) (*txv1.ResolvedState, error) {
+func GetState(kv KV, stateID transaction.StateID) (*transaction.State, error) {
 	infoPayload, err := kv.Get(stateInfoKey(stateID))
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting state info for %s from db", stateID)
@@ -74,11 +74,10 @@ func GetState(kv KV, stateID transaction.StateID) (*txv1.ResolvedState, error) {
 		return nil, errors.WithMessagef(err, "error getting state %s from db", stateID)
 	}
 
-	state := &txv1.ResolvedState{
-		Txid:        stateID.TxID,
-		OutputIndex: stateID.OutputIndex,
-		Info:        &stateInfo,
-		State:       payload,
+	state := &transaction.State{
+		ID:        stateID,
+		StateInfo: &stateInfo,
+		Data:      payload,
 	}
 
 	return state, nil

@@ -12,6 +12,7 @@ import (
 
 	"github.com/sykesm/batik/pkg/merkle"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
@@ -82,7 +83,12 @@ func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateReques
 	}
 
 	return &storev1.GetStateResponse{
-		State: state,
+		State: &txv1.ResolvedState{
+			Txid:        state.ID.TxID,
+			OutputIndex: state.ID.OutputIndex,
+			Info:        state.StateInfo,
+			State:       state.Data,
+		},
 	}, nil
 }
 
