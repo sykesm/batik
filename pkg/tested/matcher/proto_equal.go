@@ -31,9 +31,9 @@ func (e *protoEqualMatcher) Match(actual interface{}) (bool, error) {
 }
 
 func (e *protoEqualMatcher) FailureMessage(actual interface{}) string {
-	return fmt.Sprintf("Expected\n\t%#vto proto.Equal\n\t%#v", actual, e.expected)
+	return fmt.Sprintf("Expected\n\t%#v\nto proto.Equal\n\t%#v", actual, e.expected)
 }
 
 func (e *protoEqualMatcher) NegatedFailureMessage(actual interface{}) string {
-	return fmt.Sprintf("Expected\n\t%#vnot to proto.Equal\n\t%#v", actual, e.expected)
+	return fmt.Sprintf("Expected\n\t%#v\nnot to proto.Equal\n\t%#v", actual, e.expected)
 }
