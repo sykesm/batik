@@ -19,6 +19,7 @@ import (
 
 type Repository interface {
 	PutTransaction(*transaction.Transaction) error
+	GetTransaction(transaction.ID) (*transaction.Transaction, error)
 }
 
 // StoreService implements the StoreAPIServer gRPC interface.
@@ -45,13 +46,13 @@ func NewStoreService(db store.KV) *StoreService {
 // GetTransaction retrieves the associated transaction corresponding to the
 // txid passed in the GetTransactionRequest.
 func (s *StoreService) GetTransaction(ctx context.Context, req *storev1.GetTransactionRequest) (*storev1.GetTransactionResponse, error) {
-	tx, err := store.LoadTransaction(s.db, req.Txid)
+	tx, err := s.repo.GetTransaction(req.Txid)
 	if err != nil {
 		return nil, err
 	}
 
 	return &storev1.GetTransactionResponse{
-		Transaction: tx,
+		Transaction: tx.Tx,
 	}, nil
 }
 

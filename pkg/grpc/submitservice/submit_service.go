@@ -18,6 +18,7 @@ import (
 
 type Repository interface {
 	PutTransaction(*transaction.Transaction) error
+	GetTransaction(transaction.ID) (*transaction.Transaction, error)
 }
 
 // SubmitService implements the EncodeAPIServer gRPC interface.
@@ -63,7 +64,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	}
 
 	// Check if the transaction already exists
-	_, err = store.LoadTransaction(s.kv, itx.ID)
+	_, err = s.repo.GetTransaction(itx.ID)
 	if !store.IsNotFound(err) {
 		return nil, status.Errorf(codes.AlreadyExists, "transaction %s already exists", itx.ID)
 	}

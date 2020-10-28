@@ -26,8 +26,8 @@ func (t *TransactionRepository) PutTransaction(tx *transaction.Transaction) erro
 	return nil
 }
 
-func LoadTransaction(kv KV, id []byte) (*txv1.Transaction, error) {
-	payload, err := kv.Get(transactionKey(id))
+func (t *TransactionRepository) GetTransaction(id transaction.ID) (*transaction.Transaction, error) {
+	payload, err := t.KV.Get(transactionKey(id))
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting tx %x from db", id)
 	}
@@ -35,7 +35,11 @@ func LoadTransaction(kv KV, id []byte) (*txv1.Transaction, error) {
 	if err := proto.Unmarshal(payload, &tx); err != nil {
 		return nil, errors.WithMessagef(err, "error unmarshaling tx %x", id)
 	}
-	return &tx, nil
+	return &transaction.Transaction{
+		Tx:      &tx,
+		ID:      transaction.NewID(id),
+		Encoded: payload,
+	}, nil
 }
 
 func StoreStates(kv KV, states []*txv1.ResolvedState) error {
