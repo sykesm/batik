@@ -41,7 +41,7 @@ func TestStoreService_GetTransaction(t *testing.T) {
 	resp, err := storeSvc.GetTransaction(context.Background(), req)
 	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
-	err = store.StoreTransactions(db, []*txv1.Transaction{testTx})
+	err = storeSvc.repo.PutTransaction(intTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetTransaction(context.Background(), req)

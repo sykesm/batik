@@ -16,6 +16,10 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
+type Repository interface {
+	PutTransaction(*transaction.Transaction) error
+}
+
 // SubmitService implements the EncodeAPIServer gRPC interface.
 type SubmitService struct {
 	// Unnsafe has been chosed to ensure there's a compilation failure when the
@@ -26,6 +30,8 @@ type SubmitService struct {
 	hasher merkle.Hasher
 	// kv is a reference to the key value store backing this service
 	kv store.KV
+
+	repo Repository
 }
 
 var _ txv1.SubmitAPIServer = (*SubmitService)(nil)
@@ -35,6 +41,7 @@ func NewSubmitService(kv store.KV) *SubmitService {
 	return &SubmitService{
 		hasher: crypto.SHA256,
 		kv:     kv,
+		repo:   &store.TransactionRepository{KV: kv},
 	}
 }
 
@@ -70,7 +77,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	// TODO: Consumed outputs must be marked as consumed.
 	// TODO: The data store should be using the intermediate tx with the marshaled state
 
-	err = store.StoreTransactions(s.kv, []*txv1.Transaction{tx})
+	err = s.repo.PutTransaction(itx)
 	if err != nil {
 		return nil, status.Errorf(codes.Unknown, "storing transaction %s failed: %s", itx.ID, err)
 	}

@@ -17,30 +17,6 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
-func TestStoreTransactions(t *testing.T) {
-	gt := NewGomegaWithT(t)
-
-	path, cleanup := tested.TempDir(t, "", "level")
-	defer cleanup()
-
-	db, err := NewLevelDB(path)
-	gt.Expect(err).NotTo(HaveOccurred())
-	defer tested.Close(t, db)
-
-	testTx := newTestTransaction()
-	intTx, err := transaction.New(crypto.SHA256, testTx)
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	key := transactionKey(intTx.ID)
-
-	err = StoreTransactions(db, []*txv1.Transaction{testTx})
-	gt.Expect(err).NotTo(HaveOccurred())
-
-	data, err := db.Get(key)
-	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(data).To(Equal(intTx.Encoded))
-}
-
 func TestLoadTransactions(t *testing.T) {
 	gt := NewGomegaWithT(t)
 

@@ -4,7 +4,6 @@
 package store
 
 import (
-	"crypto"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -15,21 +14,16 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
-func StoreTransactions(kv KV, txs []*txv1.Transaction) error {
-	batch := kv.NewWriteBatch()
+type TransactionRepository struct {
+	KV KV
+}
 
-	for _, tx := range txs {
-		intTx, err := transaction.New(crypto.SHA256, tx)
-		if err != nil {
-			return errors.WithMessage(err, "error marshaling transaction")
-		}
-
-		if err := batch.Put(transactionKey(intTx.ID), intTx.Encoded); err != nil {
-			return err
-		}
+func (t *TransactionRepository) PutTransaction(tx *transaction.Transaction) error {
+	err := t.KV.Put(transactionKey(tx.ID), tx.Encoded)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to put transaction %s", tx.ID)
 	}
-
-	return errors.WithMessage(batch.Commit(), "error committing transactions batch")
+	return nil
 }
 
 func LoadTransactions(kv KV, ids [][]byte) ([]*txv1.Transaction, error) {
