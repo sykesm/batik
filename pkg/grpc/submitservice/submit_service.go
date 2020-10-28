@@ -21,6 +21,7 @@ type Repository interface {
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
 	PutState(*transaction.State) error
 	GetState(transaction.StateID) (*transaction.State, error)
+	ConsumeStates(...transaction.StateID) error
 }
 
 // SubmitService implements the EncodeAPIServer gRPC interface.
@@ -94,7 +95,11 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 		}
 	}
 
-	err = store.ConsumeStates(s.kv, tx.Inputs)
+	var inputs []transaction.StateID
+	for _, input := range tx.Inputs {
+		inputs = append(inputs, transaction.StateID{TxID: input.Txid, OutputIndex: input.OutputIndex})
+	}
+	err = s.repo.ConsumeStates(inputs...)
 	if err != nil {
 		return nil, err
 	}

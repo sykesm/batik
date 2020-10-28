@@ -83,18 +83,18 @@ func (t *TransactionRepository) GetState(stateID transaction.StateID) (*transact
 	return state, nil
 }
 
-func ConsumeStates(kv KV, refs []*txv1.StateReference) error {
-	batch := kv.NewWriteBatch()
-	for _, ref := range refs {
-		state, err := kv.Get(stateKey(transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}))
+func (t *TransactionRepository) ConsumeStates(stateIDs ...transaction.StateID) error {
+	batch := t.KV.NewWriteBatch()
+	for _, id := range stateIDs {
+		state, err := t.KV.Get(stateKey(id))
 		if err != nil {
 			return err
 		}
-		err = kv.Delete(stateKey(transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}))
+		err = batch.Put(consumedStateKey(id), state)
 		if err != nil {
 			return err
 		}
-		err = batch.Put(consumedStateKey(ref), state)
+		err = t.KV.Delete(stateKey(id))
 		if err != nil {
 			return err
 		}
@@ -131,9 +131,9 @@ func stateInfoKey(id transaction.StateID) []byte {
 	)
 }
 
-func consumedStateKey(stateRef *txv1.StateReference) []byte {
+func consumedStateKey(id transaction.StateID) []byte {
 	return append(
-		append(keyConsumedStates[:], stateRef.Txid[:]...),
-		strconv.Itoa(int(stateRef.OutputIndex))...,
+		append(keyConsumedStates[:], id.TxID[:]...),
+		strconv.Itoa(int(id.OutputIndex))...,
 	)
 }
