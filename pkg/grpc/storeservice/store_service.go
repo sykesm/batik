@@ -81,11 +81,10 @@ func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateReques
 	}
 
 	return &storev1.GetStateResponse{
-		State: &txv1.ResolvedState{
-			Txid:        state.ID.TxID,
-			OutputIndex: state.ID.OutputIndex,
-			Info:        state.StateInfo,
-			State:       state.Data,
+		StateReference: req.StateRef,
+		State: &txv1.State{
+			Info:  state.StateInfo,
+			State: state.Data,
 		},
 	}, nil
 }
@@ -93,7 +92,10 @@ func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateReques
 // PutState stores the encoded resolved state in the backing store.
 func (s *StoreService) PutState(ctx context.Context, req *storev1.PutStateRequest) (*storev1.PutStateResponse, error) {
 	state := &transaction.State{
-		ID:        transaction.StateID{TxID: req.State.Txid, OutputIndex: req.State.OutputIndex},
+		ID: transaction.StateID{
+			TxID:        req.StateReference.Txid,
+			OutputIndex: req.StateReference.OutputIndex,
+		},
 		StateInfo: req.State.Info,
 		Data:      req.State.State,
 	}

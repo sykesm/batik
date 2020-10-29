@@ -305,22 +305,19 @@ var _ = Describe("gRPC", func() {
 
 		Describe("GetState", func() {
 			var (
-				req       *storev1.GetStateRequest
-				testState *txv1.ResolvedState
+				req      *storev1.GetStateRequest
+				stateRef *txv1.StateReference
+				state    *txv1.State
 			)
 
 			BeforeEach(func() {
-				req = &storev1.GetStateRequest{
-					StateRef: &txv1.StateReference{
-						Txid:        txid,
-						OutputIndex: 0,
-					},
-				}
-				testState = &txv1.ResolvedState{
+				state = testTx.Outputs[0]
+				stateRef = &txv1.StateReference{
 					Txid:        txid,
 					OutputIndex: 0,
-					State:       testTx.Outputs[0].State,
-					Info:        testTx.Outputs[0].Info,
+				}
+				req = &storev1.GetStateRequest{
+					StateRef: stateRef,
 				}
 			})
 
@@ -335,7 +332,8 @@ var _ = Describe("gRPC", func() {
 			When("the state exists", func() {
 				BeforeEach(func() {
 					putReq := &storev1.PutStateRequest{
-						State: testState,
+						StateReference: stateRef,
+						State:          state,
 					}
 
 					_, err := storeServiceClient.PutState(context.Background(), putReq)
@@ -345,27 +343,28 @@ var _ = Describe("gRPC", func() {
 				It("retrieves a state from the store", func() {
 					resp, err := storeServiceClient.GetState(context.Background(), req)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(resp.State).To(ProtoEqual(testState))
+					Expect(resp.State).To(ProtoEqual(state))
 				})
 			})
 		})
 
 		Describe("PutState", func() {
 			var (
-				req       *storev1.PutStateRequest
-				testState *txv1.ResolvedState
+				req      *storev1.PutStateRequest
+				stateRef *txv1.StateReference
+				state    *txv1.State
 			)
 
 			BeforeEach(func() {
-				testState = &txv1.ResolvedState{
+				state = testTx.Outputs[0]
+				stateRef = &txv1.StateReference{
 					Txid:        txid,
 					OutputIndex: 0,
-					State:       testTx.Outputs[0].State,
-					Info:        testTx.Outputs[0].Info,
 				}
 
 				req = &storev1.PutStateRequest{
-					State: testState,
+					StateReference: stateRef,
+					State:          state,
 				}
 			})
 
@@ -376,14 +375,11 @@ var _ = Describe("gRPC", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				getReq := &storev1.GetStateRequest{
-					StateRef: &txv1.StateReference{
-						Txid:        txid,
-						OutputIndex: 0,
-					},
+					StateRef: stateRef,
 				}
 				resp, err := storeServiceClient.GetState(context.Background(), getReq)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(resp.State).To(ProtoEqual(testState))
+				Expect(resp.State).To(ProtoEqual(state))
 			})
 		})
 	})

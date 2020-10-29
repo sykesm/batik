@@ -20,14 +20,14 @@ type StoreAPIClient interface {
 	// GetTransaction retrieves the associated transaction corresponding to the
 	// txid passed in the GetTransactionRequest.
 	GetTransaction(ctx context.Context, in *GetTransactionRequest, opts ...grpc.CallOption) (*GetTransactionResponse, error)
-	// PutTransaction hashes the transaction and then stores the
-	// encoded transaction in the backing store.
+	// PutTransaction hashes the transaction and then stores the encoded
+	// transaction in the backing store.
 	// Note: This API is temporary and intended for test. DO NOT USE.
 	PutTransaction(ctx context.Context, in *PutTransactionRequest, opts ...grpc.CallOption) (*PutTransactionResponse, error)
-	// GetState retrieves the associated ResolvedState corresponding to the state reference
-	// passed in the GetStateRequest from the backing store indexed by a txid and
-	// output index that the State was originally created at in the transaction output
-	// list.
+	// GetState retrieves the associated ResolvedState corresponding to the state
+	// reference passed in the GetStateRequest from the backing store indexed by
+	// a txid and output index that the State was originally created at in the
+	// transaction output list.
 	GetState(ctx context.Context, in *GetStateRequest, opts ...grpc.CallOption) (*GetStateResponse, error)
 	// PutState stores the encoded resolved state in the backing store.
 	// Note: This API is temporary and intended for test. DO NOT USE.
@@ -85,14 +85,14 @@ type StoreAPIServer interface {
 	// GetTransaction retrieves the associated transaction corresponding to the
 	// txid passed in the GetTransactionRequest.
 	GetTransaction(context.Context, *GetTransactionRequest) (*GetTransactionResponse, error)
-	// PutTransaction hashes the transaction and then stores the
-	// encoded transaction in the backing store.
+	// PutTransaction hashes the transaction and then stores the encoded
+	// transaction in the backing store.
 	// Note: This API is temporary and intended for test. DO NOT USE.
 	PutTransaction(context.Context, *PutTransactionRequest) (*PutTransactionResponse, error)
-	// GetState retrieves the associated ResolvedState corresponding to the state reference
-	// passed in the GetStateRequest from the backing store indexed by a txid and
-	// output index that the State was originally created at in the transaction output
-	// list.
+	// GetState retrieves the associated ResolvedState corresponding to the state
+	// reference passed in the GetStateRequest from the backing store indexed by
+	// a txid and output index that the State was originally created at in the
+	// transaction output list.
 	GetState(context.Context, *GetStateRequest) (*GetStateResponse, error)
 	// PutState stores the encoded resolved state in the backing store.
 	// Note: This API is temporary and intended for test. DO NOT USE.

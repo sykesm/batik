@@ -72,34 +72,27 @@ func TestStoreService_GetState(t *testing.T) {
 	intTx, err := transaction.New(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	testState := &txv1.ResolvedState{
-		Txid:        intTx.ID,
-		OutputIndex: 0,
-		Info:        testTx.Outputs[0].Info,
-		State:       testTx.Outputs[0].State,
-	}
-
-	testStateRef := &txv1.StateReference{
+	stateRef := &txv1.StateReference{
 		Txid:        intTx.ID,
 		OutputIndex: 0,
 	}
 
 	req := &storev1.GetStateRequest{
-		StateRef: testStateRef,
+		StateRef: stateRef,
 	}
 	resp, err := storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
 	err = storeSvc.repo.PutState(&transaction.State{
-		ID:        transaction.StateID{TxID: testState.Txid, OutputIndex: testState.OutputIndex},
-		StateInfo: testState.Info,
-		Data:      testState.State,
+		ID:        transaction.StateID{TxID: stateRef.Txid, OutputIndex: stateRef.OutputIndex},
+		StateInfo: testTx.Outputs[0].Info,
+		Data:      testTx.Outputs[0].State,
 	})
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(resp.State).To(ProtoEqual(testState))
+	gt.Expect(resp.State).To(ProtoEqual(testTx.Outputs[0]))
 }
 
 func TestStoreService_PutState(t *testing.T) {
@@ -111,28 +104,26 @@ func TestStoreService_PutState(t *testing.T) {
 	intTx, err := transaction.New(crypto.SHA256, testTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	testState := &txv1.ResolvedState{
-		Txid:        intTx.ID,
-		OutputIndex: 0,
-		Info:        testTx.Outputs[0].Info,
-		State:       testTx.Outputs[0].State,
-	}
+	testState := testTx.Outputs[0]
 
 	req := &storev1.PutStateRequest{
+		StateReference: &txv1.StateReference{
+			Txid:        intTx.ID,
+			OutputIndex: 0,
+		},
 		State: testState,
 	}
 	_, err = storeSvc.PutState(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	state, err := storeSvc.repo.GetState(transaction.StateID{TxID: testState.Txid, OutputIndex: testState.OutputIndex})
-	resolvedState := &txv1.ResolvedState{
-		Txid:        state.ID.TxID,
-		OutputIndex: state.ID.OutputIndex,
-		Info:        state.StateInfo,
-		State:       state.Data,
+	stateID := transaction.StateID{
+		TxID:        req.StateReference.Txid,
+		OutputIndex: req.StateReference.OutputIndex,
 	}
+	state, err := storeSvc.repo.GetState(stateID)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(resolvedState).To(ProtoEqual(testState))
+	gt.Expect(state.StateInfo).To(ProtoEqual(testState.Info))
+	gt.Expect(state.Data).To(Equal(testState.State))
 }
 
 func newStoreService(t *testing.T) (*StoreService, func()) {
