@@ -4,6 +4,7 @@
 package store
 
 import (
+	"crypto"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,9 @@ import (
 	"github.com/sykesm/batik/pkg/protomsg"
 	"github.com/sykesm/batik/pkg/transaction"
 )
+
+// TODO: Determine how to model the hasher required to restore a transaction.
+// TODO: Standarize on binary mashaling and unmarshaling to remove proto
 
 type TransactionRepository struct {
 	kv KV
@@ -37,15 +41,14 @@ func (t *TransactionRepository) GetTransaction(id transaction.ID) (*transaction.
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting tx %x from db", id)
 	}
-	var tx txv1.Transaction
-	if err := proto.Unmarshal(payload, &tx); err != nil {
-		return nil, errors.WithMessagef(err, "error unmarshaling tx %x", id)
+	tx, err := transaction.NewFromBytes(crypto.SHA256, payload)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to reconstruct the transaction")
 	}
-	return &transaction.Transaction{
-		ID:      transaction.NewID(id),
-		Tx:      &tx,
-		Encoded: payload,
-	}, nil
+	if !tx.ID.Equals(id) {
+		return nil, errors.Errorf("requested transaction %s but retrieved %s", id, tx.ID)
+	}
+	return tx, nil
 }
 
 func (t *TransactionRepository) PutState(state *transaction.State) error {

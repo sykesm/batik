@@ -4,12 +4,14 @@
 package transaction
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"encoding/hex"
 	"errors"
 	"fmt"
 
 	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/sykesm/batik/pkg/merkle"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
@@ -40,6 +42,11 @@ func (id ID) Bytes() []byte {
 	return []byte(id)
 }
 
+// Equals returns true if this identity is equal to the argument.
+func (id ID) Equals(that ID) bool {
+	return bytes.Equal(id.Bytes(), that.Bytes())
+}
+
 // Transaction holds intermediate information for an encoded transaction.
 type Transaction struct {
 	ID      ID
@@ -52,8 +59,15 @@ type StateID struct {
 	OutputIndex uint64
 }
 
-func (s StateID) String() string {
-	return fmt.Sprintf("%s:%08x", s.TxID, s.OutputIndex)
+func (sid StateID) String() string {
+	return fmt.Sprintf("%s:%08x", sid.TxID, sid.OutputIndex)
+}
+
+func (sid StateID) Equals(that StateID) bool {
+	if sid.OutputIndex == that.OutputIndex && sid.TxID.Equals(that.TxID) {
+		return true
+	}
+	return false
 }
 
 type State struct {
@@ -107,6 +121,17 @@ func New(h merkle.Hasher, tx *txv1.Transaction) (*Transaction, error) {
 		Encoded: encoded,
 		ID:      merkle.Root(h, leaves...),
 	}, nil
+}
+
+// NewFromBytes creates a Transaction from the protocol buffer serialization
+// of a txv1.Transaction.
+func NewFromBytes(h merkle.Hasher, b []byte) (*Transaction, error) {
+	var tx txv1.Transaction
+	err := proto.Unmarshal(b, &tx)
+	if err != nil {
+		return nil, err
+	}
+	return New(h, &tx)
 }
 
 // encodedElement returns the encoded pieces of each message in a transaction.
