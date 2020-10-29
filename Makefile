@@ -42,12 +42,13 @@ integration-test integration-tests:
 	@scripts/run-integration-tests
 
 # go tool->path mapping
+gotool.counterfeiter := github.com/maxbrunsfeld/counterfeiter/v6
 gotool.ginkgo := github.com/onsi/ginkgo/ginkgo
 gotool.protoc-gen-go := google.golang.org/protobuf/cmd/protoc-gen-go
 gotool.protoc-gen-go-grpc := google.golang.org/grpc/cmd/protoc-gen-go-grpc
 gotool.protoc-gen-grpc-gateway := github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
 gotool.prototool := github.com/uber/prototool/cmd/prototool
-GOTOOLS = ginkgo protoc-gen-go protoc-gen-go-grpc protoc-gen-grpc-gateway prototool
+GOTOOLS = counterfeiter ginkgo protoc-gen-go protoc-gen-go-grpc protoc-gen-grpc-gateway prototool
 
 .PHONY: gotools
 gotools: $(patsubst %,$(GOTOOLS_BINDIR)/%, $(GOTOOLS))
