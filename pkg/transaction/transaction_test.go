@@ -22,6 +22,7 @@ import (
 	"github.com/sykesm/batik/pkg/merkle"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
+	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction/internal/testprotos/mutated"
 )
 
@@ -54,7 +55,7 @@ func TestSalt(t *testing.T) {
 	}
 }
 
-func TestMarshal(t *testing.T) {
+func TestNew(t *testing.T) {
 	salt := fromHex(t, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
 	noop := func(tx *txv1.Transaction) {}
 	salted := func(tx *txv1.Transaction) { tx.Salt = salt }
@@ -103,6 +104,24 @@ func TestMarshal(t *testing.T) {
 			gt.Expect(intTx.Encoded).To(Equal(expectedEncoded))
 		})
 	}
+}
+
+func TestNewFromBytes(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	intTx, err := New(crypto.SHA256, newTestTransaction())
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	tx, err := NewFromBytes(crypto.SHA256, intTx.Encoded)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	gt.Expect(tx.ID).To(Equal(intTx.ID))
+	gt.Expect(tx.Tx).To(ProtoEqual(intTx.Tx))
+}
+
+func TestNewFromBytesError(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	_, err := NewFromBytes(crypto.SHA256, []byte("deaadbeef"))
+	gt.Expect(err).To(MatchError(proto.Error))
 }
 
 func TestIDMatchesReflected(t *testing.T) {

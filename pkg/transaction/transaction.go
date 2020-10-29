@@ -4,11 +4,8 @@
 package transaction
 
 import (
-	"bytes"
 	"crypto/hmac"
-	"encoding/hex"
 	"errors"
-	"fmt"
 
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
@@ -18,62 +15,11 @@ import (
 	"github.com/sykesm/batik/pkg/protomsg"
 )
 
-// ID is a transaction identifier. A transaction ID is a merkle hash that
-// uniquely identifies a transaction based on its contents.
-type ID []byte
-
-// NewID creates a new ID from a byte slice.
-func NewID(b []byte) ID {
-	var id []byte
-	if b != nil {
-		id = make([]byte, len(b), len(b))
-		copy(id, b)
-	}
-	return ID(id)
-}
-
-// ID implements fmt.Stringer and returns the hex encoded representation of ID.
-func (id ID) String() string {
-	return hex.EncodeToString(id)
-}
-
-// Bytes returns the ID as a byte slice.
-func (id ID) Bytes() []byte {
-	return []byte(id)
-}
-
-// Equals returns true if this identity is equal to the argument.
-func (id ID) Equals(that ID) bool {
-	return bytes.Equal(id.Bytes(), that.Bytes())
-}
-
 // Transaction holds intermediate information for an encoded transaction.
 type Transaction struct {
 	ID      ID
 	Tx      *txv1.Transaction
 	Encoded []byte
-}
-
-type StateID struct {
-	TxID        ID
-	OutputIndex uint64
-}
-
-func (sid StateID) String() string {
-	return fmt.Sprintf("%s:%08x", sid.TxID, sid.OutputIndex)
-}
-
-func (sid StateID) Equals(that StateID) bool {
-	if sid.OutputIndex == that.OutputIndex && sid.TxID.Equals(that.TxID) {
-		return true
-	}
-	return false
-}
-
-type State struct {
-	ID        StateID
-	StateInfo *txv1.StateInfo
-	Data      []byte
 }
 
 // New creates a Transaction from a protocol buffer message and also generates
