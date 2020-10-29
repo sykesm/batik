@@ -5,8 +5,6 @@ package transaction
 
 import (
 	"fmt"
-
-	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 )
 
 type StateID struct {
@@ -25,8 +23,37 @@ func (sid StateID) Equals(that StateID) bool {
 	return false
 }
 
+type Party struct {
+	PublicKey []byte
+}
+
+type StateInfo struct {
+	Owners []*Party
+	Kind   string
+}
+
 type State struct {
 	ID        StateID
-	StateInfo *txv1.StateInfo
+	StateInfo *StateInfo
 	Data      []byte
+}
+
+type Parameter struct {
+	Name  string
+	Value []byte
+}
+
+type Signature struct {
+	PublicKey []byte
+	Signature []byte
+}
+
+type Resolved struct {
+	Tx              *Transaction
+	Inputs          []*State
+	References      []*State
+	Outputs         []*State
+	Parameters      []*Parameter
+	RequiredSigners []*Party
+	Signatures      []*Signature
 }

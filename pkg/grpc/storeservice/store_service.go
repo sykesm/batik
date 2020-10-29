@@ -12,7 +12,6 @@ import (
 
 	"github.com/sykesm/batik/pkg/merkle"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
-	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
@@ -82,23 +81,13 @@ func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateReques
 
 	return &storev1.GetStateResponse{
 		StateReference: req.StateRef,
-		State: &txv1.State{
-			Info:  state.StateInfo,
-			State: state.Data,
-		},
+		State:          transaction.FromState(state),
 	}, nil
 }
 
 // PutState stores the encoded resolved state in the backing store.
 func (s *StoreService) PutState(ctx context.Context, req *storev1.PutStateRequest) (*storev1.PutStateResponse, error) {
-	state := &transaction.State{
-		ID: transaction.StateID{
-			TxID:        req.StateReference.Txid,
-			OutputIndex: req.StateReference.OutputIndex,
-		},
-		StateInfo: req.State.Info,
-		Data:      req.State.State,
-	}
+	state := transaction.ToState(req.State, req.StateReference.Txid, req.StateReference.OutputIndex)
 	if err := s.repo.PutState(state); err != nil {
 		return nil, err
 	}

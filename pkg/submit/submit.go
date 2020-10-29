@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
@@ -42,7 +41,7 @@ func (s *Service) Submit(ctx context.Context, tx *transaction.Transaction) error
 	}
 
 	// resolve all inputs and references
-	_, err = resolve(s.repo, tx.Tx)
+	_, err = resolve(s.repo, tx)
 	if err != nil {
 		return errors.WithMessagef(err, "state resolution for transaction %s failed", tx.ID)
 	}
@@ -53,12 +52,7 @@ func (s *Service) Submit(ctx context.Context, tx *transaction.Transaction) error
 	}
 
 	for i := range tx.Tx.Outputs {
-		state := &transaction.State{
-			ID:        transaction.StateID{TxID: tx.ID, OutputIndex: uint64(i)},
-			StateInfo: tx.Tx.Outputs[i].Info,
-			Data:      tx.Tx.Outputs[i].State,
-		}
-
+		state := transaction.ToState(tx.Tx.Outputs[i], tx.ID, uint64(i))
 		err = s.repo.PutState(state)
 		if err != nil {
 			return errors.WithMessagef(err, "storing transaction %s failed", tx.ID)
@@ -77,27 +71,9 @@ func (s *Service) Submit(ctx context.Context, tx *transaction.Transaction) error
 	return nil
 }
 
-// A Resolved transaction is a Transaction where state references have been
-// resolved and populated with data from the ledger.
-type ResolvedTransaction struct {
-	Salt            []byte
-	Inputs          []*txv1.State
-	References      []*txv1.State
-	Outputs         []*txv1.State
-	Parameters      []*txv1.Parameter
-	RequiredSigners []*txv1.Party
-}
-
-func resolve(repo Repository, tx *txv1.Transaction) (*ResolvedTransaction, error) {
-	resolved := &ResolvedTransaction{
-		Salt:            tx.Salt,
-		Outputs:         tx.Outputs,
-		Parameters:      tx.Parameters,
-		RequiredSigners: tx.RequiredSigners,
-	}
-
+func resolve(repo Repository, tx *transaction.Transaction) (*transaction.Resolved, error) {
 	var inputs []*transaction.State
-	for _, input := range tx.Inputs {
+	for _, input := range tx.Tx.Inputs {
 		stateID := transaction.StateID{TxID: input.Txid, OutputIndex: input.OutputIndex}
 		state, err := repo.GetState(stateID)
 		if err != nil {
@@ -106,7 +82,7 @@ func resolve(repo Repository, tx *txv1.Transaction) (*ResolvedTransaction, error
 		inputs = append(inputs, state)
 	}
 	var refs []*transaction.State
-	for _, ref := range tx.References {
+	for _, ref := range tx.Tx.References {
 		stateID := transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}
 		state, err := repo.GetState(stateID)
 		if err != nil {
@@ -114,18 +90,18 @@ func resolve(repo Repository, tx *txv1.Transaction) (*ResolvedTransaction, error
 		}
 		refs = append(refs, state)
 	}
-
-	for _, input := range inputs {
-		resolved.Inputs = append(resolved.Inputs, &txv1.State{
-			Info:  input.StateInfo,
-			State: input.Data,
-		})
+	var outputs []*transaction.State
+	for i, out := range tx.Tx.Outputs {
+		outputs = append(outputs, transaction.ToState(out, tx.ID, uint64(i)))
 	}
-	for _, ref := range refs {
-		resolved.References = append(resolved.References, &txv1.State{
-			Info:  ref.StateInfo,
-			State: ref.Data,
-		})
+
+	resolved := &transaction.Resolved{
+		Tx:              tx,
+		Inputs:          inputs,
+		References:      refs,
+		Outputs:         outputs,
+		Parameters:      transaction.ToParameters(tx.Tx.Parameters...),
+		RequiredSigners: transaction.ToParties(tx.Tx.RequiredSigners...),
 	}
 
 	return resolved, nil

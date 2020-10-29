@@ -38,9 +38,9 @@ message StateReference {
 }
 
 // A Parameter is additional context that can be included within a transaction
-// to "parameterize" valiation. It holds arbitrary key/value data and can be
+// to "parameterize" validation. It holds arbitrary key/value data and can be
 // used to express intent (like an operation) or provide additional public data
-// for validation.
+// to the validator.
 message Parameter {
   string name = 1;
   bytes value = 2;

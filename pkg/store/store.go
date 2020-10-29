@@ -17,6 +17,7 @@ import (
 
 // TODO: Determine how to model the hasher required to restore a transaction.
 // TODO: Standarize on binary mashaling and unmarshaling to remove proto
+// TODO: Unit of work / atomicity / snapshot isolation
 
 type TransactionRepository struct {
 	kv KV
@@ -52,7 +53,17 @@ func (t *TransactionRepository) GetTransaction(id transaction.ID) (*transaction.
 }
 
 func (t *TransactionRepository) PutState(state *transaction.State) error {
-	info, err := protomsg.MarshalDeterministic(state.StateInfo)
+	var owners []*txv1.Party
+	si := state.StateInfo
+	for i := range si.Owners {
+		owners = append(owners, &txv1.Party{PublicKey: si.Owners[i].PublicKey})
+	}
+	stateInfo := &txv1.StateInfo{
+		Owners: owners,
+		Kind:   si.Kind,
+	}
+
+	info, err := protomsg.MarshalDeterministic(stateInfo)
 	if err != nil {
 		return errors.WithMessage(err, "error marshalling state info")
 	}
@@ -83,10 +94,18 @@ func (t *TransactionRepository) GetState(stateID transaction.StateID) (*transact
 		return nil, errors.WithMessagef(err, "error getting state %s from db", stateID)
 	}
 
+	var owners []*transaction.Party
+	for i := range stateInfo.Owners {
+		owners = append(owners, &transaction.Party{PublicKey: stateInfo.Owners[i].PublicKey})
+	}
+
 	state := &transaction.State{
-		ID:        stateID,
-		StateInfo: &stateInfo,
-		Data:      payload,
+		ID: stateID,
+		StateInfo: &transaction.StateInfo{
+			Kind:   stateInfo.Kind,
+			Owners: owners,
+		},
+		Data: payload,
 	}
 
 	return state, nil
