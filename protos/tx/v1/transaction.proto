@@ -7,10 +7,10 @@ package tx.v1;
 
 option go_package = "github.com/sykesm/batik/pkg/pb/tx/v1;txv1";
 
-// A Party represents an identity that can be used to represent an owner or an
-// interested party.
+// A Party contains a public key credential that can be used to represent an
+// owner or an interested party.
 message Party {
-  bytes credential = 1;
+  bytes public_key = 1;
 }
 
 // StateInfo contains structured information about a state that can be utilized
@@ -38,8 +38,9 @@ message StateReference {
 }
 
 // A Parameter is additional context that can be included within a transaction
-// to "parameterize" consistency valiation. It expresses intent (like an operation)
-// and arbitrary information required to properly perform consistency checks.
+// to "parameterize" valiation. It holds arbitrary key/value data and can be
+// used to express intent (like an operation) or provide additional public data
+// for validation.
 message Parameter {
   string name = 1;
   bytes value = 2;
@@ -58,6 +59,13 @@ message Transaction {
   repeated Party required_signers = 6;
 }
 
+// A signature holds a signer's public key and its signature over a transaction
+// ID.
+message Signature {
+  bytes public_key = 1;
+  bytes signature = 2;
+}
+
 // A signed transaction is transaction with attached signatures. The signatures
 // should be over the unique transaction ID generated from hashing the
 // deterministic marshaling of the transaction.
@@ -66,9 +74,3 @@ message SignedTransaction {
   repeated Signature signatures = 2;
 }
 
-// A signature holds a signer's public key and its signature over a transaction
-// ID.
-message Signature {
-  bytes public_key = 1;
-  bytes signature = 2;
-}

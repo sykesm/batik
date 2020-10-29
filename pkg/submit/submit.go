@@ -25,8 +25,7 @@ type Repository interface {
 }
 
 type Service struct {
-	// repo is a reference to the transaction state repository.
-	repo Repository
+	repo Repository // repo is a reference to the transaction state repository.
 }
 
 func NewService(repo Repository) *Service {

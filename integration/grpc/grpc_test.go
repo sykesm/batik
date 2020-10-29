@@ -403,14 +403,14 @@ func newTestTransaction() *txv1.Transaction {
 		Outputs: []*txv1.State{
 			{
 				Info: &txv1.StateInfo{
-					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+					Owners: []*txv1.Party{{PublicKey: []byte("owner-1")}, {PublicKey: []byte("owner-2")}},
 					Kind:   "state-kind-0",
 				},
 				State: []byte("state-0"),
 			},
 			{
 				Info: &txv1.StateInfo{
-					Owners: []*txv1.Party{{Credential: []byte("owner-1")}, {Credential: []byte("owner-2")}},
+					Owners: []*txv1.Party{{PublicKey: []byte("owner-1")}, {PublicKey: []byte("owner-2")}},
 					Kind:   "state-kind-1",
 				},
 				State: []byte("state-1"),
@@ -421,8 +421,8 @@ func newTestTransaction() *txv1.Transaction {
 			{Name: "name-1", Value: []byte("value-1")},
 		},
 		RequiredSigners: []*txv1.Party{
-			{Credential: []byte("observer-1")},
-			{Credential: []byte("observer-2")},
+			{PublicKey: []byte("observer-1")},
+			{PublicKey: []byte("observer-2")},
 		},
 	}
 }
