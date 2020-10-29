@@ -12,10 +12,15 @@ import (
 	"github.com/onsi/gomega/types"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
-	"github.com/sykesm/batik/pkg/store"
-	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
+	"github.com/sykesm/batik/pkg/transaction"
 )
+
+type submitterFunc func(context.Context, *transaction.Transaction) error
+
+func (s submitterFunc) Submit(ctx context.Context, tx *transaction.Transaction) error {
+	return s(ctx, tx)
+}
 
 func TestSubmit(t *testing.T) {
 	tests := map[string]struct {
@@ -49,14 +54,10 @@ func TestSubmit(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
-
-			kv, err := store.NewLevelDB("")
-			gt.Expect(err).NotTo(HaveOccurred())
-			defer tested.Close(t, kv)
-
-			repo := store.NewRepository(kv)
-
-			ss := NewSubmitService(repo)
+			var submitter submitterFunc = func(ctx context.Context, tx *transaction.Transaction) error {
+				return nil
+			}
+			ss := NewSubmitService(submitter)
 			resp, err := ss.Submit(context.Background(), tt.req)
 			if tt.errMatcher != nil {
 				gt.Expect(err).To(tt.errMatcher)

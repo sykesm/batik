@@ -27,6 +27,7 @@ import (
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
+	"github.com/sykesm/batik/pkg/submit"
 )
 
 func startCommand(config *options.Batik, interactive bool) *cli.Command {
@@ -86,7 +87,7 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 	encodeService := &encodeservice.EncodeService{}
 	txv1.RegisterEncodeAPIServer(grpcServer.Server, encodeService)
 
-	submitService := submitservice.NewSubmitService(transactionRepo)
+	submitService := submitservice.NewSubmitService(submit.NewService(transactionRepo))
 	txv1.RegisterSubmitAPIServer(grpcServer.Server, submitService)
 
 	storeService := storeservice.NewStoreService(transactionRepo)
