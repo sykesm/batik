@@ -71,11 +71,11 @@ func TestNew(t *testing.T) {
 		errMatcher types.GomegaMatcher
 		setup      func(*txv1.Transaction)
 	}{
-		"happy":         {fromHex(t, "77dc6e1729583cf7f1db9863b34a8951a3bb9369ab4cf0a86340ea92a8514cf5"), nil, noop},
-		"changed salt":  {fromHex(t, "f1d081a486273dc66226a1fa30837e7583d9e0921163eac2300b350ff5ab4095"), nil, salted},
+		"happy":         {fromHex(t, "74ab83202b777ab9f27931fd76827cb848048e3abd70d2718cf1b60ed740bd89"), nil, noop},
+		"changed salt":  {fromHex(t, "2b28f98d9ee6806fea1942ae130a6c75b8f9bf5a6ace24695f4a25e021a9af53"), nil, salted},
 		"salted empty":  {fromHex(t, "38955e69c8db8963b3513c17631aebcf224c9c77017992dfe35a6dbba54b60a8"), nil, emptySalted},
-		"empty vector":  {fromHex(t, "b2d9f8a592db1c411ee4ffe783c529af43172773107f5ed103535cd5e62ad1b4"), nil, noSigners},
-		"nil element":   {fromHex(t, "d0ea4beee73ffa3597f00fe207e7c19f505247510da1dce3b7149d306d6d910a"), nil, nilElement},
+		"empty vector":  {fromHex(t, "6c8847e9e9cd65a88e17116599d47ed0c521f4cc3fd8696bda2e41b1bb10733a"), nil, noSigners},
+		"nil element":   {fromHex(t, "c85b907ec17ab566b36147964b65122e8468ea7944a0c40015552f17bb21a1f5"), nil, nilElement},
 		"empty":         {nil, MatchError("transaction salt is missing or less than 32 bytes in length"), reset},
 		"short salt":    {nil, MatchError("transaction salt is missing or less than 32 bytes in length"), shortSalt},
 		"unknown field": {nil, MatchError("protomsg: refusing to marshal unknown fields with length 7"), unknownFields},
@@ -97,7 +97,7 @@ func TestNew(t *testing.T) {
 			reflected, err := reflectTransactionID(crypto.SHA256, tx)
 			gt.Expect(err).NotTo(HaveOccurred())
 
-			gt.Expect(intTx.ID).To(Equal(tt.expected), "got %x want %x reflect %x", intTx.ID, tt.expected, reflected)
+			gt.Expect(intTx.ID).To(Equal(tt.expected), "got %s want %s reflect %s", intTx.ID, tt.expected, reflected)
 
 			expectedEncoded, err := protomsg.MarshalDeterministic(tx)
 			gt.Expect(err).NotTo(HaveOccurred())

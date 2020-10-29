@@ -87,7 +87,7 @@ var _ = Describe("gRPC", func() {
 				Transaction: testTx,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(hex.EncodeToString(resp.Txid)).To(Equal("d213b9cad8f9d0d8316da198d4dd2bee53359c3a6b56a8f4fe4411c504678fa4"))
+			Expect(hex.EncodeToString(resp.Txid)).To(Equal("cec07e827e904b7e0cb43b95f5cd44f097f8be39e006684da834008461b40e2c"))
 
 			expectedEncoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(testTx)
 			Expect(resp.EncodedTransaction).To(Equal(expectedEncoded))

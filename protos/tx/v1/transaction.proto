@@ -18,8 +18,8 @@ message Party {
 // owners of a state as well as a "kind" that implies the state contract
 // implementation and the schema of the associated state.
 message StateInfo {
-  repeated Party owners = 1;
-  string kind = 2;
+  string kind = 1;
+  repeated Party owners = 2;
 }
 
 // A State contains the information stored on the ledger. While the contents of

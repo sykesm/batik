@@ -23,7 +23,7 @@ func TestEncode(t *testing.T) {
 	encodeSvc := &EncodeService{}
 	resp, err := encodeSvc.Encode(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(fmt.Sprintf("%x", resp.Txid)).To(Equal("77dc6e1729583cf7f1db9863b34a8951a3bb9369ab4cf0a86340ea92a8514cf5"))
+	gt.Expect(fmt.Sprintf("%x", resp.Txid)).To(Equal("74ab83202b777ab9f27931fd76827cb848048e3abd70d2718cf1b60ed740bd89"))
 
 	expectedEncoded, err := protomsg.MarshalDeterministic(testTx)
 	gt.Expect(resp.EncodedTransaction).To(Equal(expectedEncoded))
