@@ -30,6 +30,26 @@ type NotFoundError struct{ Err error }
 func (n *NotFoundError) Error() string { return n.Err.Error() }
 func (n *NotFoundError) Unwrap() error { return n.Err }
 
+// IsNotFound returns a boolean indicating whether the error indicates
+// that the resource was not found in the store.
+func IsNotFound(err error) bool {
+	var nfe *NotFoundError
+	return errors.As(err, &nfe)
+}
+
+// An AlreadyExistsError indicates that a resource already exists.
+type AlreadyExistsError struct{ Err error }
+
+func (a *AlreadyExistsError) Error() string { return a.Err.Error() }
+func (a *AlreadyExistsError) Unwrap() error { return a.Err }
+
+// IsAlreadyExists returns a boolean indicating that the error indicates
+// a resource already exists in the store.
+func IsAlreadyExists(err error) bool {
+	var aee *AlreadyExistsError
+	return errors.As(err, &aee)
+}
+
 type Key []byte
 
 type KV interface {
@@ -74,11 +94,4 @@ type WriteBatch interface {
 // Also read Iterator documentation of the leveldb/iterator package.
 type Iterator interface {
 	Keys() ([]Key, error)
-}
-
-// IsNotFound returns a boolean indicating whether the error indicates
-// that the resource was not found in the store.
-func IsNotFound(err error) bool {
-	var nfe *NotFoundError
-	return errors.As(err, &nfe)
 }

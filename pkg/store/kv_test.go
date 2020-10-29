@@ -32,3 +32,23 @@ func TestIsNotFound(t *testing.T) {
 		})
 	}
 }
+
+func TestIsAlreadyExists(t *testing.T) {
+	tests := []struct {
+		err             error
+		isAlreadyExists bool
+	}{
+		{err: nil, isAlreadyExists: false},
+		{err: errors.New("an error"), isAlreadyExists: false},
+		{err: leveldb.ErrNotFound, isAlreadyExists: false},
+		{err: &AlreadyExistsError{}, isAlreadyExists: true},
+		{err: &AlreadyExistsError{Err: errors.New("an error")}, isAlreadyExists: true},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			gt.Expect(IsAlreadyExists(tt.err)).To(Equal(tt.isAlreadyExists))
+		})
+	}
+}
