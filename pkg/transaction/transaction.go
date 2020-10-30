@@ -17,9 +17,14 @@ import (
 
 // Transaction holds intermediate information for an encoded transaction.
 type Transaction struct {
-	ID      ID
-	Tx      *txv1.Transaction
-	Encoded []byte
+	ID              ID
+	Inputs          []*StateID
+	References      []*StateID
+	Outputs         []*State
+	Parameters      []*Parameter
+	RequiredSigners []*Party
+	Tx              *txv1.Transaction
+	Encoded         []byte
 }
 
 // New creates a Transaction from a protocol buffer message and also generates
@@ -62,10 +67,16 @@ func New(h merkle.Hasher, tx *txv1.Transaction) (*Transaction, error) {
 		leaves = append(leaves, merkle.Root(h, m...))
 	}
 
+	txid := merkle.Root(h, leaves...)
 	return &Transaction{
-		Tx:      tx,
-		Encoded: encoded,
-		ID:      merkle.Root(h, leaves...),
+		ID:              NewID(txid),
+		Inputs:          ToStateIDs(tx.Inputs...),
+		References:      ToStateIDs(tx.References...),
+		Outputs:         ToStates(txid, tx.Outputs...),
+		Parameters:      ToParameters(tx.Parameters...),
+		RequiredSigners: ToParties(tx.RequiredSigners...),
+		Tx:              tx,
+		Encoded:         encoded,
 	}, nil
 }
 

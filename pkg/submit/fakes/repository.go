@@ -8,15 +8,15 @@ import (
 )
 
 type Repository struct {
-	ConsumeStatesStub        func(...transaction.StateID) error
-	consumeStatesMutex       sync.RWMutex
-	consumeStatesArgsForCall []struct {
-		arg1 []transaction.StateID
+	ConsumeStateStub        func(transaction.StateID) error
+	consumeStateMutex       sync.RWMutex
+	consumeStateArgsForCall []struct {
+		arg1 transaction.StateID
 	}
-	consumeStatesReturns struct {
+	consumeStateReturns struct {
 		result1 error
 	}
-	consumeStatesReturnsOnCall map[int]struct {
+	consumeStateReturnsOnCall map[int]struct {
 		result1 error
 	}
 	GetStateStub        func(transaction.StateID) (*transaction.State, error)
@@ -71,18 +71,18 @@ type Repository struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *Repository) ConsumeStates(arg1 ...transaction.StateID) error {
-	fake.consumeStatesMutex.Lock()
-	ret, specificReturn := fake.consumeStatesReturnsOnCall[len(fake.consumeStatesArgsForCall)]
-	fake.consumeStatesArgsForCall = append(fake.consumeStatesArgsForCall, struct {
-		arg1 []transaction.StateID
+func (fake *Repository) ConsumeState(arg1 transaction.StateID) error {
+	fake.consumeStateMutex.Lock()
+	ret, specificReturn := fake.consumeStateReturnsOnCall[len(fake.consumeStateArgsForCall)]
+	fake.consumeStateArgsForCall = append(fake.consumeStateArgsForCall, struct {
+		arg1 transaction.StateID
 	}{arg1})
-	stub := fake.ConsumeStatesStub
-	fakeReturns := fake.consumeStatesReturns
-	fake.recordInvocation("ConsumeStates", []interface{}{arg1})
-	fake.consumeStatesMutex.Unlock()
+	stub := fake.ConsumeStateStub
+	fakeReturns := fake.consumeStateReturns
+	fake.recordInvocation("ConsumeState", []interface{}{arg1})
+	fake.consumeStateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1...)
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -90,44 +90,44 @@ func (fake *Repository) ConsumeStates(arg1 ...transaction.StateID) error {
 	return fakeReturns.result1
 }
 
-func (fake *Repository) ConsumeStatesCallCount() int {
-	fake.consumeStatesMutex.RLock()
-	defer fake.consumeStatesMutex.RUnlock()
-	return len(fake.consumeStatesArgsForCall)
+func (fake *Repository) ConsumeStateCallCount() int {
+	fake.consumeStateMutex.RLock()
+	defer fake.consumeStateMutex.RUnlock()
+	return len(fake.consumeStateArgsForCall)
 }
 
-func (fake *Repository) ConsumeStatesCalls(stub func(...transaction.StateID) error) {
-	fake.consumeStatesMutex.Lock()
-	defer fake.consumeStatesMutex.Unlock()
-	fake.ConsumeStatesStub = stub
+func (fake *Repository) ConsumeStateCalls(stub func(transaction.StateID) error) {
+	fake.consumeStateMutex.Lock()
+	defer fake.consumeStateMutex.Unlock()
+	fake.ConsumeStateStub = stub
 }
 
-func (fake *Repository) ConsumeStatesArgsForCall(i int) []transaction.StateID {
-	fake.consumeStatesMutex.RLock()
-	defer fake.consumeStatesMutex.RUnlock()
-	argsForCall := fake.consumeStatesArgsForCall[i]
+func (fake *Repository) ConsumeStateArgsForCall(i int) transaction.StateID {
+	fake.consumeStateMutex.RLock()
+	defer fake.consumeStateMutex.RUnlock()
+	argsForCall := fake.consumeStateArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *Repository) ConsumeStatesReturns(result1 error) {
-	fake.consumeStatesMutex.Lock()
-	defer fake.consumeStatesMutex.Unlock()
-	fake.ConsumeStatesStub = nil
-	fake.consumeStatesReturns = struct {
+func (fake *Repository) ConsumeStateReturns(result1 error) {
+	fake.consumeStateMutex.Lock()
+	defer fake.consumeStateMutex.Unlock()
+	fake.ConsumeStateStub = nil
+	fake.consumeStateReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *Repository) ConsumeStatesReturnsOnCall(i int, result1 error) {
-	fake.consumeStatesMutex.Lock()
-	defer fake.consumeStatesMutex.Unlock()
-	fake.ConsumeStatesStub = nil
-	if fake.consumeStatesReturnsOnCall == nil {
-		fake.consumeStatesReturnsOnCall = make(map[int]struct {
+func (fake *Repository) ConsumeStateReturnsOnCall(i int, result1 error) {
+	fake.consumeStateMutex.Lock()
+	defer fake.consumeStateMutex.Unlock()
+	fake.ConsumeStateStub = nil
+	if fake.consumeStateReturnsOnCall == nil {
+		fake.consumeStateReturnsOnCall = make(map[int]struct {
 			result1 error
 		})
 	}
-	fake.consumeStatesReturnsOnCall[i] = struct {
+	fake.consumeStateReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -385,8 +385,8 @@ func (fake *Repository) PutTransactionReturnsOnCall(i int, result1 error) {
 func (fake *Repository) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.consumeStatesMutex.RLock()
-	defer fake.consumeStatesMutex.RUnlock()
+	fake.consumeStateMutex.RLock()
+	defer fake.consumeStateMutex.RUnlock()
 	fake.getStateMutex.RLock()
 	defer fake.getStateMutex.RUnlock()
 	fake.getTransactionMutex.RLock()

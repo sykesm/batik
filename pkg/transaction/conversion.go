@@ -18,6 +18,14 @@ func ToState(in *txv1.State, txID ID, index uint64) *State {
 	}
 }
 
+func ToStates(txID ID, in ...*txv1.State) []*State {
+	var states []*State
+	for i := range in {
+		states = append(states, ToState(in[i], txID, uint64(i)))
+	}
+	return states
+}
+
 func FromState(in *State) *txv1.State {
 	if in == nil {
 		return nil
@@ -46,6 +54,42 @@ func FromStateInfo(in *StateInfo) *txv1.StateInfo {
 		Owners: FromParties(in.Owners...),
 		Kind:   in.Kind,
 	}
+}
+
+func ToStateID(in *txv1.StateReference) *StateID {
+	if in == nil {
+		return nil
+	}
+	return &StateID{
+		TxID:        NewID(in.Txid),
+		OutputIndex: in.OutputIndex,
+	}
+}
+
+func FromStateID(in *StateID) *txv1.StateReference {
+	if in == nil {
+		return nil
+	}
+	return &txv1.StateReference{
+		Txid:        in.TxID.Bytes(),
+		OutputIndex: in.OutputIndex,
+	}
+}
+
+func ToStateIDs(in ...*txv1.StateReference) []*StateID {
+	var ids []*StateID
+	for _, s := range in {
+		ids = append(ids, ToStateID(s))
+	}
+	return ids
+}
+
+func FromStateIDs(in ...*StateID) []*txv1.StateReference {
+	var ids []*txv1.StateReference
+	for _, s := range in {
+		ids = append(ids, FromStateID(s))
+	}
+	return ids
 }
 
 func ToParty(in *txv1.Party) *Party {

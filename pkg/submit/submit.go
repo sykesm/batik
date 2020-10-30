@@ -20,7 +20,7 @@ type Repository interface {
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
 	PutState(*transaction.State) error
 	GetState(transaction.StateID) (*transaction.State, error)
-	ConsumeStates(...transaction.StateID) error
+	ConsumeState(transaction.StateID) error
 }
 
 type Service struct {
@@ -35,10 +35,14 @@ func NewService(repo Repository) *Service {
 
 func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error {
 	tx := signed.Transaction
-	// Check if the transaction already exists
+
+	// Transaction must have been processed before
 	_, err := s.repo.GetTransaction(tx.ID)
-	if err == nil || !store.IsNotFound(err) {
+	if err == nil {
 		return &store.AlreadyExistsError{Err: errors.Errorf("transaction %s already exists", tx.ID)}
+	}
+	if !store.IsNotFound(err) {
+		return err
 	}
 
 	// resolve all inputs and references
@@ -52,21 +56,18 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 		return errors.WithMessagef(err, "storing transaction %s failed", tx.ID)
 	}
 
-	for i := range tx.Tx.Outputs {
-		state := transaction.ToState(tx.Tx.Outputs[i], tx.ID, uint64(i))
-		err = s.repo.PutState(state)
+	for _, output := range tx.Outputs {
+		err = s.repo.PutState(output)
 		if err != nil {
 			return errors.WithMessagef(err, "storing transaction %s failed", tx.ID)
 		}
 	}
 
-	var inputs []transaction.StateID
-	for _, input := range tx.Tx.Inputs {
-		inputs = append(inputs, transaction.StateID{TxID: input.Txid, OutputIndex: input.OutputIndex})
-	}
-	err = s.repo.ConsumeStates(inputs...)
-	if err != nil {
-		return err
+	for _, input := range tx.Inputs {
+		err = s.repo.ConsumeState(*input)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -74,35 +75,29 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 
 func resolve(repo Repository, tx *transaction.Transaction) (*transaction.Resolved, error) {
 	var inputs []*transaction.State
-	for _, input := range tx.Tx.Inputs {
-		stateID := transaction.StateID{TxID: input.Txid, OutputIndex: input.OutputIndex}
-		state, err := repo.GetState(stateID)
+	for _, input := range tx.Inputs {
+		state, err := repo.GetState(*input)
 		if err != nil {
 			return nil, err
 		}
 		inputs = append(inputs, state)
 	}
 	var refs []*transaction.State
-	for _, ref := range tx.Tx.References {
-		stateID := transaction.StateID{TxID: ref.Txid, OutputIndex: ref.OutputIndex}
-		state, err := repo.GetState(stateID)
+	for _, ref := range tx.References {
+		state, err := repo.GetState(*ref)
 		if err != nil {
 			return nil, err
 		}
 		refs = append(refs, state)
-	}
-	var outputs []*transaction.State
-	for i, out := range tx.Tx.Outputs {
-		outputs = append(outputs, transaction.ToState(out, tx.ID, uint64(i)))
 	}
 
 	resolved := &transaction.Resolved{
 		Tx:              tx,
 		Inputs:          inputs,
 		References:      refs,
-		Outputs:         outputs,
-		Parameters:      transaction.ToParameters(tx.Tx.Parameters...),
-		RequiredSigners: transaction.ToParties(tx.Tx.RequiredSigners...),
+		Outputs:         tx.Outputs,
+		Parameters:      tx.Parameters,
+		RequiredSigners: tx.RequiredSigners,
 	}
 
 	return resolved, nil

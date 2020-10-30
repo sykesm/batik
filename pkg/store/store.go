@@ -111,7 +111,11 @@ func (t *TransactionRepository) GetState(stateID transaction.StateID) (*transact
 	return state, nil
 }
 
-func (t *TransactionRepository) ConsumeStates(stateIDs ...transaction.StateID) error {
+func (t *TransactionRepository) ConsumeState(stateID transaction.StateID) error {
+	return t.consumeStates(stateID)
+}
+
+func (t *TransactionRepository) consumeStates(stateIDs ...transaction.StateID) error {
 	batch := t.kv.NewWriteBatch()
 	for _, id := range stateIDs {
 		state, err := t.kv.Get(stateKey(id))
