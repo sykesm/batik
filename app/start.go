@@ -18,9 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/sykesm/batik/pkg/grpc/encodeservice"
-	"github.com/sykesm/batik/pkg/grpc/storeservice"
-	"github.com/sykesm/batik/pkg/grpc/submitservice"
+	"github.com/sykesm/batik/pkg/grpcapi"
 	"github.com/sykesm/batik/pkg/grpccomm"
 	"github.com/sykesm/batik/pkg/grpclogging"
 	"github.com/sykesm/batik/pkg/options"
@@ -84,13 +82,13 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 
 	transactionRepo := store.NewRepository(db)
 
-	encodeService := &encodeservice.EncodeService{}
+	encodeService := &grpcapi.EncodeService{}
 	txv1.RegisterEncodeAPIServer(grpcServer.Server, encodeService)
 
-	submitService := submitservice.NewSubmitService(submit.NewService(transactionRepo))
+	submitService := grpcapi.NewSubmitService(submit.NewService(transactionRepo))
 	txv1.RegisterSubmitAPIServer(grpcServer.Server, submitService)
 
-	storeService := storeservice.NewStoreService(transactionRepo)
+	storeService := grpcapi.NewStoreService(transactionRepo)
 	storev1.RegisterStoreAPIServer(grpcServer.Server, storeService)
 
 	mux := gwruntime.NewServeMux()
