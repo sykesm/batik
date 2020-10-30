@@ -17,7 +17,7 @@ import (
 )
 
 type Submitter interface {
-	Submit(context.Context, *transaction.Transaction) error
+	Submit(context.Context, *transaction.Signed) error
 }
 
 // SubmitService implements the EncodeAPIServer gRPC interface.
@@ -59,7 +59,11 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.submitter.Submit(ctx, itx)
+	signed := &transaction.Signed{
+		Transaction: itx,
+		Signatures:  transaction.ToSignatures(signedTx.Signatures...),
+	}
+	err = s.submitter.Submit(ctx, signed)
 	if err != nil {
 		code := codes.Unknown
 		switch {

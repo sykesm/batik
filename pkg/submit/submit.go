@@ -33,7 +33,8 @@ func NewService(repo Repository) *Service {
 
 // TODO: build submitter instance
 
-func (s *Service) Submit(ctx context.Context, tx *transaction.Transaction) error {
+func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error {
+	tx := signed.Transaction
 	// Check if the transaction already exists
 	_, err := s.repo.GetTransaction(tx.ID)
 	if err == nil || !store.IsNotFound(err) {
