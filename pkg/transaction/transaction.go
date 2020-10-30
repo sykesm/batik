@@ -80,6 +80,12 @@ func NewFromBytes(h merkle.Hasher, b []byte) (*Transaction, error) {
 	return New(h, &tx)
 }
 
+// Signed holds a transaction and (possibly unverified) signatures.
+type Signed struct {
+	*Transaction
+	Signatures []*Signature
+}
+
 // encodedElement returns the encoded pieces of each message in a transaction.
 // The element is prepended with the protowire encoded tag of the field number
 // followed by the length of the encoded message.

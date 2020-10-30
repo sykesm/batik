@@ -117,3 +117,39 @@ func FromParameters(in ...*Parameter) []*txv1.Parameter {
 	}
 	return parameters
 }
+
+func ToSignature(in *txv1.Signature) *Signature {
+	if in == nil {
+		return nil
+	}
+	return &Signature{
+		PublicKey: in.PublicKey,
+		Signature: in.Signature,
+	}
+}
+
+func FromSignature(in *Signature) *txv1.Signature {
+	if in == nil {
+		return nil
+	}
+	return &txv1.Signature{
+		PublicKey: in.PublicKey,
+		Signature: in.Signature,
+	}
+}
+
+func ToSignatures(in ...*txv1.Signature) []*Signature {
+	var sigs []*Signature
+	for _, s := range in {
+		sigs = append(sigs, ToSignature(s))
+	}
+	return sigs
+}
+
+func FromSignatures(in ...*Signature) []*txv1.Signature {
+	var sigs []*txv1.Signature
+	for _, s := range in {
+		sigs = append(sigs, FromSignature(s))
+	}
+	return sigs
+}
