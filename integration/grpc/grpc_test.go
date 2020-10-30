@@ -81,13 +81,15 @@ var _ = Describe("gRPC", func() {
 	Describe("Encode transaction api", func() {
 		It("encodes a transaction", func() {
 			testTx := newTestTransaction()
+			itx, err := transaction.New(crypto.SHA256, testTx)
+			Expect(err).NotTo(HaveOccurred())
 
 			encodeTransactionClient := txv1.NewEncodeAPIClient(clientConn)
 			resp, err := encodeTransactionClient.Encode(context.Background(), &txv1.EncodeRequest{
 				Transaction: testTx,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(hex.EncodeToString(resp.Txid)).To(Equal("cec07e827e904b7e0cb43b95f5cd44f097f8be39e006684da834008461b40e2c"))
+			Expect(resp.Txid).To(Equal(itx.ID.Bytes()))
 
 			expectedEncoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(testTx)
 			Expect(resp.EncodedTransaction).To(Equal(expectedEncoded))

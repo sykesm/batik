@@ -5,25 +5,28 @@ package encodeservice
 
 import (
 	"context"
-	"fmt"
+	"crypto"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/protomsg"
+	"github.com/sykesm/batik/pkg/transaction"
 )
 
 func TestEncode(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	testTx := newTestTransaction()
+	itx, err := transaction.New(crypto.SHA256, testTx)
+	gt.Expect(err).NotTo(HaveOccurred())
 	req := &txv1.EncodeRequest{Transaction: testTx}
 
 	encodeSvc := &EncodeService{}
 	resp, err := encodeSvc.Encode(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
-	gt.Expect(fmt.Sprintf("%x", resp.Txid)).To(Equal("74ab83202b777ab9f27931fd76827cb848048e3abd70d2718cf1b60ed740bd89"))
+	gt.Expect(resp.Txid).To(Equal(itx.ID.Bytes()))
 
 	expectedEncoded, err := protomsg.MarshalDeterministic(testTx)
 	gt.Expect(resp.EncodedTransaction).To(Equal(expectedEncoded))
