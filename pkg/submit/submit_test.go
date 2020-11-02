@@ -17,7 +17,7 @@ import (
 )
 
 //go:generate counterfeiter -o fakes/repository.go --fake-name Repository . fakeRepository
-type fakeRepository Repository // private import to prevent import cycle in generated fake
+type fakeRepository Repository // private to prevent an import cycle in generated fake
 
 func TestSubmit(t *testing.T) {
 	var (
