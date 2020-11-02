@@ -5,7 +5,6 @@ package submit
 
 import (
 	"context"
-	"crypto"
 
 	"github.com/pkg/errors"
 
@@ -31,7 +30,7 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-// TODO: build submitter instance
+// TODO: build submitter instance as a unit of work
 
 func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error {
 	tx := signed.Transaction
@@ -59,14 +58,14 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 	for _, output := range tx.Outputs {
 		err = s.repo.PutState(output)
 		if err != nil {
-			return errors.WithMessagef(err, "storing transaction %s failed", tx.ID)
+			return errors.WithMessagef(err, "storing transaction output %s failed", output.ID)
 		}
 	}
 
 	for _, input := range tx.Inputs {
 		err = s.repo.ConsumeState(*input)
 		if err != nil {
-			return err
+			return errors.WithMessagef(err, "consuming transaction state %s failed", input)
 		}
 	}
 
@@ -101,8 +100,4 @@ func resolve(repo Repository, tx *transaction.Transaction) (*transaction.Resolve
 	}
 
 	return resolved, nil
-}
-
-func verifySignature(pk crypto.PublicKey, signature, hash []byte) bool {
-	return false
 }

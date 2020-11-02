@@ -5,11 +5,12 @@ package submit
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/submit/fakes"
 	"github.com/sykesm/batik/pkg/transaction"
@@ -19,32 +20,143 @@ import (
 type fakeRepository Repository // private import to prevent import cycle in generated fake
 
 func TestSubmit(t *testing.T) {
-	gt := NewGomegaWithT(t)
-	fakeRepo := &fakes.Repository{}
-	submitService := NewService(fakeRepo)
+	var (
+		fakeRepo      *fakes.Repository
+		submitService *Service
+		signed        *transaction.Signed
+		activeStates  []*transaction.State
+	)
 
-	fakeRepo.GetTransactionReturns(nil, &store.NotFoundError{Err: errors.New("not-found-error")})
-	signed := &transaction.Signed{
-		Transaction: &transaction.Transaction{
-			ID: transaction.NewID([]byte("transaction-id")),
-		},
+	setup := func(t *testing.T) {
+		fakeRepo = &fakes.Repository{}
+		submitService = NewService(fakeRepo)
+		activeStates = []*transaction.State{
+			{
+				ID:   transaction.StateID{TxID: transaction.ID("transaction-id-1"), OutputIndex: 1},
+				Data: []byte("state-data-1"),
+			},
+			{
+				ID:   transaction.StateID{TxID: transaction.ID("transaction-id-2"), OutputIndex: 0},
+				Data: []byte("state-data-2"),
+			},
+		}
+
+		signed = &transaction.Signed{
+			Transaction: &transaction.Transaction{
+				ID: transaction.NewID([]byte("transaction-id")),
+				Inputs: []*transaction.StateID{
+					{TxID: transaction.NewID([]byte("transaction-id-1")), OutputIndex: 1},
+				},
+				References: []*transaction.StateID{
+					{TxID: transaction.NewID([]byte("transaction-id-2")), OutputIndex: 0},
+				},
+				Outputs: []*transaction.State{
+					{
+						ID: transaction.StateID{
+							TxID: transaction.NewID([]byte("transaction-id")), OutputIndex: 0,
+						},
+						StateInfo: &transaction.StateInfo{},
+						Data:      []byte("output-0-data"),
+					},
+				},
+				Tx:      &txv1.Transaction{},
+				Encoded: []byte("encoded-transaction"),
+			},
+		}
+		fakeRepo.GetTransactionReturns(nil, &store.NotFoundError{Err: errors.New("not-found-error")})
+		fakeRepo.GetStateStub = func(sid transaction.StateID) (*transaction.State, error) {
+			for _, s := range activeStates {
+				if s.ID.Equals(sid) {
+					return s, nil
+				}
+			}
+			return nil, &store.NotFoundError{Err: errors.Errorf("missing-state %s", sid)}
+		}
 	}
 
-	err := submitService.Submit(context.Background(), signed)
-	gt.Expect(err).NotTo(HaveOccurred())
+	t.Run("BasicTransaction", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
 
-	gt.Expect(fakeRepo.GetTransactionCallCount()).To(Equal(1))
-	getID := fakeRepo.GetTransactionArgsForCall(0)
-	gt.Expect(getID).To(Equal(transaction.ID([]byte("transaction-id"))))
+		setup(t)
 
-	gt.Expect(fakeRepo.GetStateCallCount()).To(Equal(0))
+		err := submitService.Submit(context.Background(), signed)
+		gt.Expect(err).NotTo(HaveOccurred())
 
-	gt.Expect(fakeRepo.PutTransactionCallCount()).To(Equal(1))
-	putTx := fakeRepo.PutTransactionArgsForCall(0)
-	gt.Expect(putTx).To(Equal(signed.Transaction)) // TODO: This should be a signed transaction
+		gt.Expect(fakeRepo.GetTransactionCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.GetTransactionArgsForCall(0)).To(Equal(transaction.ID([]byte("transaction-id"))))
 
-	gt.Expect(fakeRepo.PutStateCallCount()).To(Equal(0))
-	gt.Expect(fakeRepo.ConsumeStateCallCount()).To(Equal(0))
+		gt.Expect(fakeRepo.GetStateCallCount()).To(Equal(2))
+		gt.Expect(fakeRepo.GetStateArgsForCall(0)).To(Equal(*signed.Transaction.Inputs[0]))
+		gt.Expect(fakeRepo.GetStateArgsForCall(1)).To(Equal(*signed.Transaction.References[0]))
+
+		gt.Expect(fakeRepo.PutTransactionCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.PutTransactionArgsForCall(0)).To(Equal(signed.Transaction)) // TODO: This should be a signed transaction
+
+		gt.Expect(fakeRepo.PutStateCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.PutStateArgsForCall(0)).To(Equal(signed.Transaction.Outputs[0]))
+
+		gt.Expect(fakeRepo.ConsumeStateCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.ConsumeStateArgsForCall(0)).To(Equal(*signed.Transaction.Inputs[0]))
+	})
+
+	t.Run("MissingInput", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		signed.Inputs = append(signed.Inputs, &transaction.StateID{
+			TxID: transaction.NewID([]byte("missing-input-txid")),
+		})
+
+		err := submitService.Submit(context.Background(), signed)
+		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(store.IsNotFound(err)).To(BeTrue())
+	})
+
+	t.Run("MissingReference", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		signed.References = append(signed.References, &transaction.StateID{
+			TxID: transaction.NewID([]byte("missing-ref-txid")),
+		})
+
+		err := submitService.Submit(context.Background(), signed)
+		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(store.IsNotFound(err)).To(BeTrue())
+	})
+
+	t.Run("PutTransactionFailure", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		fakeRepo.PutTransactionReturns(errors.New("put-transaction-store-failure"))
+
+		err := submitService.Submit(context.Background(), signed)
+		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(err).To(MatchError("storing transaction " + signed.Transaction.ID.String() + " failed: put-transaction-store-failure"))
+	})
+
+	t.Run("PutStateFailure", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		fakeRepo.PutStateReturns(errors.New("put-state-store-failure"))
+
+		err := submitService.Submit(context.Background(), signed)
+		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(err).To(MatchError("storing transaction output " + signed.Transaction.Outputs[0].ID.String() + " failed: put-state-store-failure"))
+	})
+
+	t.Run("ConsumeStateFailure", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		fakeRepo.ConsumeStateReturns(errors.New("consume-state-store-failure"))
+
+		err := submitService.Submit(context.Background(), signed)
+		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(err).To(MatchError("consuming transaction state " + signed.Inputs[0].String() + " failed: consume-state-store-failure"))
+	})
 }
 
 func TestSubmitGetTransaction(t *testing.T) {
@@ -73,6 +185,6 @@ func TestSubmitGetTransaction(t *testing.T) {
 		submitService := NewService(fakeRepo)
 
 		err := submitService.Submit(context.Background(), signed)
-		gt.Expect(err).To(Equal(errors.New("unexpected-error")))
+		gt.Expect(err).To(MatchError("unexpected-error"))
 	})
 }
