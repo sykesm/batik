@@ -106,7 +106,8 @@ type Signed struct {
 func encodedElement(fn uint32, m []byte) []byte {
 	var encodedElement []byte
 	encodedElement = append(encodedElement, byte(protowire.EncodeTag(protowire.Number(fn), protowire.BytesType)))
-	encodedElement = append(encodedElement, byte(len(m)))
+	// proto.Marshal normally appends the length of a byte slice as a Varint encoded uint64
+	encodedElement = protowire.AppendVarint(encodedElement, uint64(len(m)))
 	encodedElement = append(encodedElement, m...)
 	return encodedElement
 }

@@ -57,6 +57,7 @@ func TestSalt(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	salt := fromHex(t, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+	long := fromHex(t, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
 	noop := func(tx *txv1.Transaction) {}
 	salted := func(tx *txv1.Transaction) { tx.Salt = salt }
 	emptySalted := func(tx *txv1.Transaction) { tx.Reset(); tx.Salt = salt }
@@ -65,6 +66,7 @@ func TestNew(t *testing.T) {
 	nilElement := func(tx *txv1.Transaction) { tx.Inputs[0] = nil }
 	reset := func(tx *txv1.Transaction) { tx.Reset() }
 	unknownFields := func(tx *txv1.Transaction) { tx.Inputs[0].ProtoReflect().SetUnknown([]byte("garbage")) }
+	longKey := func(tx *txv1.Transaction) { tx.Outputs[0].Info.Owners[0].PublicKey = long }
 
 	var tests = map[string]struct {
 		expected   ID
@@ -76,6 +78,7 @@ func TestNew(t *testing.T) {
 		"salted empty":  {fromHex(t, "38955e69c8db8963b3513c17631aebcf224c9c77017992dfe35a6dbba54b60a8"), nil, emptySalted},
 		"empty vector":  {fromHex(t, "6c8847e9e9cd65a88e17116599d47ed0c521f4cc3fd8696bda2e41b1bb10733a"), nil, noSigners},
 		"nil element":   {fromHex(t, "c85b907ec17ab566b36147964b65122e8468ea7944a0c40015552f17bb21a1f5"), nil, nilElement},
+		"long key":      {fromHex(t, "bbecd8c2a804b25788f70cbe13aaca8c5d63b777a947d81cce15e853304e2ee0"), nil, longKey},
 		"empty":         {nil, MatchError("transaction salt is missing or less than 32 bytes in length"), reset},
 		"short salt":    {nil, MatchError("transaction salt is missing or less than 32 bytes in length"), shortSalt},
 		"unknown field": {nil, MatchError("protomsg: refusing to marshal unknown fields with length 7"), unknownFields},
@@ -102,6 +105,12 @@ func TestNew(t *testing.T) {
 			expectedEncoded, err := protomsg.MarshalDeterministic(tx)
 			gt.Expect(err).NotTo(HaveOccurred())
 			gt.Expect(intTx.Encoded).To(Equal(expectedEncoded))
+
+			// Ensure encoded transaction can be unmarshalled back to a Transaction
+			unmarshalled := &txv1.Transaction{}
+			err = proto.Unmarshal(intTx.Encoded, unmarshalled)
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(unmarshalled).To(ProtoEqual(tx))
 		})
 	}
 }
