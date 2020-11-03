@@ -4,10 +4,13 @@
 package submit
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 
+	"github.com/sykesm/batik/pkg/ecdsautil"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
@@ -22,6 +25,9 @@ type Repository interface {
 	ConsumeState(transaction.StateID) error
 }
 
+// TODO: build submitter instance as a unit of work
+// TODO: proper error values with semantics
+
 type Service struct {
 	repo Repository // repo is a reference to the transaction state repository.
 }
@@ -29,8 +35,6 @@ type Service struct {
 func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
-
-// TODO: build submitter instance as a unit of work
 
 func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error {
 	txid := signed.Transaction.ID
@@ -50,12 +54,12 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 		return errors.WithMessagef(err, "state resolution for transaction %s failed", txid)
 	}
 
-	err = verify(resolved)
+	err = validate(resolved)
 	if err != nil {
 		panic(err)
 	}
 
-	err = s.repo.PutTransaction(resolved.Tx)
+	err = s.repo.PutTransaction(signed.Transaction)
 	if err != nil {
 		return errors.WithMessagef(err, "storing transaction %s failed", txid)
 	}
@@ -96,7 +100,7 @@ func resolve(repo Repository, tx *transaction.Transaction, sigs []*transaction.S
 	}
 
 	resolved := &transaction.Resolved{
-		Tx:              tx,
+		ID:              tx.ID,
 		Inputs:          inputs,
 		References:      refs,
 		Outputs:         tx.Outputs,
@@ -108,6 +112,48 @@ func resolve(repo Repository, tx *transaction.Transaction, sigs []*transaction.S
 	return resolved, nil
 }
 
-func verify(resolved *transaction.Resolved) error {
+func validate(resolved *transaction.Resolved) error {
+	requiredSigners := requiredSigners(resolved)
+	for _, signer := range requiredSigners {
+		sig := signature(signer.PublicKey, resolved.Signatures)
+		if sig == nil {
+			return fmt.Errorf("missing signature from %x", signer.PublicKey)
+		}
+		pk, err := ecdsautil.UnmarshalPublicKey(signer.PublicKey)
+		if err != nil {
+			return err
+		}
+		ok, err := ecdsautil.Verify(pk, sig.Signature, resolved.ID.Bytes())
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.Wrap(err, "signature verification failed")
+		}
+	}
 	return nil
+}
+
+func signature(publicKey []byte, signatures []*transaction.Signature) *transaction.Signature {
+	if publicKey == nil {
+		return nil
+	}
+	for _, sig := range signatures {
+		if bytes.Equal(sig.PublicKey, publicKey) {
+			return sig
+		}
+	}
+	return nil
+}
+
+// TODO(mjs): Consider duplicate removal
+func requiredSigners(resolved *transaction.Resolved) []*transaction.Party {
+	var required []*transaction.Party
+	for _, input := range resolved.Inputs {
+		if input.StateInfo != nil {
+			required = append(required, input.StateInfo.Owners...)
+		}
+	}
+	required = append(required, resolved.RequiredSigners...)
+	return required
 }

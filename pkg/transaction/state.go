@@ -28,8 +28,8 @@ type Party struct {
 }
 
 type StateInfo struct {
-	Owners []*Party
 	Kind   string
+	Owners []*Party
 }
 
 type State struct {
@@ -49,7 +49,7 @@ type Signature struct {
 }
 
 type Resolved struct {
-	Tx              *Transaction
+	ID              ID
 	Inputs          []*State
 	References      []*State
 	Outputs         []*State

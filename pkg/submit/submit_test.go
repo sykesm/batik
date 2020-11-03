@@ -5,11 +5,15 @@ package submit
 
 import (
 	"context"
+	"crypto"
+	"crypto/elliptic"
+	"crypto/rand"
 	"testing"
 
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	"github.com/sykesm/batik/pkg/ecdsautil"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/submit/fakes"
@@ -28,11 +32,25 @@ func TestSubmit(t *testing.T) {
 	)
 
 	setup := func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+		sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)
+		gt.Expect(err).NotTo(HaveOccurred())
+		pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
+		gt.Expect(err).NotTo(HaveOccurred())
+		sig, err := ecdsautil.NewSigner(sk).Sign(rand.Reader, []byte("transaction-id"), crypto.SHA256)
+		gt.Expect(err).NotTo(HaveOccurred())
+
 		fakeRepo = &fakes.Repository{}
 		submitService = NewService(fakeRepo)
 		activeStates = []*transaction.State{
 			{
-				ID:   transaction.StateID{TxID: transaction.ID("transaction-id-1"), OutputIndex: 1},
+				ID: transaction.StateID{TxID: transaction.ID("transaction-id-1"), OutputIndex: 1},
+				StateInfo: &transaction.StateInfo{
+					Kind: "dummy-state",
+					Owners: []*transaction.Party{
+						{PublicKey: pk},
+					},
+				},
 				Data: []byte("state-data-1"),
 			},
 			{
@@ -61,6 +79,9 @@ func TestSubmit(t *testing.T) {
 				},
 				Tx:      &txv1.Transaction{},
 				Encoded: []byte("encoded-transaction"),
+			},
+			Signatures: []*transaction.Signature{
+				{PublicKey: pk, Signature: sig},
 			},
 		}
 		fakeRepo.GetTransactionReturns(nil, &store.NotFoundError{Err: errors.New("not-found-error")})
@@ -157,6 +178,10 @@ func TestSubmit(t *testing.T) {
 		gt.Expect(err).To(HaveOccurred())
 		gt.Expect(err).To(MatchError("consuming transaction state " + signed.Inputs[0].String() + " failed: consume-state-store-failure"))
 	})
+
+	t.Run("ValidateFailure", func(t *testing.T) {
+		t.Skip("Implement after validate")
+	})
 }
 
 func TestSubmitGetTransaction(t *testing.T) {
@@ -187,4 +212,7 @@ func TestSubmitGetTransaction(t *testing.T) {
 		err := submitService.Submit(context.Background(), signed)
 		gt.Expect(err).To(MatchError("unexpected-error"))
 	})
+}
+
+func TestValidate(t *testing.T) {
 }
