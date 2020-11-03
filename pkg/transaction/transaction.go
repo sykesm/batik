@@ -104,12 +104,10 @@ type Signed struct {
 // This logic loosely follows how protomsg.MarshalDeterministic encodes a
 // proto.Message.
 func encodedElement(fn uint32, m []byte) []byte {
-	var encodedElement []byte
-	encodedElement = append(encodedElement, byte(protowire.EncodeTag(protowire.Number(fn), protowire.BytesType)))
-	// proto.Marshal normally appends the length of a byte slice as a Varint encoded uint64
-	encodedElement = protowire.AppendVarint(encodedElement, uint64(len(m)))
-	encodedElement = append(encodedElement, m...)
-	return encodedElement
+	var encoded []byte
+	encoded = protowire.AppendTag(encoded, protowire.Number(fn), protowire.BytesType)
+	encoded = protowire.AppendBytes(encoded, m)
+	return encoded
 }
 
 // A salt is generated for each leaf by caculating an HMAC over the protobuf
