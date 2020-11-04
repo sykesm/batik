@@ -17,14 +17,14 @@ import (
 
 // Transaction holds intermediate information for an encoded transaction.
 type Transaction struct {
-	ID              ID
-	Inputs          []*StateID
-	References      []*StateID
-	Outputs         []*State
-	Parameters      []*Parameter
-	RequiredSigners []*Party
-	Tx              *txv1.Transaction
-	Encoded         []byte
+	ID              ID                `json:"id"`
+	Inputs          []*StateID        `json:"inputs"`
+	References      []*StateID        `json:"references"`
+	Outputs         []*State          `json:"outputs"`
+	Parameters      []*Parameter      `json:"parameters"`
+	RequiredSigners []*Party          `json:"required_signers"`
+	Tx              *txv1.Transaction `json:"-"`
+	Encoded         []byte            `json:"-"`
 }
 
 // New creates a Transaction from a protocol buffer message and also generates
