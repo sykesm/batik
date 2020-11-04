@@ -56,7 +56,7 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 
 	err = validate(resolved)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = s.repo.PutTransaction(signed.Transaction)
