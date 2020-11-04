@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -39,8 +40,9 @@ func TestSalt(t *testing.T) {
 		{nil, 1, 2},
 		{[]byte("NaCl"), 0xffffffff, 2},
 	}
-	for _, tt := range tests {
-		t.Run("", func(t *testing.T) {
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
 			hash := hmac.New(sha256.New, tt.salt)
@@ -83,6 +85,7 @@ func TestNew(t *testing.T) {
 		"short salt":    {nil, MatchError("transaction salt is missing or less than 32 bytes in length"), shortSalt},
 		"unknown field": {nil, MatchError("protomsg: refusing to marshal unknown fields with length 7"), unknownFields},
 	}
+
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
@@ -161,6 +164,7 @@ func TestReflectDetectsChanges(t *testing.T) {
 		"removed field": {&mutated.RemovedFieldTransaction{}, nil},
 		"extra field":   {&mutated.ExtraFieldTransaction{}, nil},
 	}
+
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)

@@ -4,10 +4,13 @@
 package transaction
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 )
 
 func TestNewID(t *testing.T) {
@@ -74,6 +77,53 @@ func TestIDBytes(t *testing.T) {
 	}
 }
 
+func TestIDMarshalingJSON(t *testing.T) {
+	tests := []struct {
+		id ID
+	}{
+		{id: NewID([]byte{})},
+		{id: NewID([]byte{1})},
+		{id: NewID([]byte{255})},
+		{id: NewID([]byte{1, 2, 3, 4, 5})},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			out, err := json.Marshal(tt.id)
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(out).To(Equal([]byte(fmt.Sprintf(`"%s"`, tt.id))))
+
+			var unmarshaled ID
+			err = json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, tt.id)), &unmarshaled)
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(unmarshaled).To(Equal(tt.id))
+		})
+	}
+}
+
+func TestIDUnmarshalErrors(t *testing.T) {
+	tests := []struct {
+		in         string
+		errMatcher types.GomegaMatcher
+	}{
+		{in: `""`, errMatcher: BeNil()},
+		{in: `"0"`, errMatcher: MatchError(ContainSubstring("odd length hex string"))},
+		{in: `"00`, errMatcher: MatchError(ContainSubstring("unexpected end of JSON input"))},
+		{in: `00"`, errMatcher: HaveOccurred()},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+
+			var id ID
+			err := json.Unmarshal([]byte(tt.in), &id)
+			gt.Expect(err).To(tt.errMatcher)
+		})
+	}
+}
+
 func TestIDEquals(t *testing.T) {
 	tests := []struct {
 		a, b  ID
@@ -91,6 +141,69 @@ func TestIDEquals(t *testing.T) {
 		{a: NewID([]byte{1}), b: ID([]byte{1}), equal: true},
 		{a: NewID([]byte{1}), b: NewID([]byte{1}), equal: true},
 		{a: NewID([]byte{1}), b: NewID([]byte{2}), equal: false},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			gt.Expect(tt.a.Equals(tt.b)).To(Equal(tt.equal))
+		})
+	}
+}
+
+func TestStateIDString(t *testing.T) {
+	tests := []struct {
+		sid      StateID
+		expected string
+	}{
+		{sid: StateID{}, expected: ":0000000000000000"},
+		{sid: StateID{TxID: ID([]byte{1})}, expected: "01:0000000000000000"},
+		{sid: StateID{TxID: ID([]byte{255}), OutputIndex: 255}, expected: "ff:00000000000000ff"},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			gt.Expect(tt.sid.String()).To(Equal(tt.expected))
+		})
+	}
+}
+
+func TestStateIDMarshalingJSON(t *testing.T) {
+	tests := []struct {
+		id       StateID
+		expected string
+	}{
+		{id: StateID{}, expected: `{"txid":"", "output_index": 0}`},
+		{id: StateID{OutputIndex: 33}, expected: `{"txid":"", "output_index": 33}`},
+		{id: StateID{TxID: ID([]byte{1, 2, 3, 4})}, expected: `{"txid":"01020304", "output_index": 0}`},
+	}
+
+	for i, tt := range tests {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+			enc, err := json.Marshal(tt.id)
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(enc).To(MatchJSON(tt.expected))
+		})
+	}
+}
+
+func TestStateIDEquals(t *testing.T) {
+	tests := []struct {
+		a, b  StateID
+		equal bool
+	}{
+		{a: StateID{}, b: StateID{}, equal: true},
+		{a: StateID{OutputIndex: 1}, b: StateID{}, equal: false},
+		{a: StateID{}, b: StateID{OutputIndex: 1}, equal: false},
+		{a: StateID{OutputIndex: 1}, b: StateID{OutputIndex: 1}, equal: true},
+		{a: StateID{TxID: ID([]byte{}), OutputIndex: 1}, b: StateID{OutputIndex: 1}, equal: true},
+		{a: StateID{OutputIndex: 1}, b: StateID{TxID: ID([]byte{}), OutputIndex: 1}, equal: true},
+		{a: StateID{TxID: ID([]byte{1}), OutputIndex: 1}, b: StateID{TxID: ID([]byte{1}), OutputIndex: 1}, equal: true},
+		{a: StateID{TxID: ID([]byte{0}), OutputIndex: 1}, b: StateID{TxID: ID([]byte{1}), OutputIndex: 1}, equal: false},
+		{a: StateID{TxID: ID([]byte{1}), OutputIndex: 2}, b: StateID{TxID: ID([]byte{0}), OutputIndex: 1}, equal: false},
+		{a: StateID{TxID: ID([]byte{1}), OutputIndex: 0}, b: StateID{TxID: ID([]byte{1}), OutputIndex: 1}, equal: false},
 	}
 
 	for i, tt := range tests {

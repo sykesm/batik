@@ -3,57 +3,39 @@
 
 package transaction
 
-import (
-	"fmt"
-)
-
-type StateID struct {
-	TxID        ID
-	OutputIndex uint64
-}
-
-func (sid StateID) String() string {
-	return fmt.Sprintf("%s:%016x", sid.TxID, sid.OutputIndex)
-}
-
-func (sid StateID) Equals(that StateID) bool {
-	if sid.OutputIndex == that.OutputIndex && sid.TxID.Equals(that.TxID) {
-		return true
-	}
-	return false
-}
-
-type Party struct {
-	PublicKey []byte
-}
-
-type StateInfo struct {
-	Kind   string
-	Owners []*Party
-}
-
+// A State represents the output of a transaction.
 type State struct {
-	ID        StateID
-	StateInfo *StateInfo
-	Data      []byte
+	ID        StateID    `json:"id"`
+	StateInfo *StateInfo `json:"info"`
+	Data      []byte     `json:"data"`
 }
 
+// A StateInfo holds metadata about a State.
+type StateInfo struct {
+	Kind   string   `json:"kind"`
+	Owners []*Party `json:"owners"`
+}
+
+// A Party represents a state owner or transaction signatory.
+type Party struct {
+	PublicKey []byte `json:"public_key,omitempty"`
+}
+
+// String satisfies the fmt.Stringer interface.
+func (p Party) String() string {
+	return toHexString(p.PublicKey)
+}
+
+// A Parameter holds information intended to parameterize the execution of a
+// transaction.
 type Parameter struct {
-	Name  string
-	Value []byte
+	Name  string `json:"name"`
+	Value []byte `json:"value"`
 }
 
+// A Signature is used to hold a transaction endorsement by the party
+// represented by the public key.
 type Signature struct {
-	PublicKey []byte
-	Signature []byte
-}
-
-type Resolved struct {
-	ID              ID
-	Inputs          []*State
-	References      []*State
-	Outputs         []*State
-	Parameters      []*Parameter
-	RequiredSigners []*Party
-	Signatures      []*Signature
+	PublicKey []byte `json:"public_key"`
+	Signature []byte `json:"signature"`
 }
