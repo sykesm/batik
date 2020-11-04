@@ -42,6 +42,9 @@ func TestBatikWiring(t *testing.T) {
 	// Subcommand implementations
 	gt.Expect(app.Commands[0].Subcommands).To(HaveLen(3))
 	gt.Expect(app.Commands[0].Subcommands[0].Name).To(Equal("get"))
+	gt.Expect(app.Commands[0].Subcommands[0].Subcommands).To(HaveLen(2))
+	gt.Expect(app.Commands[0].Subcommands[0].Subcommands[0].Name).To(Equal("state"))
+	gt.Expect(app.Commands[0].Subcommands[0].Subcommands[1].Name).To(Equal("tx"))
 	gt.Expect(app.Commands[0].Subcommands[1].Name).To(Equal("keys"))
 	gt.Expect(app.Commands[0].Subcommands[1].Flags).To(HaveLen(1))
 	gt.Expect(app.Commands[0].Subcommands[1].Flags[0].Names()[0]).To(Equal("prefix"))
@@ -138,11 +141,13 @@ func TestBatikInteractiveWiring(t *testing.T) {
 
 		gt.Expect(sa.Commands[0].Subcommands).To(HaveLen(3))
 		gt.Expect(sa.Commands[0].Subcommands[0].Name).To(Equal("get"))
+		gt.Expect(sa.Commands[0].Subcommands[0].Subcommands).To(HaveLen(2))
+		gt.Expect(sa.Commands[0].Subcommands[0].Subcommands[0].Name).To(Equal("state"))
+		gt.Expect(sa.Commands[0].Subcommands[0].Subcommands[1].Name).To(Equal("tx"))
 		gt.Expect(sa.Commands[0].Subcommands[1].Name).To(Equal("keys"))
-		gt.Expect(sa.Commands[0].Subcommands[2].Name).To(Equal("put"))
-
 		gt.Expect(sa.Commands[0].Subcommands[1].Flags).To(HaveLen(1))
 		gt.Expect(sa.Commands[0].Subcommands[1].Flags[0].Names()[0]).To(Equal("prefix"))
+		gt.Expect(sa.Commands[0].Subcommands[2].Name).To(Equal("put"))
 	})
 
 	t.Run("HelpTemplate", func(t *testing.T) {
