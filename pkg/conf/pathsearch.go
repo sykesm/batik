@@ -43,12 +43,10 @@ func candidateFiles(stem string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	confDir, err := os.UserConfigDir()
 	if err != nil {
 		return nil, err
 	}
-
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -63,6 +61,5 @@ func candidateFiles(stem string) ([]string, error) {
 		paths = append(paths, filepath.Join(homeDir, ".config", stem, stem+".yml"))
 		paths = append(paths, filepath.Join(homeDir, ".config", stem, stem+".yaml"))
 	}
-
 	return paths, nil
 }

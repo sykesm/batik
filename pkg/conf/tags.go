@@ -10,10 +10,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TagResolver examines a configuration structure for fields annotated with
+// `batik:"relpath"` tags. If the data associated with field is a relative
+// path, it is replaced with an absolute path that is resolved relative to
+// SourcePath.
 type TagResolver struct {
 	SourcePath string
 }
 
+// Replace relative paths in fields annotated with `batik:"relpath"` tags
+// to an absolute path.
 func (tr *TagResolver) Resolve(input interface{}) error {
 	if input == nil {
 		return nil
