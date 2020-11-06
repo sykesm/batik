@@ -19,10 +19,11 @@ type Repository struct {
 	consumeStateReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetStateStub        func(transaction.StateID) (*transaction.State, error)
+	GetStateStub        func(transaction.StateID, bool) (*transaction.State, error)
 	getStateMutex       sync.RWMutex
 	getStateArgsForCall []struct {
 		arg1 transaction.StateID
+		arg2 bool
 	}
 	getStateReturns struct {
 		result1 *transaction.State
@@ -132,18 +133,19 @@ func (fake *Repository) ConsumeStateReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *Repository) GetState(arg1 transaction.StateID) (*transaction.State, error) {
+func (fake *Repository) GetState(arg1 transaction.StateID, arg2 bool) (*transaction.State, error) {
 	fake.getStateMutex.Lock()
 	ret, specificReturn := fake.getStateReturnsOnCall[len(fake.getStateArgsForCall)]
 	fake.getStateArgsForCall = append(fake.getStateArgsForCall, struct {
 		arg1 transaction.StateID
-	}{arg1})
+		arg2 bool
+	}{arg1, arg2})
 	stub := fake.GetStateStub
 	fakeReturns := fake.getStateReturns
-	fake.recordInvocation("GetState", []interface{}{arg1})
+	fake.recordInvocation("GetState", []interface{}{arg1, arg2})
 	fake.getStateMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -157,17 +159,17 @@ func (fake *Repository) GetStateCallCount() int {
 	return len(fake.getStateArgsForCall)
 }
 
-func (fake *Repository) GetStateCalls(stub func(transaction.StateID) (*transaction.State, error)) {
+func (fake *Repository) GetStateCalls(stub func(transaction.StateID, bool) (*transaction.State, error)) {
 	fake.getStateMutex.Lock()
 	defer fake.getStateMutex.Unlock()
 	fake.GetStateStub = stub
 }
 
-func (fake *Repository) GetStateArgsForCall(i int) transaction.StateID {
+func (fake *Repository) GetStateArgsForCall(i int) (transaction.StateID, bool) {
 	fake.getStateMutex.RLock()
 	defer fake.getStateMutex.RUnlock()
 	argsForCall := fake.getStateArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *Repository) GetStateReturns(result1 *transaction.State, result2 error) {

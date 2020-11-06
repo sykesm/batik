@@ -87,7 +87,7 @@ func TestSubmit(t *testing.T) {
 			},
 		}
 		fakeRepo.GetTransactionReturns(nil, &store.NotFoundError{Err: errors.New("not-found-error")})
-		fakeRepo.GetStateStub = func(sid transaction.StateID) (*transaction.State, error) {
+		fakeRepo.GetStateStub = func(sid transaction.StateID, consumed bool) (*transaction.State, error) {
 			for _, s := range activeStates {
 				if s.ID.Equals(sid) {
 					return s, nil
@@ -109,8 +109,12 @@ func TestSubmit(t *testing.T) {
 		gt.Expect(fakeRepo.GetTransactionArgsForCall(0)).To(Equal(transaction.ID([]byte("transaction-id"))))
 
 		gt.Expect(fakeRepo.GetStateCallCount()).To(Equal(2))
-		gt.Expect(fakeRepo.GetStateArgsForCall(0)).To(Equal(*signed.Transaction.Inputs[0]))
-		gt.Expect(fakeRepo.GetStateArgsForCall(1)).To(Equal(*signed.Transaction.References[0]))
+		sID, consumed := fakeRepo.GetStateArgsForCall(0)
+		gt.Expect(sID).To(Equal(*signed.Transaction.Inputs[0]))
+		gt.Expect(consumed).To(BeFalse())
+		sID, consumed = fakeRepo.GetStateArgsForCall(1)
+		gt.Expect(sID).To(Equal(*signed.Transaction.References[0]))
+		gt.Expect(consumed).To(BeFalse())
 
 		gt.Expect(fakeRepo.PutTransactionCallCount()).To(Equal(1))
 		gt.Expect(fakeRepo.PutTransactionArgsForCall(0)).To(Equal(signed.Transaction)) // TODO: This should be a signed transaction

@@ -79,7 +79,7 @@ func (t *TransactionRepository) PutState(state *transaction.State) error {
 	return errors.WithMessage(batch.Commit(), "error committing resolved states batch")
 }
 
-func (t *TransactionRepository) GetState(stateID transaction.StateID) (*transaction.State, error) {
+func (t *TransactionRepository) GetState(stateID transaction.StateID, consumed bool) (*transaction.State, error) {
 	infoPayload, err := t.kv.Get(stateInfoKey(stateID))
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting state info for %s from db", stateID)
@@ -89,7 +89,13 @@ func (t *TransactionRepository) GetState(stateID transaction.StateID) (*transact
 		return nil, errors.WithMessagef(err, "error unmarshaling state info for ref %s", stateID)
 	}
 
-	payload, err := t.kv.Get(stateKey(stateID))
+	var payload []byte
+	switch {
+	case consumed:
+		payload, err = t.kv.Get(consumedStateKey(stateID))
+	default:
+		payload, err = t.kv.Get(stateKey(stateID))
+	}
 	if err != nil {
 		return nil, errors.WithMessagef(err, "error getting state %s from db", stateID)
 	}

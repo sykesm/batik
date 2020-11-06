@@ -110,6 +110,12 @@ func getStateSubcommand(dataDir string) *cli.Command {
 	return &cli.Command{
 		Name:  "state",
 		Usage: "get a state from the db",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "consumed",
+				Usage: "fetch a consumed state",
+			},
+		},
 		Action: func(ctx *cli.Context) error {
 			db, err := levelDB(ctx, dataDir)
 			if err != nil {
@@ -134,7 +140,7 @@ func getStateSubcommand(dataDir string) *cli.Command {
 				TxID:        txID,
 				OutputIndex: outputIndex,
 			}
-			val, err := transactionRepo.GetState(stateID)
+			val, err := transactionRepo.GetState(stateID, ctx.Bool("consumed"))
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil

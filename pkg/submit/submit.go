@@ -21,7 +21,7 @@ type Repository interface {
 	PutTransaction(*transaction.Transaction) error
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
 	PutState(*transaction.State) error
-	GetState(transaction.StateID) (*transaction.State, error)
+	GetState(transaction.StateID, bool) (*transaction.State, error)
 	ConsumeState(transaction.StateID) error
 }
 
@@ -84,7 +84,7 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 func resolve(repo Repository, tx *transaction.Transaction, sigs []*transaction.Signature) (*transaction.Resolved, error) {
 	var inputs []*transaction.State
 	for _, input := range tx.Inputs {
-		state, err := repo.GetState(*input)
+		state, err := repo.GetState(*input, false)
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +92,7 @@ func resolve(repo Repository, tx *transaction.Transaction, sigs []*transaction.S
 	}
 	var refs []*transaction.State
 	for _, ref := range tx.References {
-		state, err := repo.GetState(*ref)
+		state, err := repo.GetState(*ref, false)
 		if err != nil {
 			return nil, err
 		}

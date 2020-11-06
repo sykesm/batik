@@ -55,9 +55,11 @@ message PutTransactionRequest {
 // a transaction in the backing store.
 message PutTransactionResponse {}
 
-// GetStateRequest provices a state reference to resolve in the backing store.
+// GetStateRequest provides a state reference to resolve in the backing store.
+// Consumed indicates whether to fetch a consumed state.
 message GetStateRequest {
   tx.v1.StateReference state_ref = 1;
+  bool consumed = 2;
 }
 
 // GetStateResponse contains a transaction state from the backing store and its

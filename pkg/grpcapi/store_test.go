@@ -117,7 +117,7 @@ func TestStoreService_PutState(t *testing.T) {
 		TxID:        req.StateReference.Txid,
 		OutputIndex: req.StateReference.OutputIndex,
 	}
-	state, err := storeSvc.repo.GetState(stateID)
+	state, err := storeSvc.repo.GetState(stateID, false)
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(transaction.FromStateInfo(state.StateInfo)).To(ProtoEqual(testState.Info))
 	gt.Expect(state.Data).To(Equal(testState.State))

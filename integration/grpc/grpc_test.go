@@ -171,6 +171,8 @@ var _ = Describe("gRPC", func() {
 					OutputIndex: 0,
 				}},
 			}
+			itx2, err := transaction.New(crypto.SHA256, tx)
+			Expect(err).NotTo(HaveOccurred())
 			resp, err = submitClient.Submit(
 				context.Background(),
 				&txv1.SubmitRequest{
@@ -179,6 +181,7 @@ var _ = Describe("gRPC", func() {
 					},
 				},
 			)
+			Expect(resp.Txid).To(Equal(itx2.ID.Bytes()))
 			Expect(err).NotTo(HaveOccurred())
 
 			By("verifying the output is consumed")
@@ -186,7 +189,7 @@ var _ = Describe("gRPC", func() {
 			_, err = io.ReadFull(rand.Reader, salt)
 			Expect(err).NotTo(HaveOccurred())
 
-			tx = &txv1.Transaction{
+			tx2 := &txv1.Transaction{
 				Salt: salt,
 				Inputs: []*txv1.StateReference{{
 					Txid:        itx.ID,
@@ -197,7 +200,7 @@ var _ = Describe("gRPC", func() {
 				context.Background(),
 				&txv1.SubmitRequest{
 					SignedTransaction: &txv1.SignedTransaction{
-						Transaction: tx,
+						Transaction: tx2,
 					},
 				},
 			)
@@ -207,9 +210,22 @@ var _ = Describe("gRPC", func() {
 			Expect(ok).To(BeTrue())
 			Expect(st.Code()).To(Equal(codes.FailedPrecondition))
 
-			itx2, err := transaction.New(crypto.SHA256, tx)
+			itx3, err := transaction.New(crypto.SHA256, tx2)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx2.ID)))
+			Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx3.ID)))
+
+			By("fetching the consumed state")
+			_, err = storeClient.GetState(
+				context.Background(),
+				&storev1.GetStateRequest{
+					StateRef: &txv1.StateReference{
+						Txid:        itx.ID,
+						OutputIndex: 0,
+					},
+					Consumed: true,
+				},
+			)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 

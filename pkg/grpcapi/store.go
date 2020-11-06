@@ -19,7 +19,7 @@ type Repository interface {
 	PutTransaction(*transaction.Transaction) error
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
 	PutState(*transaction.State) error
-	GetState(transaction.StateID) (*transaction.State, error)
+	GetState(transaction.StateID, bool) (*transaction.State, error)
 }
 
 // StoreService implements the StoreAPIServer gRPC interface.
@@ -74,7 +74,7 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *storev1.PutTrans
 // list.
 func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateRequest) (*storev1.GetStateResponse, error) {
 	stateID := transaction.StateID{TxID: req.StateRef.Txid, OutputIndex: req.StateRef.OutputIndex}
-	state, err := s.repo.GetState(stateID)
+	state, err := s.repo.GetState(stateID, req.Consumed)
 	if err != nil {
 		return nil, err
 	}
