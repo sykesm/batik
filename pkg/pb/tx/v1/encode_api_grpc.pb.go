@@ -67,7 +67,7 @@ type UnsafeEncodeAPIServer interface {
 	mustEmbedUnimplementedEncodeAPIServer()
 }
 
-func RegisterEncodeAPIServer(s *grpc.Server, srv EncodeAPIServer) {
+func RegisterEncodeAPIServer(s grpc.ServiceRegistrar, srv EncodeAPIServer) {
 	s.RegisterService(&_EncodeAPI_serviceDesc, srv)
 }
 

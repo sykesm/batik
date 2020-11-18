@@ -79,7 +79,7 @@ type UnsafeValidationAPIServer interface {
 	mustEmbedUnimplementedValidationAPIServer()
 }
 
-func RegisterValidationAPIServer(s *grpc.Server, srv ValidationAPIServer) {
+func RegisterValidationAPIServer(s grpc.ServiceRegistrar, srv ValidationAPIServer) {
 	s.RegisterService(&_ValidationAPI_serviceDesc, srv)
 }
 

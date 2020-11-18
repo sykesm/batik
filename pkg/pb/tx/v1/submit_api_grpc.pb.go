@@ -65,7 +65,7 @@ type UnsafeSubmitAPIServer interface {
 	mustEmbedUnimplementedSubmitAPIServer()
 }
 
-func RegisterSubmitAPIServer(s *grpc.Server, srv SubmitAPIServer) {
+func RegisterSubmitAPIServer(s grpc.ServiceRegistrar, srv SubmitAPIServer) {
 	s.RegisterService(&_SubmitAPI_serviceDesc, srv)
 }
 

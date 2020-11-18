@@ -125,7 +125,7 @@ type UnsafeStoreAPIServer interface {
 	mustEmbedUnimplementedStoreAPIServer()
 }
 
-func RegisterStoreAPIServer(s *grpc.Server, srv StoreAPIServer) {
+func RegisterStoreAPIServer(s grpc.ServiceRegistrar, srv StoreAPIServer) {
 	s.RegisterService(&_StoreAPI_serviceDesc, srv)
 }
 
