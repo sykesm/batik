@@ -29,10 +29,11 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20201012173705-84dcc777aaee
-	golang.org/x/net v0.0.0-20201010224723-4f7140c49acb // indirect
-	golang.org/x/sys v0.0.0-20201101102859-da207088b7d1 // indirect
-	google.golang.org/genproto v0.0.0-20201015140912-32ed001d685c
-	google.golang.org/grpc v1.33.0
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
+	golang.org/x/sys v0.0.0-20201118182958-a01c418693c7 // indirect
+	golang.org/x/text v0.3.4 // indirect
+	google.golang.org/genproto v0.0.0-20201117123952-62d171c70ae1
+	google.golang.org/grpc v1.33.2
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
