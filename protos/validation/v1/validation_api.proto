@@ -1,0 +1,34 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package validation.v1;
+
+option go_package = "github.com/sykesm/batik/pkg/pb/validation/v1;validationv1";
+
+import "validation/v1/resolved.proto";
+
+// ValidationAPI defines the function used to validate transactions before
+// committing.
+service ValidationAPI {
+  // Validate is used to ensure that a transaction is semantically valid prior
+  // to committing it to the ledger. This operation is only invoked if a
+  // transaction has not already been committed and transaction inputs and
+  // references have not been consumed.
+  //
+  // When Validate returns without error, the transaction is considered valid
+  // and will enter commit processing. Valid transactions may fail to commit
+  // if the invariants established prior to validation have changed or any
+  // invariants raised by the validator are not satisfied.
+  rpc Validate(ValidateRequest) returns (ValidateResponse);
+}
+
+// ValidateRequest ...
+message ValidateRequest {
+  ResolvedTransaction resolved_transaction = 1;
+}
+
+// ValidateResponse...
+message ValidateResponse {
+}

@@ -5,6 +5,7 @@ package transaction
 
 import (
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 )
 
 func ToState(in *txv1.State, txID ID, index uint64) *State {
@@ -34,6 +35,14 @@ func FromState(in *State) *txv1.State {
 		Info:  FromStateInfo(in.StateInfo),
 		State: in.Data,
 	}
+}
+
+func FromStates(in ...*State) []*txv1.State {
+	var states []*txv1.State
+	for i := range in {
+		states = append(states, FromState(in[i]))
+	}
+	return states
 }
 
 func ToStateInfo(in *txv1.StateInfo) *StateInfo {
@@ -196,4 +205,19 @@ func FromSignatures(in ...*Signature) []*txv1.Signature {
 		sigs = append(sigs, FromSignature(s))
 	}
 	return sigs
+}
+
+func FromResolved(in *Resolved) *validationv1.ResolvedTransaction {
+	if in == nil {
+		return nil
+	}
+	return &validationv1.ResolvedTransaction{
+		Txid:            in.ID,
+		Inputs:          FromStates(in.Inputs...),
+		References:      FromStates(in.References...),
+		Outputs:         FromStates(in.Outputs...),
+		Parameters:      FromParameters(in.Parameters...),
+		RequiredSigners: FromParties(in.RequiredSigners...),
+		Signatures:      FromSignatures(in.Signatures...),
+	}
 }

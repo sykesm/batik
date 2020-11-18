@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 )
 
@@ -59,6 +60,16 @@ func TestStateConversion(t *testing.T) {
 		gt := NewGomegaWithT(t)
 		gt.Expect(FromState(nil)).To(BeNil())
 		gt.Expect(FromState(state)).To(ProtoEqual(protoState))
+	})
+
+	t.Run("FromStates", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+		gt.Expect(FromStates()).To(BeEmpty())
+		gt.Expect(FromStates(nil)).To(Equal([]*txv1.State{nil}))
+		gt.Expect(FromStates(state, state)).To(ConsistOf(
+			ProtoEqual(protoState),
+			ProtoEqual(protoState),
+		))
 	})
 }
 
@@ -243,5 +254,171 @@ func TestSignatureConversion(t *testing.T) {
 			ProtoEqual(protoSignatures[0]),
 			ProtoEqual(protoSignatures[1]),
 		))
+	})
+}
+
+func TestResolvedConversion(t *testing.T) {
+	resolved := Resolved{
+		ID: NewID([]byte("transaction-id-100")),
+		Inputs: []*State{
+			{
+				ID: StateID{TxID: ID([]byte("transaction-id-1")), OutputIndex: 1},
+				StateInfo: &StateInfo{
+					Kind: "dummy-state",
+					Owners: []*Party{
+						{PublicKey: []byte("owner-1-public-key")},
+					},
+				},
+				Data: []byte("input-0-data"),
+			},
+			{
+				ID: StateID{TxID: ID([]byte("transaction-id-2")), OutputIndex: 2},
+				StateInfo: &StateInfo{
+					Kind: "dummy-state",
+					Owners: []*Party{
+						{PublicKey: []byte("owner-2-public-key")},
+					},
+				},
+				Data: []byte("input-1-data"),
+			},
+		},
+		References: []*State{
+			{
+				ID: StateID{TxID: ID([]byte("transaction-id-3")), OutputIndex: 3},
+				StateInfo: &StateInfo{
+					Kind: "dummy-reference-state",
+					Owners: []*Party{
+						{PublicKey: []byte("owner-3-public-key")},
+						{PublicKey: []byte("owner-4-public-key")},
+					},
+				},
+				Data: []byte("reference-0-data"),
+			},
+			{
+				ID: StateID{TxID: ID([]byte("transaction-id-4")), OutputIndex: 4},
+				StateInfo: &StateInfo{
+					Kind: "dummy-reference-state",
+					Owners: []*Party{
+						{PublicKey: []byte("owner-5-public-key")},
+						{PublicKey: []byte("owner-6-public-key")},
+					},
+				},
+				Data: []byte("reference-1-data"),
+			},
+		},
+		Outputs: []*State{
+			{
+				ID: StateID{TxID: ID([]byte("transaction-id-100")), OutputIndex: 0},
+				StateInfo: &StateInfo{
+					Kind: "currency-kind",
+					Owners: []*Party{
+						{PublicKey: []byte("owner-100-public-key")},
+					},
+				},
+				Data: []byte("output-data-0"),
+			},
+			{
+				ID: StateID{TxID: ID([]byte("transaction-id-100")), OutputIndex: 1},
+				StateInfo: &StateInfo{
+					Kind: "currency-kind",
+					Owners: []*Party{
+						{PublicKey: []byte("owner-100-public-key")},
+					},
+				},
+				Data: []byte("output-data-1"),
+			},
+		},
+		Parameters: []*Parameter{
+			{Name: "operation", Value: []byte("generate-some-cash")},
+		},
+		RequiredSigners: []*Party{
+			{PublicKey: []byte("owner-5-public-key")},
+		},
+		Signatures: []*Signature{
+			{PublicKey: []byte("owner-1-public-key"), Signature: []byte("owner-1-signature")},
+			{PublicKey: []byte("owner-2-public-key"), Signature: []byte("owner-2-signature")},
+			{PublicKey: []byte("owner-5-public-key"), Signature: []byte("owner-5-signature")},
+		},
+	}
+
+	t.Run("FromResolved", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+		gt.Expect(FromResolved(nil)).To(BeNil())
+		gt.Expect(FromResolved(&resolved)).To(ProtoEqual(&validationv1.ResolvedTransaction{
+			Txid: []byte("transaction-id-100"),
+			Inputs: []*txv1.State{
+				{
+					Info: &txv1.StateInfo{
+						Kind: "dummy-state",
+						Owners: []*txv1.Party{
+							{PublicKey: []byte("owner-1-public-key")},
+						},
+					},
+					State: []byte("input-0-data"),
+				},
+				{
+					Info: &txv1.StateInfo{
+						Kind: "dummy-state",
+						Owners: []*txv1.Party{
+							{PublicKey: []byte("owner-2-public-key")},
+						},
+					},
+					State: []byte("input-1-data"),
+				},
+			},
+			References: []*txv1.State{
+				{
+					Info: &txv1.StateInfo{
+						Kind: "dummy-reference-state",
+						Owners: []*txv1.Party{
+							{PublicKey: []byte("owner-3-public-key")},
+							{PublicKey: []byte("owner-4-public-key")},
+						},
+					},
+					State: []byte("reference-0-data"),
+				},
+				{
+					Info: &txv1.StateInfo{
+						Kind: "dummy-reference-state",
+						Owners: []*txv1.Party{
+							{PublicKey: []byte("owner-5-public-key")},
+							{PublicKey: []byte("owner-6-public-key")},
+						},
+					},
+					State: []byte("reference-1-data"),
+				},
+			},
+			Outputs: []*txv1.State{
+				{
+					Info: &txv1.StateInfo{
+						Kind: "currency-kind",
+						Owners: []*txv1.Party{
+							{PublicKey: []byte("owner-100-public-key")},
+						},
+					},
+					State: []byte("output-data-0"),
+				},
+				{
+					Info: &txv1.StateInfo{
+						Kind: "currency-kind",
+						Owners: []*txv1.Party{
+							{PublicKey: []byte("owner-100-public-key")},
+						},
+					},
+					State: []byte("output-data-1"),
+				},
+			},
+			Parameters: []*txv1.Parameter{
+				{Name: "operation", Value: []byte("generate-some-cash")},
+			},
+			RequiredSigners: []*txv1.Party{
+				{PublicKey: []byte("owner-5-public-key")},
+			},
+			Signatures: []*txv1.Signature{
+				{PublicKey: []byte("owner-1-public-key"), Signature: []byte("owner-1-signature")},
+				{PublicKey: []byte("owner-2-public-key"), Signature: []byte("owner-2-signature")},
+				{PublicKey: []byte("owner-5-public-key"), Signature: []byte("owner-5-signature")},
+			},
+		}))
 	})
 }
