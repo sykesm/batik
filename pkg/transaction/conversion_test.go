@@ -257,6 +257,55 @@ func TestSignatureConversion(t *testing.T) {
 	})
 }
 
+func TestResolvedFromStateConversion(t *testing.T) {
+	state := &State{
+		ID: StateID{
+			TxID:        ID([]byte("transaction-id-0")),
+			OutputIndex: 1,
+		},
+		StateInfo: &StateInfo{
+			Kind: "state-kind-0",
+			Owners: []*Party{
+				{PublicKey: []byte("owner-1")},
+				{PublicKey: []byte("owner-2")},
+			},
+		},
+		Data: []byte("state-data"),
+	}
+	protoResolvedState := &validationv1.ResolvedState{
+		Reference: &txv1.StateReference{
+			Txid:        []byte("transaction-id-0"),
+			OutputIndex: 1,
+		},
+		State: &txv1.State{
+			Info: &txv1.StateInfo{
+				Kind: "state-kind-0",
+				Owners: []*txv1.Party{
+					{PublicKey: []byte("owner-1")},
+					{PublicKey: []byte("owner-2")},
+				},
+			},
+			State: []byte("state-data"),
+		},
+	}
+
+	t.Run("ResolvedFromState", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+		gt.Expect(ResolvedFromState(nil)).To(BeNil())
+		gt.Expect(ResolvedFromState(state)).To(ProtoEqual(protoResolvedState))
+	})
+
+	t.Run("ResolvedFromStates", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+		gt.Expect(ResolvedFromStates()).To(BeEmpty())
+		gt.Expect(ResolvedFromStates(nil)).To(Equal([]*validationv1.ResolvedState{nil}))
+		gt.Expect(ResolvedFromStates(state, state)).To(ConsistOf(
+			ProtoEqual(protoResolvedState),
+			ProtoEqual(protoResolvedState),
+		))
+	})
+}
+
 func TestResolvedConversion(t *testing.T) {
 	resolved := Resolved{
 		ID: NewID([]byte("transaction-id-100")),
@@ -346,46 +395,70 @@ func TestResolvedConversion(t *testing.T) {
 		gt.Expect(FromResolved(nil)).To(BeNil())
 		gt.Expect(FromResolved(&resolved)).To(ProtoEqual(&validationv1.ResolvedTransaction{
 			Txid: []byte("transaction-id-100"),
-			Inputs: []*txv1.State{
+			Inputs: []*validationv1.ResolvedState{
 				{
-					Info: &txv1.StateInfo{
-						Kind: "dummy-state",
-						Owners: []*txv1.Party{
-							{PublicKey: []byte("owner-1-public-key")},
-						},
+					Reference: &txv1.StateReference{
+						Txid:        []byte("transaction-id-1"),
+						OutputIndex: 1,
 					},
-					State: []byte("input-0-data"),
+					State: &txv1.State{
+						Info: &txv1.StateInfo{
+							Kind: "dummy-state",
+							Owners: []*txv1.Party{
+								{PublicKey: []byte("owner-1-public-key")},
+							},
+						},
+						State: []byte("input-0-data"),
+					},
 				},
 				{
-					Info: &txv1.StateInfo{
-						Kind: "dummy-state",
-						Owners: []*txv1.Party{
-							{PublicKey: []byte("owner-2-public-key")},
-						},
+					Reference: &txv1.StateReference{
+						Txid:        []byte("transaction-id-2"),
+						OutputIndex: 2,
 					},
-					State: []byte("input-1-data"),
+					State: &txv1.State{
+						Info: &txv1.StateInfo{
+							Kind: "dummy-state",
+							Owners: []*txv1.Party{
+								{PublicKey: []byte("owner-2-public-key")},
+							},
+						},
+						State: []byte("input-1-data"),
+					},
 				},
 			},
-			References: []*txv1.State{
+			References: []*validationv1.ResolvedState{
 				{
-					Info: &txv1.StateInfo{
-						Kind: "dummy-reference-state",
-						Owners: []*txv1.Party{
-							{PublicKey: []byte("owner-3-public-key")},
-							{PublicKey: []byte("owner-4-public-key")},
-						},
+					Reference: &txv1.StateReference{
+						Txid:        []byte("transaction-id-3"),
+						OutputIndex: 3,
 					},
-					State: []byte("reference-0-data"),
+					State: &txv1.State{
+						Info: &txv1.StateInfo{
+							Kind: "dummy-reference-state",
+							Owners: []*txv1.Party{
+								{PublicKey: []byte("owner-3-public-key")},
+								{PublicKey: []byte("owner-4-public-key")},
+							},
+						},
+						State: []byte("reference-0-data"),
+					},
 				},
 				{
-					Info: &txv1.StateInfo{
-						Kind: "dummy-reference-state",
-						Owners: []*txv1.Party{
-							{PublicKey: []byte("owner-5-public-key")},
-							{PublicKey: []byte("owner-6-public-key")},
-						},
+					Reference: &txv1.StateReference{
+						Txid:        []byte("transaction-id-4"),
+						OutputIndex: 4,
 					},
-					State: []byte("reference-1-data"),
+					State: &txv1.State{
+						Info: &txv1.StateInfo{
+							Kind: "dummy-reference-state",
+							Owners: []*txv1.Party{
+								{PublicKey: []byte("owner-5-public-key")},
+								{PublicKey: []byte("owner-6-public-key")},
+							},
+						},
+						State: []byte("reference-1-data"),
+					},
 				},
 			},
 			Outputs: []*txv1.State{

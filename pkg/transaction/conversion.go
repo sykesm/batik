@@ -87,16 +87,16 @@ func FromStateID(in *StateID) *txv1.StateReference {
 
 func ToStateIDs(in ...*txv1.StateReference) []*StateID {
 	var ids []*StateID
-	for _, s := range in {
-		ids = append(ids, ToStateID(s))
+	for i := range in {
+		ids = append(ids, ToStateID(in[i]))
 	}
 	return ids
 }
 
 func FromStateIDs(in ...*StateID) []*txv1.StateReference {
 	var ids []*txv1.StateReference
-	for _, s := range in {
-		ids = append(ids, FromStateID(s))
+	for i := range in {
+		ids = append(ids, FromStateID(in[i]))
 	}
 	return ids
 }
@@ -121,16 +121,16 @@ func FromParty(in *Party) *txv1.Party {
 
 func ToParties(in ...*txv1.Party) []*Party {
 	var parties []*Party
-	for _, p := range in {
-		parties = append(parties, ToParty(p))
+	for i := range in {
+		parties = append(parties, ToParty(in[i]))
 	}
 	return parties
 }
 
 func FromParties(in ...*Party) []*txv1.Party {
 	var parties []*txv1.Party
-	for _, p := range in {
-		parties = append(parties, FromParty(p))
+	for i := range in {
+		parties = append(parties, FromParty(in[i]))
 	}
 	return parties
 }
@@ -157,16 +157,16 @@ func FromParameter(in *Parameter) *txv1.Parameter {
 
 func ToParameters(in ...*txv1.Parameter) []*Parameter {
 	var parameters []*Parameter
-	for _, p := range in {
-		parameters = append(parameters, ToParameter(p))
+	for i := range in {
+		parameters = append(parameters, ToParameter(in[i]))
 	}
 	return parameters
 }
 
 func FromParameters(in ...*Parameter) []*txv1.Parameter {
 	var parameters []*txv1.Parameter
-	for _, p := range in {
-		parameters = append(parameters, FromParameter(p))
+	for i := range in {
+		parameters = append(parameters, FromParameter(in[i]))
 	}
 	return parameters
 }
@@ -193,18 +193,36 @@ func FromSignature(in *Signature) *txv1.Signature {
 
 func ToSignatures(in ...*txv1.Signature) []*Signature {
 	var sigs []*Signature
-	for _, s := range in {
-		sigs = append(sigs, ToSignature(s))
+	for i := range in {
+		sigs = append(sigs, ToSignature(in[i]))
 	}
 	return sigs
 }
 
 func FromSignatures(in ...*Signature) []*txv1.Signature {
 	var sigs []*txv1.Signature
-	for _, s := range in {
-		sigs = append(sigs, FromSignature(s))
+	for i := range in {
+		sigs = append(sigs, FromSignature(in[i]))
 	}
 	return sigs
+}
+
+func ResolvedFromState(in *State) *validationv1.ResolvedState {
+	if in == nil {
+		return nil
+	}
+	return &validationv1.ResolvedState{
+		Reference: FromStateID(&in.ID),
+		State:     FromState(in),
+	}
+}
+
+func ResolvedFromStates(in ...*State) []*validationv1.ResolvedState {
+	var resolved []*validationv1.ResolvedState
+	for i := range in {
+		resolved = append(resolved, ResolvedFromState(in[i]))
+	}
+	return resolved
 }
 
 func FromResolved(in *Resolved) *validationv1.ResolvedTransaction {
@@ -213,8 +231,8 @@ func FromResolved(in *Resolved) *validationv1.ResolvedTransaction {
 	}
 	return &validationv1.ResolvedTransaction{
 		Txid:            in.ID,
-		Inputs:          FromStates(in.Inputs...),
-		References:      FromStates(in.References...),
+		Inputs:          ResolvedFromStates(in.Inputs...),
+		References:      ResolvedFromStates(in.References...),
 		Outputs:         FromStates(in.Outputs...),
 		Parameters:      FromParameters(in.Parameters...),
 		RequiredSigners: FromParties(in.RequiredSigners...),

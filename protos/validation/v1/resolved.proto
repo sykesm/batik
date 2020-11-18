@@ -9,12 +9,18 @@ option go_package = "github.com/sykesm/batik/pkg/pb/validation/v1;validationv1";
 
 import "tx/v1/transaction.proto";
 
+// A ResolvedState binds a state reference to the state it references.
+message ResolvedState {
+  tx.v1.StateReference reference = 1;
+  tx.v1.State state = 2;
+}
+
 // A ResolvedTransaction is a transaction where all state references have been
 // resolved.
 message ResolvedTransaction {
   bytes txid = 1;
-  repeated tx.v1.State inputs = 2;
-  repeated tx.v1.State references = 3;
+  repeated ResolvedState inputs = 2;
+  repeated ResolvedState references = 3;
   repeated tx.v1.State outputs = 4;
   repeated tx.v1.Parameter parameters = 5;
   repeated tx.v1.Party required_signers = 6;
