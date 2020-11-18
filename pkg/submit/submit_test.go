@@ -16,18 +16,18 @@ import (
 	"github.com/sykesm/batik/pkg/ecdsautil"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
-	"github.com/sykesm/batik/pkg/submit/fakes"
+	"github.com/sykesm/batik/pkg/submit/fake"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
-//go:generate counterfeiter -o fakes/repository.go --fake-name Repository . fakeRepository
+//go:generate counterfeiter -o fake/repository.go --fake-name Repository . fakeRepository
 type fakeRepository Repository // private to prevent an import cycle in generated fake
 
-var _ fakeRepository = (*fakes.Repository)(nil)
+var _ fakeRepository = (*fake.Repository)(nil)
 
 func TestSubmit(t *testing.T) {
 	var (
-		fakeRepo      *fakes.Repository
+		fakeRepo      *fake.Repository
 		submitService *Service
 		signed        *transaction.Signed
 		activeStates  []*transaction.State
@@ -42,7 +42,7 @@ func TestSubmit(t *testing.T) {
 		sig, err := ecdsautil.NewSigner(sk).Sign(rand.Reader, []byte("transaction-id"), crypto.SHA256)
 		gt.Expect(err).NotTo(HaveOccurred())
 
-		fakeRepo = &fakes.Repository{}
+		fakeRepo = &fake.Repository{}
 		submitService = NewService(fakeRepo)
 		activeStates = []*transaction.State{
 			{
@@ -200,7 +200,7 @@ func TestSubmitGetTransaction(t *testing.T) {
 	t.Run("ExistingTransaction", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
-		fakeRepo := &fakes.Repository{}
+		fakeRepo := &fake.Repository{}
 		submitService := NewService(fakeRepo)
 
 		err := submitService.Submit(context.Background(), signed)
@@ -211,7 +211,7 @@ func TestSubmitGetTransaction(t *testing.T) {
 	t.Run("UnexpectedError", func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
-		fakeRepo := &fakes.Repository{}
+		fakeRepo := &fake.Repository{}
 		fakeRepo.GetTransactionReturns(nil, errors.New("unexpected-error"))
 		submitService := NewService(fakeRepo)
 
