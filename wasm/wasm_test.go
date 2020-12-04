@@ -4,7 +4,6 @@
 package wasm
 
 import (
-	"encoding/binary"
 	"fmt"
 	"os"
 	"os/exec"
@@ -82,12 +81,12 @@ func TestBasic(t *testing.T) {
 	adapter.resolved = resolved
 
 	validate := instance.GetExport("validate").Func()
-	res, err := validate.Call(99)
+	res, err := validate.Call(99, len(resolved))
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(res).To(BeEquivalentTo(0))
 
 	var validateResponse validationv1.ValidateResponse
-	err = proto.Unmarshal(adapter.response[4:], &validateResponse)
+	err = proto.Unmarshal(adapter.response, &validateResponse)
 	gt.Expect(err).NotTo(HaveOccurred())
 }
 
@@ -101,14 +100,8 @@ type adapter struct {
 
 func (a *adapter) read(streamID, addr, buflen int32) int32 {
 	buf := a.memory.UnsafeData()[addr:]
-	var written int
-	if a.idx < 4 {
-		binary.BigEndian.PutUint32(buf, uint32(len(a.resolved)))
-		written = 4
-	} else {
-		idx := a.idx - 4
-		written = copy(buf, a.resolved[idx:idx+int(buflen)])
-	}
+	idx := a.idx
+	written := copy(buf, a.resolved[idx:idx+int(buflen)])
 	a.idx += written
 	return int32(written)
 }

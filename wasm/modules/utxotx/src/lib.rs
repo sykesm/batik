@@ -35,25 +35,10 @@ fn batik_write(id: i32, buf: &Vec<u8>) -> isize {
     unsafe { __batik_write(id as isize, buf.as_ptr() as *const c_void, buf.len()) }
 }
 
-fn u32_from_slice(buf: &[u8]) -> u32 {
-    let mut array = [0; 4];
-    let b = &buf[..array.len()];
-    array.copy_from_slice(b);
-    u32::from_be_bytes(array)
-}
-
 #[no_mangle]
-pub extern "C" fn validate(stream: i32) -> i32 {
-    batik_log(format!("stream {}", stream).as_str());
+pub extern "C" fn validate(stream: i32, input_len: i32) -> i32 {
+    batik_log(format!("stream {} input_len {}", stream, input_len).as_str());
 
-    let len_buf: &mut Vec<u8> = &mut Vec::with_capacity(4);
-    let read_len_rc = batik_read(stream, len_buf);
-    batik_log(format!("stream {} read {}", stream, read_len_rc).as_str());
-    if read_len_rc != 4 {
-        return -1;
-    }
-
-    let input_len = u32_from_slice(&len_buf[0..4]);
     let req_bytes: &mut Vec<u8> = &mut Vec::with_capacity(input_len as usize);
     let read_len = batik_read(stream, req_bytes);
     if read_len != input_len as isize {
@@ -69,10 +54,6 @@ pub extern "C" fn validate(stream: i32) -> i32 {
     let result = validation_api::ValidateResponse::new();
 
     let encoded_result = result.write_to_bytes().unwrap();
-    let resp_len = u32::to_be_bytes(encoded_result.len() as u32).to_vec();
-    if batik_write(stream, &resp_len) != 4 {
-        return -1;
-    }
     if batik_write(stream, &encoded_result) != encoded_result.len() as isize {
         return -1;
     }
