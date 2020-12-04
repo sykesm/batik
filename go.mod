@@ -6,6 +6,7 @@ module github.com/sykesm/batik
 go 1.14
 
 require (
+	github.com/bytecodealliance/wasmtime-go v0.21.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0

@@ -1,0 +1,19 @@
+# Copyright IBM Corp. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "utxotx"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+protobuf = "2.14.0"
+
+[profile.release]
+opt-level = "s"
+
+[build-dependencies]
+protobuf-codegen-pure = "2.3"
