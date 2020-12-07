@@ -5,7 +5,6 @@ mod messages;
 
 use messages::validation_api;
 use protobuf::{parse_from_bytes, Message};
-use std::os::raw::c_void;
 
 #[link(wasm_import_module = "batik")]
 extern "C" {
@@ -13,10 +12,10 @@ extern "C" {
     fn __batik_log(msg: *const u8, len: usize);
 
     #[link_name = "read"]
-    fn __batik_read(stream_id: isize, buf: *mut c_void, count: usize) -> isize;
+    fn __batik_read(stream_id: isize, buf: *mut u8, count: usize) -> isize;
 
     #[link_name = "write"]
-    fn __batik_write(stream_id: isize, buf: *const c_void, count: usize) -> isize;
+    fn __batik_write(stream_id: isize, buf: *const u8, count: usize) -> isize;
 }
 
 fn batik_log(msg: &str) {
@@ -24,7 +23,7 @@ fn batik_log(msg: &str) {
 }
 
 fn batik_read(id: i32, buf: &mut Vec<u8>) -> isize {
-    let len = unsafe { __batik_read(id as isize, buf.as_mut_ptr() as *mut c_void, buf.capacity()) };
+    let len = unsafe { __batik_read(id as isize, buf.as_mut_ptr() as *mut u8, buf.capacity()) };
     if len >= 0 {
         unsafe { buf.set_len(len as usize) };
     }
@@ -32,7 +31,7 @@ fn batik_read(id: i32, buf: &mut Vec<u8>) -> isize {
 }
 
 fn batik_write(id: i32, buf: &Vec<u8>) -> isize {
-    unsafe { __batik_write(id as isize, buf.as_ptr() as *const c_void, buf.len()) }
+    unsafe { __batik_write(id as isize, buf.as_ptr() as *const u8, buf.len()) }
 }
 
 #[no_mangle]
