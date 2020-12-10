@@ -58,7 +58,7 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 
 	err = validate(resolved)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "validation failed")
 	}
 
 	err = s.repo.PutTransaction(signed.Transaction)
@@ -121,29 +121,29 @@ func digest(preImage []byte) []byte {
 func validate(resolved *transaction.Resolved) error {
 	requiredSigners := requiredSigners(resolved)
 	for _, signer := range requiredSigners {
+		if signer.PublicKey == nil {
+			return fmt.Errorf("required signer missing public key")
+		}
 		sig := signature(signer.PublicKey, resolved.Signatures)
 		if sig == nil {
 			return fmt.Errorf("missing signature from %x", signer.PublicKey)
 		}
 		pk, err := ecdsautil.UnmarshalPublicKey(signer.PublicKey)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "unmarshal public key failed")
 		}
 		ok, err := ecdsautil.Verify(pk, sig.Signature, digest(resolved.ID.Bytes()))
 		if err != nil {
 			return err
 		}
 		if !ok {
-			return errors.Wrap(err, "signature verification failed")
+			return errors.New("signature verification failed")
 		}
 	}
 	return nil
 }
 
 func signature(publicKey []byte, signatures []*transaction.Signature) *transaction.Signature {
-	if publicKey == nil {
-		return nil
-	}
 	for _, sig := range signatures {
 		if bytes.Equal(sig.PublicKey, publicKey) {
 			return sig

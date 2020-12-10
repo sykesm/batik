@@ -161,7 +161,7 @@ func TestVerifyBadSignatureFormat(t *testing.T) {
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		_, err = Verify(&key.PublicKey, []byte("garbage"), []byte{})
-		gt.Expect(err).To(MatchError(ContainSubstring("failed unmashalling signature: asn1: structure error")))
+		gt.Expect(err).To(MatchError(ContainSubstring("failed unmarshalling signature: asn1: structure error")))
 	})
 
 	t.Run("LowSFailure", func(t *testing.T) {
