@@ -4,6 +4,10 @@
 package wasm
 
 import (
+	"crypto"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,6 +18,8 @@ import (
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/sykesm/batik/pkg/ecdsautil"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 )
 
@@ -73,8 +79,26 @@ func TestBasic(t *testing.T) {
 	adapter.memory = instance.GetExport("memory").Memory()
 
 	var validateRequest validationv1.ValidateRequest
+	sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)
+	gt.Expect(err).NotTo(HaveOccurred())
+	pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
+	gt.Expect(err).NotTo(HaveOccurred())
+	txidHash := sha256.Sum256([]byte("transaction-id"))
+	sig, err := ecdsautil.NewSigner(sk).Sign(rand.Reader, txidHash[:], crypto.SHA256)
+	gt.Expect(err).NotTo(HaveOccurred())
 	validateRequest.ResolvedTransaction = &validationv1.ResolvedTransaction{
 		Txid: []byte("transaction-id"),
+		RequiredSigners: []*txv1.Party{
+			{
+				PublicKey: pk,
+			},
+		},
+		Signatures: []*txv1.Signature{
+			{
+				PublicKey: pk,
+				Signature: sig,
+			},
+		},
 	}
 	resolved, err := proto.Marshal(&validateRequest)
 	gt.Expect(err).NotTo(HaveOccurred())
