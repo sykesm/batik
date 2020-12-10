@@ -39,7 +39,7 @@ func TestSubmit(t *testing.T) {
 		gt.Expect(err).NotTo(HaveOccurred())
 		pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
 		gt.Expect(err).NotTo(HaveOccurred())
-		sig, err := ecdsautil.NewSigner(sk).Sign(rand.Reader, []byte("transaction-id"), crypto.SHA256)
+		sig, err := ecdsautil.NewSigner(sk).Sign(rand.Reader, digest([]byte("transaction-id")), crypto.SHA256)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		fakeRepo = &fake.Repository{}

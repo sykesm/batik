@@ -6,6 +6,8 @@ package submit
 import (
 	"bytes"
 	"context"
+	"crypto"
+	_ "crypto/sha256"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -112,6 +114,10 @@ func resolve(repo Repository, tx *transaction.Transaction, sigs []*transaction.S
 	return resolved, nil
 }
 
+func digest(preImage []byte) []byte {
+	return crypto.SHA256.New().Sum(preImage)
+}
+
 func validate(resolved *transaction.Resolved) error {
 	requiredSigners := requiredSigners(resolved)
 	for _, signer := range requiredSigners {
@@ -123,7 +129,7 @@ func validate(resolved *transaction.Resolved) error {
 		if err != nil {
 			return err
 		}
-		ok, err := ecdsautil.Verify(pk, sig.Signature, resolved.ID.Bytes())
+		ok, err := ecdsautil.Verify(pk, sig.Signature, digest(resolved.ID.Bytes()))
 		if err != nil {
 			return err
 		}
