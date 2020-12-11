@@ -1,0 +1,104 @@
+// Copyright IBM Corp. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package utxo
+
+import (
+	"crypto"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
+	_ "crypto/sha256"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"testing"
+
+	. "github.com/onsi/gomega"
+
+	"github.com/sykesm/batik/pkg/ecdsautil"
+	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
+)
+
+func TestMain(m *testing.M) {
+	cmd := exec.Command("cargo", "build")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Dir = filepath.Join(modulesPath(), "utxotx")
+
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
+}
+
+func TestUTXOValidator(t *testing.T) {
+	var (
+		validateRequest *validationv1.ValidateRequest
+		validator       *UTXOValidator
+		signer          *ecdsautil.Signer
+	)
+
+	setup := func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+		modulePath := filepath.Join(modulesPath(), "utxotx", "target", "wasm32-unknown-unknown", "debug", "utxotx.wasm")
+		gt.Expect(modulePath).To(BeAnExistingFile())
+
+		validator = NewValidator()
+		err := validator.Init()
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)
+		gt.Expect(err).NotTo(HaveOccurred())
+		pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
+		gt.Expect(err).NotTo(HaveOccurred())
+		signer = ecdsautil.NewSigner(sk)
+		txidHash := digest([]byte("transaction-id"))
+		sig, err := signer.Sign(rand.Reader, txidHash[:], crypto.SHA256)
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		validateRequest = &validationv1.ValidateRequest{
+			ResolvedTransaction: &validationv1.ResolvedTransaction{
+				Txid: []byte("transaction-id"),
+				RequiredSigners: []*txv1.Party{
+					{
+						PublicKey: pk,
+					},
+				},
+				Signatures: []*txv1.Signature{
+					{
+						PublicKey: pk,
+						Signature: sig,
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("SuccessfulValidation", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		_, err := validator.Validate(validateRequest)
+		gt.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("BadSignature", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		newTxidHash := digest([]byte("this-is-a-different-message"))
+		sig, err := signer.Sign(rand.Reader, newTxidHash[:], crypto.SHA256)
+		gt.Expect(err).NotTo(HaveOccurred())
+		validateRequest.ResolvedTransaction.Signatures[0].Signature = sig
+
+		_, err = validator.Validate(validateRequest)
+		gt.Expect(err).To(MatchError("validate failed, return code: -1"))
+	})
+}
+
+func digest(preImage []byte) [32]byte {
+	return sha256.Sum256(preImage)
+}
