@@ -8,7 +8,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
-	_ "crypto/sha256"
 	"os"
 	"os/exec"
 	"path/filepath"
