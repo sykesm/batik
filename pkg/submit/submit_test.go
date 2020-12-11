@@ -8,6 +8,10 @@ import (
 	"crypto"
 	"crypto/elliptic"
 	"crypto/rand"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -325,6 +329,20 @@ func TestValidate(t *testing.T) {
 		err = validate(resolvedTx)
 		gt.Expect(err).To(MatchError("signature verification failed"))
 	})
+}
+
+func TestMain(m *testing.M) {
+	_, b, _, _ := runtime.Caller(0)
+	cmd := exec.Command("cargo", "build")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Dir = filepath.Join(filepath.Dir(b), "..", "..", "wasm", "modules", "utxotx")
+
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
 }
 
 func TestValidateWASM(t *testing.T) {
