@@ -39,7 +39,8 @@ func TestSubmit(t *testing.T) {
 		gt.Expect(err).NotTo(HaveOccurred())
 		pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
 		gt.Expect(err).NotTo(HaveOccurred())
-		sig, err := ecdsautil.NewSigner(sk).Sign(rand.Reader, digest([]byte("transaction-id")), crypto.SHA256)
+		txidHash := digest([]byte("transaction-id"))
+		sig, err := ecdsautil.NewSigner(sk).Sign(rand.Reader, txidHash[:], crypto.SHA256)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		fakeRepo = &fake.Repository{}
@@ -234,13 +235,14 @@ func TestValidate(t *testing.T) {
 
 	setup := func(t *testing.T) {
 		gt := NewGomegaWithT(t)
+
 		sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)
 		gt.Expect(err).NotTo(HaveOccurred())
 		pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
 		gt.Expect(err).NotTo(HaveOccurred())
 		signer = ecdsautil.NewSigner(sk)
 		txidHash := digest([]byte("transaction-id"))
-		sig, err := signer.Sign(rand.Reader, txidHash, crypto.SHA256)
+		sig, err := signer.Sign(rand.Reader, txidHash[:], crypto.SHA256)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		resolvedTx = &transaction.Resolved{
@@ -315,11 +317,116 @@ func TestValidate(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
 		setup(t)
-		sig, err := signer.Sign(rand.Reader, digest([]byte("this-is-a-different-message")), crypto.SHA256)
+		newTxidHash := digest([]byte("this-is-a-different-message"))
+		sig, err := signer.Sign(rand.Reader, newTxidHash[:], crypto.SHA256)
 		gt.Expect(err).NotTo(HaveOccurred())
 		resolvedTx.Signatures[0].Signature = sig
 
 		err = validate(resolvedTx)
 		gt.Expect(err).To(MatchError("signature verification failed"))
+	})
+}
+
+func TestValidateWASM(t *testing.T) {
+	var (
+		resolvedTx *transaction.Resolved
+		signer     *ecdsautil.Signer
+	)
+
+	setup := func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)
+		gt.Expect(err).NotTo(HaveOccurred())
+		pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
+		gt.Expect(err).NotTo(HaveOccurred())
+		signer = ecdsautil.NewSigner(sk)
+		txidHash := digest([]byte("transaction-id"))
+		sig, err := signer.Sign(rand.Reader, txidHash[:], crypto.SHA256)
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		resolvedTx = &transaction.Resolved{
+			ID: []byte("transaction-id"),
+			RequiredSigners: []*transaction.Party{
+				{
+					PublicKey: pk,
+				},
+			},
+			Signatures: []*transaction.Signature{
+				{
+					PublicKey: pk,
+					Signature: sig,
+				},
+			},
+		}
+	}
+
+	t.Run("SucessfulValidation", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		err := validateWASM(resolvedTx)
+		gt.Expect(err).NotTo(HaveOccurred())
+	})
+
+	t.Run("MissingRequiredSignature", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		resolvedTx.RequiredSigners = append(
+			resolvedTx.RequiredSigners,
+			&transaction.Party{PublicKey: []byte("absent-required-signer")},
+		)
+
+		err := validateWASM(resolvedTx)
+		// TODO: check error properly once module properly handles
+		gt.Expect(err).To(HaveOccurred())
+	})
+
+	t.Run("InvalidPublicKey", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		resolvedTx.RequiredSigners[0].PublicKey = []byte("invalid-public-key")
+		resolvedTx.Signatures[0].PublicKey = []byte("invalid-public-key")
+
+		err := validateWASM(resolvedTx)
+		// TODO: check error properly once module properly handles
+		gt.Expect(err).To(HaveOccurred())
+	})
+
+	t.Run("NilPublicKey", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		resolvedTx.RequiredSigners[0].PublicKey = nil
+
+		err := validateWASM(resolvedTx)
+		// TODO: check error properly once module properly handles
+		gt.Expect(err).To(HaveOccurred())
+	})
+
+	t.Run("InvalidSignatureFormat", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		resolvedTx.Signatures[0].Signature = []byte("bad-signature")
+
+		err := validateWASM(resolvedTx)
+		// TODO: check error properly once module properly handles
+		gt.Expect(err).To(HaveOccurred())
+	})
+
+	t.Run("BadSignature", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		newTxidHash := digest([]byte("this-is-a-different-message"))
+		sig, err := signer.Sign(rand.Reader, newTxidHash[:], crypto.SHA256)
+		gt.Expect(err).NotTo(HaveOccurred())
+		resolvedTx.Signatures[0].Signature = sig
+
+		err = validateWASM(resolvedTx)
+		gt.Expect(err).To(MatchError("validate failed, return code: -1"))
 	})
 }

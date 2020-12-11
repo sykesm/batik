@@ -6,15 +6,17 @@ package submit
 import (
 	"bytes"
 	"context"
-	"crypto"
-	_ "crypto/sha256"
+	"crypto/sha256"
 	"fmt"
 
 	"github.com/pkg/errors"
 
 	"github.com/sykesm/batik/pkg/ecdsautil"
+	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
+	"github.com/sykesm/batik/pkg/validator"
+	"github.com/sykesm/batik/pkg/validator/utxo"
 )
 
 // A Repository abstracts the data persistence layer for transactions and
@@ -114,8 +116,8 @@ func resolve(repo Repository, tx *transaction.Transaction, sigs []*transaction.S
 	return resolved, nil
 }
 
-func digest(preImage []byte) []byte {
-	return crypto.SHA256.New().Sum(preImage)
+func digest(preImage []byte) [32]byte {
+	return sha256.Sum256(preImage)
 }
 
 func validate(resolved *transaction.Resolved) error {
@@ -132,7 +134,8 @@ func validate(resolved *transaction.Resolved) error {
 		if err != nil {
 			return errors.Wrap(err, "unmarshal public key failed")
 		}
-		ok, err := ecdsautil.Verify(pk, sig.Signature, digest(resolved.ID.Bytes()))
+		txidHash := digest(resolved.ID.Bytes())
+		ok, err := ecdsautil.Verify(pk, sig.Signature, txidHash[:])
 		if err != nil {
 			return err
 		}
@@ -140,6 +143,27 @@ func validate(resolved *transaction.Resolved) error {
 			return errors.New("signature verification failed")
 		}
 	}
+	return nil
+}
+
+func validateWASM(resolved *transaction.Resolved) error {
+	var validator validator.Validator
+
+	// Check and choose type of validator
+	validator = utxo.NewValidator()
+	if err := validator.Init(); err != nil {
+		return errors.WithMessage(err, "failed initializing validator")
+	}
+
+	validateRequest := &validationv1.ValidateRequest{
+		ResolvedTransaction: transaction.FromResolved(resolved),
+	}
+
+	_, err := validator.Validate(validateRequest)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
