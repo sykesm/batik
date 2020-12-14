@@ -20,10 +20,10 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
-type submitterFunc func(context.Context, *transaction.Signed) error
+type submitterFunc func(context.Context, *transaction.Signed, string) error
 
-func (s submitterFunc) Submit(ctx context.Context, tx *transaction.Signed) error {
-	return s(ctx, tx)
+func (s submitterFunc) Submit(ctx context.Context, tx *transaction.Signed, validator string) error {
+	return s(ctx, tx, validator)
 }
 
 func TestSubmit(t *testing.T) {
@@ -80,7 +80,7 @@ func TestSubmit(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
-			var submitter submitterFunc = func(ctx context.Context, tx *transaction.Signed) error {
+			var submitter submitterFunc = func(ctx context.Context, tx *transaction.Signed, validator string) error {
 				return tt.submitErr
 			}
 			ss := NewSubmitService(submitter)

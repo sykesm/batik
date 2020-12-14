@@ -40,7 +40,7 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error {
+func (s *Service) Submit(ctx context.Context, signed *transaction.Signed, validator string) error {
 	txid := signed.Transaction.ID
 
 	// Transaction must have been processed before
@@ -58,10 +58,10 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 		return errors.WithMessagef(err, "state resolution for transaction %s failed", txid)
 	}
 
-	// TODO: Select validator based on channel configuration, temporarily use context for determining
-	// validator
-	switch validator, ok := ctx.Value("validator").(string); {
-	case ok && validator == "utxo-wasm":
+	// TODO: Select validator based on channel configuration and transaction type,
+	// temporarily use passed validator string from submit request to determine which validator to use.
+	switch validator {
+	case "utxo-wasm":
 		err = validateWASM(resolved)
 	default:
 		err = validate(resolved)

@@ -21,6 +21,7 @@ service SubmitAPI {
 // SubmitRequest contains a Transaction.
 message SubmitRequest {
   SignedTransaction signed_transaction = 1;
+  string validator = 2;
 }
 
 // SubmitResponse returns the unique identifier for the transaction that was
