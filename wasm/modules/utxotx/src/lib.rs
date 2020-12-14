@@ -10,32 +10,37 @@ use protobuf::{parse_from_bytes, Message};
 use signature::Verifier;
 use simple_asn1::{oid, ASN1Block, ASN1DecodeErr, BigUint, OID};
 
-fn extract_sec1_key(pkix_key: &[u8]) -> Result<Vec<u8>, ASN1DecodeErr> {
-    let der = simple_asn1::from_der(pkix_key)?;
-    let der = der.first().unwrap();
-    if let ASN1Block::Sequence(_, seq) = der {
-        if seq.len() != 2 {
-            return Err(ASN1DecodeErr::Incomplete);
-        }
-        if let ASN1Block::Sequence(_, algid) = seq.get(0).unwrap() {
-            if let ASN1Block::ObjectIdentifier(_, alg) = algid.get(0).unwrap() {
-                if alg != oid!(1, 2, 840, 10045, 2, 1) {
-                    // ecPublicKey OID from RFC 3279 / RFC 5753
-                    return Err(ASN1DecodeErr::Incomplete);
-                }
-            }
-            if let ASN1Block::ObjectIdentifier(_, params) = algid.get(1).unwrap() {
-                if params != oid!(1, 2, 840, 10045, 3, 1, 7) {
-                    // P256 OID from RFC 5759
-                    return Err(ASN1DecodeErr::Incomplete);
-                }
-            }
-        }
-        if let ASN1Block::BitString(_, _, pk) = seq.get(1).unwrap() {
-            return Ok(pk.to_vec());
-        }
+fn extract_sec1_key(pkix_subject_key: &[u8]) -> Result<Vec<u8>, ASN1DecodeErr> {
+    let der = simple_asn1::from_der(pkix_subject_key)?; // map_err ?
+    let block = der.first().ok_or_else(|| ASN1DecodeErr::Incomplete)?;
+    let seq = match &block {
+        ASN1Block::Sequence(_, seq) if seq.len() == 2 => seq,
+        _ => return Err(ASN1DecodeErr::Incomplete),
+    };
+    let alg_id = match &seq[0] {
+        ASN1Block::Sequence(_, alg_id) if alg_id.len() == 2 => alg_id,
+        _ => return Err(ASN1DecodeErr::Incomplete),
+    };
+    let alg = match &alg_id[0] {
+        ASN1Block::ObjectIdentifier(_, alg) => alg,
+        _ => return Err(ASN1DecodeErr::Incomplete),
+    };
+    let curve = match &alg_id[1] {
+        ASN1Block::ObjectIdentifier(_, curve) => curve,
+        _ => return Err(ASN1DecodeErr::Incomplete),
+    };
+    if alg != oid!(1, 2, 840, 10045, 2, 1) {
+        return Err(ASN1DecodeErr::Incomplete);
     }
-    Ok(pkix_key.to_vec())
+    if curve != oid!(1, 2, 840, 10045, 3, 1, 7) {
+        return Err(ASN1DecodeErr::Incomplete);
+    }
+    let pk = match &seq[1] {
+        ASN1Block::BitString(_, _, pk) => pk,
+        _ => return Err(ASN1DecodeErr::Incomplete),
+    };
+
+    Ok(pk.to_vec())
 }
 
 #[no_mangle]
