@@ -199,6 +199,45 @@ func TestSubmit(t *testing.T) {
 		err := submitService.Submit(context.Background(), signed)
 		gt.Expect(err).To(MatchError(ContainSubstring("validation failed: ")))
 	})
+
+	t.Run("BasicTransactionWASMValidation", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+
+		err := submitService.Submit(context.WithValue(context.Background(), "validator", "utxo-wasm"), signed)
+		gt.Expect(err).NotTo(HaveOccurred())
+
+		gt.Expect(fakeRepo.GetTransactionCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.GetTransactionArgsForCall(0)).To(Equal(transaction.ID([]byte("transaction-id"))))
+
+		gt.Expect(fakeRepo.GetStateCallCount()).To(Equal(2))
+		sID, consumed := fakeRepo.GetStateArgsForCall(0)
+		gt.Expect(sID).To(Equal(*signed.Transaction.Inputs[0]))
+		gt.Expect(consumed).To(BeFalse())
+		sID, consumed = fakeRepo.GetStateArgsForCall(1)
+		gt.Expect(sID).To(Equal(*signed.Transaction.References[0]))
+		gt.Expect(consumed).To(BeFalse())
+
+		gt.Expect(fakeRepo.PutTransactionCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.PutTransactionArgsForCall(0)).To(Equal(signed.Transaction)) // TODO: This should be a signed transaction
+
+		gt.Expect(fakeRepo.PutStateCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.PutStateArgsForCall(0)).To(Equal(signed.Transaction.Outputs[0]))
+
+		gt.Expect(fakeRepo.ConsumeStateCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.ConsumeStateArgsForCall(0)).To(Equal(*signed.Transaction.Inputs[0]))
+	})
+
+	t.Run("ValidateWASMFailure", func(t *testing.T) {
+		gt := NewGomegaWithT(t)
+
+		setup(t)
+		signed.Signatures[0].Signature = []byte("bad-signature")
+
+		err := submitService.Submit(context.WithValue(context.Background(), "validator", "utxo-wasm"), signed)
+		gt.Expect(err).To(MatchError(ContainSubstring("validation failed: ")))
+	})
 }
 
 func TestSubmitGetTransaction(t *testing.T) {

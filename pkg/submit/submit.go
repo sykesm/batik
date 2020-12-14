@@ -58,7 +58,14 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 		return errors.WithMessagef(err, "state resolution for transaction %s failed", txid)
 	}
 
-	err = validate(resolved)
+	// TODO: Select validator based on channel configuration, temporarily use context for determining
+	// validator
+	switch validator, ok := ctx.Value("validator").(string); {
+	case ok && validator == "utxo-wasm":
+		err = validateWASM(resolved)
+	default:
+		err = validate(resolved)
+	}
 	if err != nil {
 		return errors.Wrap(err, "validation failed")
 	}
