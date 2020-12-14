@@ -58,8 +58,8 @@ pub extern "C" fn validate(stream: i32, input_len: i32) -> i32 {
     batik::log(format!("txid {}", hex::encode(txid)).as_str());
 
     for signer in required_signers(resolved_tx) {
-        let signatures = resolved_tx.get_signatures();
-        let sig = signature(signer.get_public_key(), signatures.to_vec());
+        let signatures = resolved_tx.get_signatures().to_vec();
+        let sig = signature(&signatures, signer.get_public_key()).unwrap();
         batik::log(format!("sig {}", hex::encode(sig.get_signature())).as_str());
 
         let pkix = sig.get_public_key();
@@ -93,11 +93,9 @@ fn required_signers(resolved: &resolved::ResolvedTransaction) -> Vec<transaction
     required
 }
 
-fn signature(public_key: &[u8], signatures: Vec<transaction::Signature>) -> transaction::Signature {
-    for sig in signatures {
-        if sig.public_key == public_key {
-            return sig;
-        }
-    }
-    return transaction::Signature::new();
+fn signature<'a>(
+    signatures: &'a Vec<transaction::Signature>,
+    public_key: &[u8],
+) -> Option<&'a transaction::Signature> {
+    signatures.iter().find(|sig| sig.public_key == public_key)
 }
