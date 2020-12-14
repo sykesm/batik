@@ -19,6 +19,9 @@ func modulesPath() string {
 	return filepath.Join(filepath.Dir(b), "..", "..", "..", "wasm", "modules")
 }
 
+// UTXOValidator implements the validator.Validator interface and provides
+// a custom validator for UTXO transaction validation. Currently the web assembly
+// module handles transaction signature verification.
 type UTXOValidator struct {
 	adapter *adapter
 	engine  *wasmtime.Engine
@@ -73,7 +76,6 @@ func (v *UTXOValidator) Init() error {
 }
 
 func (v *UTXOValidator) Validate(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
-
 	resolved, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
