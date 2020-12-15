@@ -199,6 +199,9 @@ impl ::protobuf::reflect::ProtobufValue for ValidateRequest {
 
 #[derive(PartialEq,Clone,Default)]
 pub struct ValidateResponse {
+    // message fields
+    pub valid: bool,
+    pub error_message: ::std::string::String,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -214,6 +217,47 @@ impl ValidateResponse {
     pub fn new() -> ValidateResponse {
         ::std::default::Default::default()
     }
+
+    // bool valid = 1;
+
+
+    pub fn get_valid(&self) -> bool {
+        self.valid
+    }
+    pub fn clear_valid(&mut self) {
+        self.valid = false;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_valid(&mut self, v: bool) {
+        self.valid = v;
+    }
+
+    // string error_message = 2;
+
+
+    pub fn get_error_message(&self) -> &str {
+        &self.error_message
+    }
+    pub fn clear_error_message(&mut self) {
+        self.error_message.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_error_message(&mut self, v: ::std::string::String) {
+        self.error_message = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_error_message(&mut self) -> &mut ::std::string::String {
+        &mut self.error_message
+    }
+
+    // Take field
+    pub fn take_error_message(&mut self) -> ::std::string::String {
+        ::std::mem::replace(&mut self.error_message, ::std::string::String::new())
+    }
 }
 
 impl ::protobuf::Message for ValidateResponse {
@@ -225,6 +269,16 @@ impl ::protobuf::Message for ValidateResponse {
         while !is.eof()? {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.valid = tmp;
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.error_message)?;
+                },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
                 },
@@ -237,12 +291,24 @@ impl ::protobuf::Message for ValidateResponse {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if self.valid != false {
+            my_size += 2;
+        }
+        if !self.error_message.is_empty() {
+            my_size += ::protobuf::rt::string_size(2, &self.error_message);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.valid != false {
+            os.write_bool(1, self.valid)?;
+        }
+        if !self.error_message.is_empty() {
+            os.write_string(2, &self.error_message)?;
+        }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -280,7 +346,17 @@ impl ::protobuf::Message for ValidateResponse {
     fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
         static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
         descriptor.get(|| {
-            let fields = ::std::vec::Vec::new();
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                "valid",
+                |m: &ValidateResponse| { &m.valid },
+                |m: &mut ValidateResponse| { &mut m.valid },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                "error_message",
+                |m: &ValidateResponse| { &m.error_message },
+                |m: &mut ValidateResponse| { &mut m.error_message },
+            ));
             ::protobuf::reflect::MessageDescriptor::new_pb_name::<ValidateResponse>(
                 "ValidateResponse",
                 fields,
@@ -297,6 +373,8 @@ impl ::protobuf::Message for ValidateResponse {
 
 impl ::protobuf::Clear for ValidateResponse {
     fn clear(&mut self) {
+        self.valid = false;
+        self.error_message.clear();
         self.unknown_fields.clear();
     }
 }
@@ -316,8 +394,9 @@ impl ::protobuf::reflect::ProtobufValue for ValidateResponse {
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\"validation/v1/validation_api.proto\x12\rvalidation.v1\"l\n\x0fValida\
     teRequest\x12W\n\x14resolved_transaction\x18\x01\x20\x01(\x0b2\".validat\
-    ion.v1.ResolvedTransactionR\x13resolvedTransactionB\0:\0\"\x14\n\x10Vali\
-    dateResponse:\0B\0b\x06proto3\
+    ion.v1.ResolvedTransactionR\x13resolvedTransactionB\0:\0\"S\n\x10Validat\
+    eResponse\x12\x16\n\x05valid\x18\x01\x20\x01(\x08R\x05validB\0\x12%\n\re\
+    rror_message\x18\x02\x20\x01(\tR\x0cerrorMessageB\0:\0B\0b\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

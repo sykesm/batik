@@ -24,11 +24,15 @@ service ValidationAPI {
   rpc Validate(ValidateRequest) returns (ValidateResponse);
 }
 
-// ValidateRequest ...
+// A ValidateRequest provides a resolved transaction proposal to a validator.
 message ValidateRequest {
   ResolvedTransaction resolved_transaction = 1;
 }
 
-// ValidateResponse...
+// A ValidateResponse indicates whether or not a proposed transaction is
+// valid. If a transaction is not valid, the error_message can be used to
+// describe why.
 message ValidateResponse {
+  bool valid = 1;
+  string error_message = 2;
 }
