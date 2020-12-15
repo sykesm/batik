@@ -13,6 +13,7 @@ all: gotools batik checks
 
 .PHONY: clean
 clean:
+	@cargo clean --manifest-path ./wasm/modules/utxotx/Cargo.toml
 	@-rm -rf dist
 
 .PHONY: batik
