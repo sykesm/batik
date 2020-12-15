@@ -93,8 +93,10 @@ func TestUTXOValidator(t *testing.T) {
 		gt.Expect(err).NotTo(HaveOccurred())
 		validateRequest.ResolvedTransaction.Signatures[0].Signature = sig
 
-		_, err = validator.Validate(validateRequest)
-		gt.Expect(err).To(MatchError("validate failed, return code: -1"))
+		res, err := validator.Validate(validateRequest)
+		gt.Expect(err).NotTo(HaveOccurred())
+		gt.Expect(res.Valid).To(BeFalse())
+		gt.Expect(res.ErrorMessage).To(Equal("signature error"))
 	})
 }
 

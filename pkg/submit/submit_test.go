@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -28,6 +27,19 @@ import (
 type fakeRepository Repository // private to prevent an import cycle in generated fake
 
 var _ fakeRepository = (*fake.Repository)(nil)
+
+func TestMain(m *testing.M) {
+	cmd := exec.Command("cargo", "build")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Dir = filepath.Join("..", "..", "wasm", "modules", "utxotx")
+
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
+}
 
 func TestSubmit(t *testing.T) {
 	var (
@@ -370,20 +382,6 @@ func TestValidate(t *testing.T) {
 	})
 }
 
-func TestMain(m *testing.M) {
-	_, b, _, _ := runtime.Caller(0)
-	cmd := exec.Command("cargo", "build")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = filepath.Join(filepath.Dir(b), "..", "..", "wasm", "modules", "utxotx")
-
-	if err := cmd.Run(); err != nil {
-		panic(err)
-	}
-
-	os.Exit(m.Run())
-}
-
 func TestValidateWASM(t *testing.T) {
 	var (
 		resolvedTx *transaction.Resolved
@@ -484,6 +482,6 @@ func TestValidateWASM(t *testing.T) {
 		resolvedTx.Signatures[0].Signature = sig
 
 		err = validateWASM(resolvedTx)
-		gt.Expect(err).To(MatchError("validate failed, return code: -1"))
+		gt.Expect(err).To(MatchError("validation failed for transaction 7472616e73616374696f6e2d6964: signature error"))
 	})
 }

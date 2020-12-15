@@ -13,6 +13,7 @@ extern "C" {
     fn __batik_write(stream_id: isize, buf: *const u8, count: usize) -> isize;
 }
 
+#[allow(dead_code)]
 pub fn log(msg: &str) {
     unsafe { __batik_log(msg.as_ptr(), msg.len()) }
 }
