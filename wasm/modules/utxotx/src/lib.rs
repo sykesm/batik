@@ -104,7 +104,8 @@ fn validate_tx(req_bytes: &mut Vec<u8>) -> Result<Vec<u8>> {
         vk.verify(txid, &signature)?;
     }
 
-    let resp = validation_api::ValidateResponse::new();
+    let mut resp = validation_api::ValidateResponse::new();
+    resp.set_valid(true);
     resp.write_to_bytes().map_err(|e| Error::ProtobufError(e))
 }
 

@@ -112,6 +112,7 @@ func TestBasic(t *testing.T) {
 	var validateResponse validationv1.ValidateResponse
 	err = proto.Unmarshal(adapter.response, &validateResponse)
 	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(validateResponse.Valid).To(BeTrue())
 }
 
 type adapter struct {

@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -131,11 +130,11 @@ func validate(resolved *transaction.Resolved) error {
 	requiredSigners := requiredSigners(resolved)
 	for _, signer := range requiredSigners {
 		if signer.PublicKey == nil {
-			return fmt.Errorf("required signer missing public key")
+			return errors.New("required signer missing public key")
 		}
 		sig := signature(signer.PublicKey, resolved.Signatures)
 		if sig == nil {
-			return fmt.Errorf("missing signature from %x", signer.PublicKey)
+			return errors.Errorf("missing signature from %x", signer.PublicKey)
 		}
 		pk, err := ecdsautil.UnmarshalPublicKey(signer.PublicKey)
 		if err != nil {
@@ -166,9 +165,15 @@ func validateWASM(resolved *transaction.Resolved) error {
 		ResolvedTransaction: transaction.FromResolved(resolved),
 	}
 
-	_, err := validator.Validate(validateRequest)
+	validateResponse, err := validator.Validate(validateRequest)
 	if err != nil {
 		return err
+	}
+	if !validateResponse.Valid {
+		if msg := validateResponse.ErrorMessage; msg != "" {
+			return errors.Errorf("validation failed for transaction %s: %s", resolved.ID, msg)
+		}
+		return errors.Errorf("validation failed for transaction %s", resolved.ID)
 	}
 
 	return nil
