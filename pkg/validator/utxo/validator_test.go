@@ -20,11 +20,13 @@ import (
 	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 )
 
+var modulePath = filepath.Join("..", "..", "..", "wasm", "modules", "utxotx")
+
 func TestMain(m *testing.M) {
-	cmd := exec.Command("cargo", "build")
+	cmd := exec.Command("cargo", "build", "--target", "wasm32-unknown-unknown")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Dir = filepath.Join(modulesPath(), "utxotx")
+	cmd.Dir = modulePath
 
 	if err := cmd.Run(); err != nil {
 		panic(err)
@@ -42,11 +44,13 @@ func TestUTXOValidator(t *testing.T) {
 
 	setup := func(t *testing.T) {
 		gt := NewGomegaWithT(t)
-		modulePath := filepath.Join(modulesPath(), "utxotx", "target", "wasm32-unknown-unknown", "debug", "utxotx.wasm")
-		gt.Expect(modulePath).To(BeAnExistingFile())
 
-		validator = NewValidator()
-		err := validator.Init()
+		var err error
+
+		wasmPath := filepath.Join(modulePath, "target", "wasm32-unknown-unknown", "debug", "utxotx.wasm")
+		gt.Expect(wasmPath).To(BeAnExistingFile())
+
+		validator, err = NewValidator(wasmPath)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)

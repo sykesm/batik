@@ -9,6 +9,5 @@ import validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 // transactions of varying types. They take advantage of a go wasmtime host
 // to handle validation via a web assembly module.
 type Validator interface {
-	Init() error
 	Validate(*validationv1.ValidateRequest) (*validationv1.ValidateResponse, error)
 }

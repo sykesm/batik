@@ -5,19 +5,12 @@ package utxo
 
 import (
 	"os"
-	"path/filepath"
-	"runtime"
 
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
 	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 	"google.golang.org/protobuf/proto"
 )
-
-func modulesPath() string {
-	_, b, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(b), "..", "..", "..", "wasm", "modules")
-}
 
 // UTXOValidator implements the validator.Validator interface and provides
 // a custom validator for UTXO transaction validation. Currently the web assembly
@@ -26,56 +19,48 @@ type UTXOValidator struct {
 	adapter *adapter
 	engine  *wasmtime.Engine
 	store   *wasmtime.Store
-
-	modulePath string
-
-	validateFunc *wasmtime.Func
+	module  *wasmtime.Module
 }
 
-func NewValidator() *UTXOValidator {
+func NewValidator(modulePath string) (*UTXOValidator, error) {
 	engine := wasmtime.NewEngine()
 	store := wasmtime.NewStore(engine)
 
-	return &UTXOValidator{
-		adapter:    &adapter{},
-		engine:     engine,
-		store:      store,
-		modulePath: filepath.Join(modulesPath(), "utxotx", "target", "wasm32-unknown-unknown", "debug", "utxotx.wasm"),
+	if _, err := os.Stat(modulePath); os.IsNotExist(err) {
+		return nil, errors.Errorf("module does not exist at %s", modulePath)
 	}
+
+	module, err := wasmtime.NewModuleFromFile(engine, modulePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &UTXOValidator{
+		adapter: &adapter{},
+		engine:  engine,
+		store:   store,
+		module:  module,
+	}, nil
 }
 
-func (v *UTXOValidator) Init() error {
-	if _, err := os.Stat(v.modulePath); os.IsNotExist(err) {
-		return errors.Errorf("module does not exist at %s", v.modulePath)
-	}
-
-	module, err := wasmtime.NewModuleFromFile(v.engine, v.modulePath)
+func (v *UTXOValidator) Validate(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
+	imports, err := v.newImports(v.module)
 	if err != nil {
-		return err
-	}
-
-	imports, err := v.newImports(module)
-	if err != nil {
-		return err
+		return nil, err
 	}
 
 	instance, err := wasmtime.NewInstance(
 		v.store,
-		module,
+		v.module,
 		imports,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	v.adapter.instance = instance
 	v.adapter.memory = instance.GetExport("memory").Memory()
-	v.validateFunc = instance.GetExport("validate").Func()
 
-	return nil
-}
-
-func (v *UTXOValidator) Validate(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
 	resolved, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -83,7 +68,7 @@ func (v *UTXOValidator) Validate(req *validationv1.ValidateRequest) (*validation
 
 	v.adapter.resolved = resolved
 
-	res, err := v.validateFunc.Call(99, len(resolved))
+	res, err := instance.GetExport("validate").Func().Call(99, len(resolved))
 	if err != nil {
 		return nil, err
 	}

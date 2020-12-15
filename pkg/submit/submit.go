@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 
@@ -153,12 +154,16 @@ func validate(resolved *transaction.Resolved) error {
 }
 
 func validateWASM(resolved *transaction.Resolved) error {
-	var validator validator.Validator
+	var (
+		validator validator.Validator
+		err       error
+	)
 
 	// Check and choose type of validator
-	validator = utxo.NewValidator()
-	if err := validator.Init(); err != nil {
-		return errors.WithMessage(err, "failed initializing validator")
+	modulePath := filepath.Join("..", "..", "wasm", "modules", "utxotx", "target", "wasm32-unknown-unknown", "debug", "utxotx.wasm")
+	validator, err = utxo.NewValidator(modulePath)
+	if err != nil {
+		return errors.WithMessage(err, "failed creating validator")
 	}
 
 	validateRequest := &validationv1.ValidateRequest{

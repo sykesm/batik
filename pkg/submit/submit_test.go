@@ -28,11 +28,13 @@ type fakeRepository Repository // private to prevent an import cycle in generate
 
 var _ fakeRepository = (*fake.Repository)(nil)
 
+var modulePath = filepath.Join("..", "..", "wasm", "modules", "utxotx")
+
 func TestMain(m *testing.M) {
-	cmd := exec.Command("cargo", "build")
+	cmd := exec.Command("cargo", "build", "--target", "wasm32-unknown-unknown")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Dir = filepath.Join("..", "..", "wasm", "modules", "utxotx")
+	cmd.Dir = modulePath
 
 	if err := cmd.Run(); err != nil {
 		panic(err)
@@ -383,24 +385,19 @@ func TestValidate(t *testing.T) {
 }
 
 func TestValidateWASM(t *testing.T) {
-	var (
-		resolvedTx *transaction.Resolved
-		signer     *ecdsautil.Signer
-	)
-
-	setup := func(t *testing.T) {
+	setup := func(t *testing.T) (*transaction.Resolved, *ecdsautil.Signer) {
 		gt := NewGomegaWithT(t)
 
 		sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)
 		gt.Expect(err).NotTo(HaveOccurred())
 		pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
 		gt.Expect(err).NotTo(HaveOccurred())
-		signer = ecdsautil.NewSigner(sk)
+		signer := ecdsautil.NewSigner(sk)
 		txidHash := digest([]byte("transaction-id"))
 		sig, err := signer.Sign(rand.Reader, txidHash[:], crypto.SHA256)
 		gt.Expect(err).NotTo(HaveOccurred())
 
-		resolvedTx = &transaction.Resolved{
+		return &transaction.Resolved{
 			ID: []byte("transaction-id"),
 			RequiredSigners: []*transaction.Party{
 				{
@@ -413,69 +410,77 @@ func TestValidateWASM(t *testing.T) {
 					Signature: sig,
 				},
 			},
-		}
+		}, signer
 	}
 
 	t.Run("SucessfulValidation", func(t *testing.T) {
+		t.Parallel()
+
 		gt := NewGomegaWithT(t)
 
-		setup(t)
+		resolvedTx, _ := setup(t)
 		err := validateWASM(resolvedTx)
 		gt.Expect(err).NotTo(HaveOccurred())
 	})
 
 	t.Run("MissingRequiredSignature", func(t *testing.T) {
+		t.Parallel()
+
 		gt := NewGomegaWithT(t)
 
-		setup(t)
+		resolvedTx, _ := setup(t)
 		resolvedTx.RequiredSigners = append(
 			resolvedTx.RequiredSigners,
 			&transaction.Party{PublicKey: []byte("absent-required-signer")},
 		)
 
 		err := validateWASM(resolvedTx)
-		// TODO: check error properly once module properly handles
-		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(err).To(MatchError("validation failed for transaction 7472616e73616374696f6e2d6964: Incomplete data or invalid ASN1"))
 	})
 
 	t.Run("InvalidPublicKey", func(t *testing.T) {
+		t.Parallel()
+
 		gt := NewGomegaWithT(t)
 
-		setup(t)
+		resolvedTx, _ := setup(t)
 		resolvedTx.RequiredSigners[0].PublicKey = []byte("invalid-public-key")
 		resolvedTx.Signatures[0].PublicKey = []byte("invalid-public-key")
 
 		err := validateWASM(resolvedTx)
-		// TODO: check error properly once module properly handles
-		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(err).To(MatchError("validation failed for transaction 7472616e73616374696f6e2d6964: Incomplete data or invalid ASN1"))
 	})
 
 	t.Run("NilPublicKey", func(t *testing.T) {
+		t.Parallel()
+
 		gt := NewGomegaWithT(t)
 
-		setup(t)
+		resolvedTx, _ := setup(t)
 		resolvedTx.RequiredSigners[0].PublicKey = nil
 
 		err := validateWASM(resolvedTx)
-		// TODO: check error properly once module properly handles
-		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(err).To(MatchError("validation failed for transaction 7472616e73616374696f6e2d6964: Encountered an empty buffer decoding ASN1 block."))
 	})
 
 	t.Run("InvalidSignatureFormat", func(t *testing.T) {
+		t.Parallel()
+
 		gt := NewGomegaWithT(t)
 
-		setup(t)
+		resolvedTx, _ := setup(t)
 		resolvedTx.Signatures[0].Signature = []byte("bad-signature")
 
 		err := validateWASM(resolvedTx)
-		// TODO: check error properly once module properly handles
-		gt.Expect(err).To(HaveOccurred())
+		gt.Expect(err).To(MatchError("validation failed for transaction 7472616e73616374696f6e2d6964: signature error"))
 	})
 
 	t.Run("BadSignature", func(t *testing.T) {
+		t.Parallel()
+
 		gt := NewGomegaWithT(t)
 
-		setup(t)
+		resolvedTx, signer := setup(t)
 		newTxidHash := digest([]byte("this-is-a-different-message"))
 		sig, err := signer.Sign(rand.Reader, newTxidHash[:], crypto.SHA256)
 		gt.Expect(err).NotTo(HaveOccurred())
