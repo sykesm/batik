@@ -44,9 +44,9 @@ dependencies = [
 
 [[package]]
 name = "const-oid"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81f31e8ecbfc556990ae313b64aedaa11d901616af2a886e8caf57883caa43f0"
+checksum = "8e143857ef5e50b46bba431bb0ed990426912f5eea85d6048214d8196d83efed"
 
 [[package]]
 name = "cpuid-bool"

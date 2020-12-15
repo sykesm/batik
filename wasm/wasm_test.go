@@ -24,7 +24,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	cmd := exec.Command("cargo", "build")
+	cmd := exec.Command("cargo", "build", "--target", "wasm32-unknown-unknown")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = filepath.Join("modules", "utxotx")
