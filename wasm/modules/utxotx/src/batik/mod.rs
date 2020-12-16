@@ -18,6 +18,7 @@ pub fn log(msg: &str) {
     unsafe { __batik_log(msg.as_ptr(), msg.len()) }
 }
 
+#[must_use]
 pub fn read(id: i32, buf: &mut Vec<u8>) -> isize {
     let len = unsafe { __batik_read(id as isize, buf.as_mut_ptr() as *mut u8, buf.capacity()) };
     if len >= 0 {
@@ -26,6 +27,7 @@ pub fn read(id: i32, buf: &mut Vec<u8>) -> isize {
     len
 }
 
+#[must_use]
 pub fn write(id: i32, buf: &Vec<u8>) -> isize {
     unsafe { __batik_write(id as isize, buf.as_ptr() as *const u8, buf.len()) }
 }
