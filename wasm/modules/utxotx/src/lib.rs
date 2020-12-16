@@ -10,7 +10,7 @@ use messages::validation_api::{ValidateRequest, ValidateResponse};
 use p256::ecdsa;
 use protobuf::{parse_from_bytes, Message};
 use signature::Verifier;
-use simple_asn1::{oid, ASN1Block, BigUint, OID};
+use simple_asn1::{oid, BigUint, OID};
 
 #[derive(Debug)]
 enum Error {
@@ -125,35 +125,185 @@ fn signature<'a>(signatures: &'a [Signature], public_key: &[u8]) -> Option<&'a S
     signatures.iter().find(|sig| sig.public_key == public_key)
 }
 
+fn ec_public_key_oid() -> simple_asn1::OID {
+    oid!(1, 2, 840, 10045, 2, 1)
+}
+
+fn ec_p256v1_oid() -> simple_asn1::OID {
+    oid!(1, 2, 840, 10045, 3, 1, 7)
+}
+
 fn extract_sec1_key(pkix_subject_key: &[u8]) -> Result<Vec<u8>> {
     let der = simple_asn1::from_der(pkix_subject_key)?;
     let block = der.first().ok_or(Error::InvalidPKIXEncoding)?;
     let seq = match &block {
-        ASN1Block::Sequence(_, seq) if seq.len() == 2 => seq,
+        simple_asn1::ASN1Block::Sequence(_, seq) if seq.len() == 2 => seq,
         _ => return Err(Error::InvalidPKIXEncoding),
     };
     let alg_id = match &seq[0] {
-        ASN1Block::Sequence(_, alg_id) if alg_id.len() == 2 => alg_id,
+        simple_asn1::ASN1Block::Sequence(_, alg_id) if alg_id.len() == 2 => alg_id,
         _ => return Err(Error::InvalidAlgorithmEncoding),
     };
     let alg = match &alg_id[0] {
-        ASN1Block::ObjectIdentifier(_, alg) => alg,
+        simple_asn1::ASN1Block::ObjectIdentifier(_, alg) => alg,
         _ => return Err(Error::InvalidAlgorithmEncoding),
     };
     let curve = match &alg_id[1] {
-        ASN1Block::ObjectIdentifier(_, curve) => curve,
+        simple_asn1::ASN1Block::ObjectIdentifier(_, curve) => curve,
         _ => return Err(Error::InvalidAlgorithmEncoding),
     };
-    if alg != oid!(1, 2, 840, 10045, 2, 1) {
+    if alg != ec_public_key_oid() {
         return Err(Error::UnknownAlgorithm);
     }
-    if curve != oid!(1, 2, 840, 10045, 3, 1, 7) {
+    if curve != ec_p256v1_oid() {
         return Err(Error::UnknownCurve);
     }
     let pk = match &seq[1] {
-        ASN1Block::BitString(_, _, pk) => pk,
+        simple_asn1::ASN1Block::BitString(_, _, pk) => pk,
         _ => return Err(Error::InvalidKeyEncoding),
     };
 
     Ok(pk.to_vec())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use simple_asn1::ASN1Block;
+
+    macro_rules! assert_error_match {
+        ($expression:expr, $error:pat) => {
+            match $expression {
+                Err($error) => (),
+                e => assert!(false, "expected {:?}, got {:?}", stringify!($error), e),
+            }
+        };
+    }
+
+    #[test]
+    fn sec1_key_extraction_empty_block() {
+        let empty: Vec<u8> = Vec::new();
+        assert_error_match!(extract_sec1_key(&empty), Error::InvalidDer(_));
+    }
+
+    #[test]
+    fn sec1_key_extraction_not_sequence() {
+        let block = ASN1Block::Boolean(0, true);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_error_match!(extract_sec1_key(&pkix_key), Error::InvalidPKIXEncoding);
+    }
+
+    #[test]
+    fn sec1_key_extraction_not_sequence_len2() {
+        let mut seq: Vec<ASN1Block> = Vec::new();
+        seq.push(ASN1Block::Boolean(0, true));
+
+        let block = ASN1Block::Sequence(0, seq);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_error_match!(extract_sec1_key(&pkix_key), Error::InvalidPKIXEncoding);
+    }
+
+    #[test]
+    fn sec1_key_extraction_algid_not_sequence() {
+        let mut algid: Vec<ASN1Block> = Vec::new();
+        algid.push(ASN1Block::Boolean(0, true));
+
+        let mut seq: Vec<ASN1Block> = Vec::new();
+        seq.push(ASN1Block::Sequence(0, algid));
+        seq.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+
+        let block = ASN1Block::Sequence(0, seq);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_error_match!(extract_sec1_key(&pkix_key), Error::InvalidAlgorithmEncoding);
+    }
+
+    #[test]
+    fn sec1_key_extraction_bad_algid_element0() {
+        let mut algid: Vec<ASN1Block> = Vec::new();
+        algid.push(ASN1Block::Boolean(0, true));
+        algid.push(ASN1Block::Boolean(0, true));
+
+        let mut seq: Vec<ASN1Block> = Vec::new();
+        seq.push(ASN1Block::Sequence(0, algid));
+        seq.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+
+        let block = ASN1Block::Sequence(0, seq);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_error_match!(extract_sec1_key(&pkix_key), Error::InvalidAlgorithmEncoding);
+    }
+
+    #[test]
+    fn sec1_key_extraction_bad_algid_element1() {
+        let mut algid: Vec<ASN1Block> = Vec::new();
+        algid.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+        algid.push(ASN1Block::Boolean(0, true));
+
+        let mut seq: Vec<ASN1Block> = Vec::new();
+        seq.push(ASN1Block::Sequence(0, algid));
+        seq.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+
+        let block = ASN1Block::Sequence(0, seq);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_error_match!(extract_sec1_key(&pkix_key), Error::InvalidAlgorithmEncoding);
+    }
+
+    #[test]
+    fn sec1_key_extraction_bad_algid_unknown_algorithm() {
+        let mut algid: Vec<ASN1Block> = Vec::new();
+        algid.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+        algid.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+
+        let mut seq: Vec<ASN1Block> = Vec::new();
+        seq.push(ASN1Block::Sequence(0, algid));
+        seq.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+
+        let block = ASN1Block::Sequence(0, seq);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_error_match!(extract_sec1_key(&pkix_key), Error::UnknownAlgorithm);
+    }
+
+    #[test]
+    fn sec1_key_extraction_bad_algid_unknown_curve() {
+        let mut algid: Vec<ASN1Block> = Vec::new();
+        algid.push(ASN1Block::ObjectIdentifier(0, ec_public_key_oid()));
+        algid.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+
+        let mut seq: Vec<ASN1Block> = Vec::new();
+        seq.push(ASN1Block::Sequence(0, algid));
+        seq.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+
+        let block = ASN1Block::Sequence(0, seq);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_error_match!(extract_sec1_key(&pkix_key), Error::UnknownCurve);
+    }
+
+    #[test]
+    fn sec1_key_extraction_invalid_key_encoding() {
+        let mut algid: Vec<ASN1Block> = Vec::new();
+        algid.push(ASN1Block::ObjectIdentifier(0, ec_public_key_oid()));
+        algid.push(ASN1Block::ObjectIdentifier(0, ec_p256v1_oid()));
+
+        let mut seq: Vec<ASN1Block> = Vec::new();
+        seq.push(ASN1Block::Sequence(0, algid));
+        seq.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 3)));
+
+        let block = ASN1Block::Sequence(0, seq);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_error_match!(extract_sec1_key(&pkix_key), Error::InvalidKeyEncoding);
+    }
+
+    #[test]
+    fn sec1_key_extraction_happy() {
+        let mut algid: Vec<ASN1Block> = Vec::new();
+        algid.push(ASN1Block::ObjectIdentifier(0, oid!(1, 2, 840, 10045, 2, 1)));
+        algid.push(ASN1Block::ObjectIdentifier(0, ec_p256v1_oid()));
+
+        let mut seq: Vec<ASN1Block> = Vec::new();
+        seq.push(ASN1Block::Sequence(0, algid));
+        seq.push(ASN1Block::BitString(0, 1, vec![1u8, 2, 3]));
+
+        let block = ASN1Block::Sequence(0, seq);
+        let pkix_key = simple_asn1::to_der(&block).unwrap();
+        assert_eq!(extract_sec1_key(&pkix_key).unwrap(), vec![1u8, 2, 3]);
+    }
 }
