@@ -49,6 +49,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e143857ef5e50b46bba431bb0ed990426912f5eea85d6048214d8196d83efed"
 
 [[package]]
+name = "const-oid"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "069b46dab00267d018567b1154f38b706d6ed93c4915301a2fa73bc24a03a1e7"
+
+[[package]]
 name = "cpuid-bool"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -95,7 +101,7 @@ dependencies = [
  "ff",
  "generic-array",
  "group",
- "pkcs8",
+ "pkcs8 0.1.1",
  "rand_core",
  "subtle",
  "zeroize",
@@ -208,7 +214,16 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6529960a627342f19f68d43a07b268c98fd347e68668df3743a3cb9211c0975f"
 dependencies = [
- "const-oid",
+ "const-oid 0.3.5",
+]
+
+[[package]]
+name = "pkcs8"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9911ed9965aeee333588f226ad2baeabda478bf5ec151550735ed1760df759ba"
+dependencies = [
+ "const-oid 0.4.0",
 ]
 
 [[package]]
@@ -284,9 +299,9 @@ dependencies = [
 
 [[package]]
 name = "subtle"
-version = "2.3.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "343f3f510c2915908f155e94f17220b19ccfacf2a64a2a5d8004f2c3e311e7fd"
+checksum = "1e81da0851ada1f3e9d4312c704aa4f8806f0f9d69faaf8df2f3464b4a9437c2"
 
 [[package]]
 name = "typenum"
@@ -301,6 +316,7 @@ dependencies = [
  "ecdsa",
  "hex",
  "p256",
+ "pkcs8 0.3.2",
  "protobuf",
  "protobuf-codegen-pure",
  "signature",
