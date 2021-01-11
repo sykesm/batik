@@ -8,7 +8,7 @@ use messages::resolved::ResolvedTransaction;
 use messages::transaction::{Party, Signature};
 use messages::validation_api::{ValidateRequest, ValidateResponse};
 use p256::ecdsa;
-use protobuf::{parse_from_bytes, Message};
+use protobuf::Message;
 use signature::Verifier;
 use simple_asn1::{oid, BigUint, OID};
 
@@ -84,7 +84,7 @@ pub extern "C" fn validate(stream: i32, input_len: i32) -> i32 {
 }
 
 fn validate_tx(req_bytes: &Vec<u8>) -> Result<Vec<u8>> {
-    let request: ValidateRequest = parse_from_bytes(req_bytes)?;
+    let request = ValidateRequest::parse_from_bytes(req_bytes)?;
     let tx = request.get_resolved_transaction();
 
     let mut resp = ValidateResponse::new();
@@ -219,7 +219,7 @@ mod tests {
     fn validate_tx_no_required_sigs() {
         let req = ValidateRequest::new().write_to_bytes().unwrap();
         let res = validate_tx(&req).unwrap();
-        let resp: ValidateResponse = parse_from_bytes(&res).unwrap();
+        let resp = ValidateResponse::parse_from_bytes(&res).unwrap();
         assert_eq!(resp.get_valid(), true);
     }
 
@@ -233,7 +233,7 @@ mod tests {
         req.set_resolved_transaction(resolved);
 
         let res = validate_tx(&req.write_to_bytes().unwrap()).unwrap();
-        let resp: ValidateResponse = parse_from_bytes(&res).unwrap();
+        let resp = ValidateResponse::parse_from_bytes(&res).unwrap();
         assert!(resp.get_valid() == true);
     }
 
@@ -247,7 +247,7 @@ mod tests {
         req.set_resolved_transaction(resolved);
 
         let res = validate_tx(&req.write_to_bytes().unwrap()).unwrap();
-        let resp: ValidateResponse = parse_from_bytes(&res).unwrap();
+        let resp = ValidateResponse::parse_from_bytes(&res).unwrap();
         assert!(resp.get_valid() == false);
     }
 
@@ -274,7 +274,7 @@ mod tests {
         req.set_resolved_transaction(resolved);
 
         let res = validate_tx(&req.write_to_bytes().unwrap()).unwrap();
-        let resp: ValidateResponse = parse_from_bytes(&res).unwrap();
+        let resp = ValidateResponse::parse_from_bytes(&res).unwrap();
         assert!(resp.get_valid());
     }
 

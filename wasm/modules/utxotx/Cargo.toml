@@ -28,4 +28,3 @@ lto = true
 protobuf-codegen-pure = "2.3"
 
 [dev-dependencies]
-pkcs8 = "0.3"
