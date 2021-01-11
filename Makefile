@@ -16,6 +16,8 @@ clean:
 	@cargo clean --manifest-path ./wasm/modules/utxotx/Cargo.toml
 	@-rm -rf dist
 
+clean-all: clean gotools-clean
+
 .PHONY: batik
 batik:
 	@-mkdir -p dist
