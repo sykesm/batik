@@ -29,21 +29,17 @@ const (
 // GetLogger retrieves a zap.Logger from the *cli.Context if one exists.
 // If no logger exists on the context a default one is created and returned.
 func GetLogger(ctx *cli.Context) (*zap.Logger, error) {
-	logger := retrieveFromCtx(ctx, loggerKey)
-	if logger == nil {
-		return log.NewLogger(
-			zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig()),
-			log.NewWriteSyncer(ctx.App.ErrWriter),
-			log.NewLeveler("info"),
-		).Named(ctx.App.Name), nil
+	logger, ok := retrieveFromCtx(ctx, loggerKey).(*zap.Logger)
+	if ok {
+		return logger, nil
 	}
 
-	l, ok := logger.(*zap.Logger)
-	if !ok {
-		return nil, errors.New("logger not of type *zap.Logger")
-	}
-
-	return l, nil
+	logger = log.NewLogger(
+		zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig()),
+		log.NewWriteSyncer(ctx.App.ErrWriter),
+		log.NewLeveler("info"),
+	)
+	return logger.Named(ctx.App.Name), nil
 }
 
 // SetLogger stores a *zap.Logger on the *cli.Context.
@@ -93,26 +89,6 @@ func GetKV(ctx *cli.Context) store.KV {
 func SetKV(ctx *cli.Context, kv store.KV) {
 	setOnCtx(ctx, kvKey, kv)
 }
-
-// // GetServer retrieves a server from the *cli.Context if one exists.
-// func GetServer(ctx *cli.Context) (*BatikServer, error) {
-// 	server := retrieveFromCtx(ctx, serverKey)
-// 	if server == nil {
-// 		return nil, nil
-// 	}
-
-// 	s, ok := server.(*BatikServer)
-// 	if !ok {
-// 		return nil, errors.New("server not of type *BatikServer")
-// 	}
-
-// 	return s, nil
-// }
-
-// // SetServer stores a *BatikServer on the *cli.Context.
-// func SetServer(ctx *cli.Context, server *BatikServer) {
-// 	setOnCtx(ctx, serverKey, server)
-// }
 
 func retrieveFromCtx(ctx *cli.Context, key contextKey) interface{} {
 	return ctx.Context.Value(key)

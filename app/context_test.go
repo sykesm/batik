@@ -23,16 +23,11 @@ func TestContext_Logger(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	ctx := cli.NewContext(cli.NewApp(), nil, nil)
-
 	logger, err := GetLogger(ctx)
 	gt.Expect(logger).NotTo(BeNil())
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	ctx.Context = context.WithValue(ctx.Context, loggerKey, "invalidlogger")
-	logger, err = GetLogger(ctx)
-	gt.Expect(err).To(MatchError("logger not of type *zap.Logger"))
-
-	buf := &bytes.Buffer{}
+	buf := bytes.NewBuffer(nil)
 	encoder := zaplogfmt.NewEncoder(zap.NewProductionEncoderConfig())
 	writer := log.NewWriteSyncer(buf)
 	leveler := log.NewLeveler("info")
