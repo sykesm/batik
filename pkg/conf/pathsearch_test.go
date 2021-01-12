@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -37,25 +38,41 @@ func Test_candidateFiles(t *testing.T) {
 }
 
 func TestFile(t *testing.T) {
-	if os.Getenv("BATIK_CONFIG_WANT_HELPER_PROCESS") != "1" {
-		t.Run("missing", func(t *testing.T) {
-			gt := NewGomegaWithT(t)
-			path, err := File("missing-config-file-stem")
-			gt.Expect(err).NotTo(HaveOccurred())
-			gt.Expect(path).To(BeEmpty())
-		})
+	isHelperProcess := os.Getenv("BATIK_CONFIG_TEST_HELPER_PROCESS") == "1"
+	if !isHelperProcess {
+		cmd := &exec.Cmd{
+			Path: os.Args[0],
+			Args: []string{
+				os.Args[0],
+				"-test.run=" + t.Name(),
+				"-test.v=" + strconv.FormatBool(testing.Verbose()),
+			},
+			Dir:    "testdata",
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+			Env:    append(os.Environ(), "BATIK_CONFIG_TEST_HELPER_PROCESS=1"),
+		}
 
-		cmd := exec.Command(os.Args[0], "-test.run=^TestFile$")
-		cmd.Env = append(os.Environ(), "BATIK_CONFIG_WANT_HELPER_PROCESS=1")
-		cmd.Dir = "testdata"
-		out, err := cmd.CombinedOutput()
-		NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred(), string(out))
-		return
+		err := cmd.Run()
+		NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred())
 	}
 
-	t.Run("existing", func(t *testing.T) {
+	t.Run("missing", func(t *testing.T) {
+		if isHelperProcess {
+			t.SkipNow()
+		}
 		gt := NewGomegaWithT(t)
+		path, err := File("missing-config-file-stem")
+		gt.Expect(err).NotTo(HaveOccurred())
+		gt.Expect(path).To(BeEmpty())
+	})
 
+	t.Run("existing", func(t *testing.T) {
+		if !isHelperProcess {
+			t.SkipNow()
+		}
+
+		gt := NewGomegaWithT(t)
 		wd, err := os.Getwd()
 		gt.Expect(err).NotTo(HaveOccurred())
 
