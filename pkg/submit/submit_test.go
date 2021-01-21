@@ -121,7 +121,7 @@ func TestSubmit(t *testing.T) {
 
 		setup(t)
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		gt.Expect(fakeRepo.GetTransactionCallCount()).To(Equal(1))
@@ -153,7 +153,7 @@ func TestSubmit(t *testing.T) {
 			TxID: transaction.NewID([]byte("missing-input-txid")),
 		})
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(HaveOccurred())
 		gt.Expect(store.IsNotFound(err)).To(BeTrue())
 	})
@@ -166,7 +166,7 @@ func TestSubmit(t *testing.T) {
 			TxID: transaction.NewID([]byte("missing-ref-txid")),
 		})
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(HaveOccurred())
 		gt.Expect(store.IsNotFound(err)).To(BeTrue())
 	})
@@ -177,7 +177,7 @@ func TestSubmit(t *testing.T) {
 		setup(t)
 		fakeRepo.PutTransactionReturns(errors.New("put-transaction-store-failure"))
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(HaveOccurred())
 		gt.Expect(err).To(MatchError("storing transaction " + signed.Transaction.ID.String() + " failed: put-transaction-store-failure"))
 	})
@@ -188,7 +188,7 @@ func TestSubmit(t *testing.T) {
 		setup(t)
 		fakeRepo.PutStateReturns(errors.New("put-state-store-failure"))
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(HaveOccurred())
 		gt.Expect(err).To(MatchError("storing transaction output " + signed.Transaction.Outputs[0].ID.String() + " failed: put-state-store-failure"))
 	})
@@ -199,7 +199,7 @@ func TestSubmit(t *testing.T) {
 		setup(t)
 		fakeRepo.ConsumeStateReturns(errors.New("consume-state-store-failure"))
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(HaveOccurred())
 		gt.Expect(err).To(MatchError("consuming transaction state " + signed.Inputs[0].String() + " failed: consume-state-store-failure"))
 	})
@@ -210,7 +210,7 @@ func TestSubmit(t *testing.T) {
 		setup(t)
 		signed.Signatures[0].Signature = []byte("bad-signature")
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(MatchError(ContainSubstring("validation failed: ")))
 	})
 
@@ -219,7 +219,7 @@ func TestSubmit(t *testing.T) {
 
 		setup(t)
 
-		err := submitService.Submit(context.Background(), signed, "utxo-wasm")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		gt.Expect(fakeRepo.GetTransactionCallCount()).To(Equal(1))
@@ -249,7 +249,7 @@ func TestSubmit(t *testing.T) {
 		setup(t)
 		signed.Signatures[0].Signature = []byte("bad-signature")
 
-		err := submitService.Submit(context.Background(), signed, "utxo-wasm")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(MatchError(ContainSubstring("validation failed: ")))
 	})
 }
@@ -267,7 +267,7 @@ func TestSubmitGetTransaction(t *testing.T) {
 		fakeRepo := &fake.Repository{}
 		submitService := NewService(fakeRepo)
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(HaveOccurred())
 		gt.Expect(store.IsAlreadyExists(err)).To(BeTrue())
 	})
@@ -279,7 +279,7 @@ func TestSubmitGetTransaction(t *testing.T) {
 		fakeRepo.GetTransactionReturns(nil, errors.New("unexpected-error"))
 		submitService := NewService(fakeRepo)
 
-		err := submitService.Submit(context.Background(), signed, "")
+		err := submitService.Submit(context.Background(), "namespace", signed)
 		gt.Expect(err).To(MatchError("unexpected-error"))
 	})
 }

@@ -28,7 +28,6 @@ service SubmitAPI {
 message SubmitRequest {
   string namespace = 1;
   SignedTransaction signed_transaction = 2;
-  string validator = 3;
 }
 
 // SubmitResponse returns the unique identifier for the transaction that was
