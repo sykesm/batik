@@ -104,7 +104,7 @@ func TestStoreService_PutState(t *testing.T) {
 	testState := testTx.Outputs[0]
 
 	req := &storev1.PutStateRequest{
-		StateReference: &txv1.StateReference{
+		StateRef: &txv1.StateReference{
 			Txid:        intTx.ID,
 			OutputIndex: 0,
 		},
@@ -114,8 +114,8 @@ func TestStoreService_PutState(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	stateID := transaction.StateID{
-		TxID:        req.StateReference.Txid,
-		OutputIndex: req.StateReference.OutputIndex,
+		TxID:        req.StateRef.Txid,
+		OutputIndex: req.StateRef.OutputIndex,
 	}
 	state, err := storeSvc.repo.GetState(stateID, false)
 	gt.Expect(err).NotTo(HaveOccurred())

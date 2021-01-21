@@ -281,7 +281,7 @@ var _ = Describe("gRPC", func() {
 				// TODO: Reorganize the integration tests
 				It("works through the REST gateway", func() {
 					client := &http.Client{}
-					url := "http://" + httpAddress + "/v1/store/tx/" + base64.URLEncoding.EncodeToString(txid)
+					url := "http://" + httpAddress + "/v1/store/bogus-namespace/tx/" + base64.URLEncoding.EncodeToString(txid)
 					resp, err := client.Get(url)
 					Expect(err).NotTo(HaveOccurred())
 					defer resp.Body.Close()
@@ -350,8 +350,8 @@ var _ = Describe("gRPC", func() {
 			When("the state exists", func() {
 				BeforeEach(func() {
 					putReq := &storev1.PutStateRequest{
-						StateReference: stateRef,
-						State:          state,
+						StateRef: stateRef,
+						State:    state,
 					}
 
 					_, err := storeServiceClient.PutState(context.Background(), putReq)
@@ -381,8 +381,8 @@ var _ = Describe("gRPC", func() {
 				}
 
 				req = &storev1.PutStateRequest{
-					StateReference: stateRef,
-					State:          state,
+					StateRef: stateRef,
+					State:    state,
 				}
 			})
 
