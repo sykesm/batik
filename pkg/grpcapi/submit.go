@@ -17,7 +17,7 @@ import (
 )
 
 type Submitter interface {
-	Submit(ctx context.Context, namespace string, signedTx *transaction.Signed) error
+	Submit(ctx context.Context, signedTx *transaction.Signed) error
 }
 
 // SubmitService implements the EncodeAPIServer gRPC interface.
@@ -28,17 +28,18 @@ type SubmitService struct {
 	// hasher implements the hash algorithm used to build and validate the
 	// transaction ID.
 	hasher merkle.Hasher
-	// submitter is the domain specific transaction processor
-	submitter Submitter
+	// submitters are the set of domain specific transaction processors asociated
+	// with each namespace
+	submitters map[string]Submitter
 }
 
 var _ txv1.SubmitAPIServer = (*SubmitService)(nil)
 
 // NewSubmitService creates a new instance of the SubmitService.
-func NewSubmitService(submitter Submitter) *SubmitService {
+func NewSubmitService(submitters map[string]Submitter) *SubmitService {
 	return &SubmitService{
-		hasher:    crypto.SHA256,
-		submitter: submitter,
+		hasher:     crypto.SHA256,
+		submitters: submitters,
 	}
 }
 
@@ -58,12 +59,16 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	submitter, ok := s.submitters[req.Namespace]
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "namespace %q not found", req.Namespace)
+	}
 
 	signed := &transaction.Signed{
 		Transaction: itx,
 		Signatures:  transaction.ToSignatures(signedTx.Signatures...),
 	}
-	err = s.submitter.Submit(ctx, req.Namespace, signed)
+	err = submitter.Submit(ctx, signed)
 	if err != nil {
 		code := codes.Unknown
 		switch {

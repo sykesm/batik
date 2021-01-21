@@ -125,6 +125,7 @@ var _ = Describe("gRPC", func() {
 			resp, err := submitClient.Submit(
 				context.Background(),
 				&txv1.SubmitRequest{
+					Namespace: "namespace",
 					SignedTransaction: &txv1.SignedTransaction{
 						Transaction: tx,
 					},
@@ -148,6 +149,7 @@ var _ = Describe("gRPC", func() {
 			_, err = submitClient.Submit(
 				context.Background(),
 				&txv1.SubmitRequest{
+					Namespace: "namespace",
 					SignedTransaction: &txv1.SignedTransaction{
 						Transaction: tx,
 					},
@@ -176,6 +178,7 @@ var _ = Describe("gRPC", func() {
 			resp, err = submitClient.Submit(
 				context.Background(),
 				&txv1.SubmitRequest{
+					Namespace: "namespace",
 					SignedTransaction: &txv1.SignedTransaction{
 						Transaction: tx,
 					},
@@ -199,6 +202,7 @@ var _ = Describe("gRPC", func() {
 			_, err = submitClient.Submit(
 				context.Background(),
 				&txv1.SubmitRequest{
+					Namespace: "namespace",
 					SignedTransaction: &txv1.SignedTransaction{
 						Transaction: tx2,
 					},

@@ -85,7 +85,10 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 	encodeService := &grpcapi.EncodeService{}
 	txv1.RegisterEncodeAPIServer(grpcServer.Server, encodeService)
 
-	submitService := grpcapi.NewSubmitService(submit.NewService(transactionRepo))
+	submitters := map[string]grpcapi.Submitter{
+		"namespace": submit.NewService(transactionRepo),
+	}
+	submitService := grpcapi.NewSubmitService(submitters)
 	txv1.RegisterSubmitAPIServer(grpcServer.Server, submitService)
 
 	storeService := grpcapi.NewStoreService(transactionRepo)

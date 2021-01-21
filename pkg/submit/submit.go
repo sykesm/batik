@@ -40,7 +40,7 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Submit(ctx context.Context, namespace string, signed *transaction.Signed) error {
+func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error {
 	txid := signed.Transaction.ID
 
 	// Transaction must have been processed before
