@@ -7,6 +7,7 @@ package tx.v1;
 
 option go_package = "github.com/sykesm/batik/pkg/pb/tx/v1;txv1";
 
+import "google/api/annotations.proto";
 import "tx/v1/transaction.proto";
 
 // SubmitAPI submits transactions for validation and commit processing.
@@ -15,13 +16,19 @@ import "tx/v1/transaction.proto";
 service SubmitAPI {
   // Submit submits a transaction for validation and commit processing.
   // NOTE: This is an implementation for prototyping.
-  rpc Submit(SubmitRequest) returns (SubmitResponse);
-};
+  rpc Submit(SubmitRequest) returns (SubmitResponse) {
+    option (google.api.http) = {
+      post: "/v1/submit/{namespace}"
+      body: "signed_transaction"
+    };
+  }
+}
 
 // SubmitRequest contains a Transaction.
 message SubmitRequest {
-  SignedTransaction signed_transaction = 1;
-  string validator = 2;
+  string namespace = 1;
+  SignedTransaction signed_transaction = 2;
+  string validator = 3;
 }
 
 // SubmitResponse returns the unique identifier for the transaction that was
