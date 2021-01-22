@@ -4,14 +4,11 @@
 package submit
 
 import (
-	"bytes"
 	"context"
-	"crypto/sha256"
 	"path/filepath"
 
 	"github.com/pkg/errors"
 
-	"github.com/sykesm/batik/pkg/ecdsautil"
 	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
@@ -29,15 +26,18 @@ type Repository interface {
 	ConsumeState(transaction.StateID) error
 }
 
-// TODO: build submitter instance as a unit of work
 // TODO: proper error values with semantics
 
 type Service struct {
-	repo Repository // repo is a reference to the transaction state repository.
+	repo      Repository          // repo is a reference to the transaction state repository.
+	validator validator.Validator // validator the transaction Validator
 }
 
 func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+	return &Service{
+		repo:      repo,
+		validator: validator.NewSignature(),
+	}
 }
 
 func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error {
@@ -58,11 +58,18 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 		return errors.WithMessagef(err, "state resolution for transaction %s failed", txid)
 	}
 
-	// TODO: Validator associated with namespace
 	// err = validateWASM(resolved)
-	err = validate(resolved)
-	if err != nil {
-		return errors.Wrap(err, "validation failed")
+	resp, err := s.validator.Validate(&validationv1.ValidateRequest{
+		ResolvedTransaction: transaction.FromResolved(resolved),
+	})
+	if err != nil { // TODO: recovery needs to halt
+		panic("validation failed with unrecoverable error")
+	}
+	if !resp.Valid && resp.ErrorMessage != "" {
+		return errors.Errorf("validation failed: %s", resp.ErrorMessage)
+	}
+	if !resp.Valid {
+		return errors.New("validation failed")
 	}
 
 	err = s.repo.PutTransaction(signed.Transaction)
@@ -118,36 +125,6 @@ func resolve(repo Repository, tx *transaction.Transaction, sigs []*transaction.S
 	return resolved, nil
 }
 
-func digest(preImage []byte) [32]byte {
-	return sha256.Sum256(preImage)
-}
-
-func validate(resolved *transaction.Resolved) error {
-	requiredSigners := requiredSigners(resolved)
-	for _, signer := range requiredSigners {
-		if signer.PublicKey == nil {
-			return errors.New("required signer missing public key")
-		}
-		sig := signature(signer.PublicKey, resolved.Signatures)
-		if sig == nil {
-			return errors.Errorf("missing signature from %x", signer.PublicKey)
-		}
-		pk, err := ecdsautil.UnmarshalPublicKey(signer.PublicKey)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal public key failed")
-		}
-		txidHash := digest(resolved.ID.Bytes())
-		ok, err := ecdsautil.Verify(pk, sig.Signature, txidHash[:])
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return errors.New("signature verification failed")
-		}
-	}
-	return nil
-}
-
 func validateWASM(resolved *transaction.Resolved) error {
 	var (
 		validator validator.Validator
@@ -177,25 +154,4 @@ func validateWASM(resolved *transaction.Resolved) error {
 	}
 
 	return nil
-}
-
-func signature(publicKey []byte, signatures []*transaction.Signature) *transaction.Signature {
-	for _, sig := range signatures {
-		if bytes.Equal(sig.PublicKey, publicKey) {
-			return sig
-		}
-	}
-	return nil
-}
-
-// TODO(mjs): Consider duplicate removal
-func requiredSigners(resolved *transaction.Resolved) []*transaction.Party {
-	var required []*transaction.Party
-	for _, input := range resolved.Inputs {
-		if input.StateInfo != nil {
-			required = append(required, input.StateInfo.Owners...)
-		}
-	}
-	required = append(required, resolved.RequiredSigners...)
-	return required
 }
