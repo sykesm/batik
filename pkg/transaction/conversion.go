@@ -207,6 +207,25 @@ func FromSignatures(in ...*Signature) []*txv1.Signature {
 	return sigs
 }
 
+func ResolvedToState(in *validationv1.ResolvedState) *State {
+	if in == nil {
+		return nil
+	}
+	return &State{
+		ID:        *ToStateID(in.Reference),
+		StateInfo: ToStateInfo(in.State.Info),
+		Data:      in.State.State,
+	}
+}
+
+func ResolvedToStates(in ...*validationv1.ResolvedState) []*State {
+	var states []*State
+	for i := range in {
+		states = append(states, ResolvedToState(in[i]))
+	}
+	return states
+}
+
 func ResolvedFromState(in *State) *validationv1.ResolvedState {
 	if in == nil {
 		return nil
@@ -223,6 +242,21 @@ func ResolvedFromStates(in ...*State) []*validationv1.ResolvedState {
 		resolved = append(resolved, ResolvedFromState(in[i]))
 	}
 	return resolved
+}
+
+func ToResolved(in *validationv1.ResolvedTransaction) *Resolved {
+	if in == nil {
+		return nil
+	}
+	return &Resolved{
+		ID:              in.Txid,
+		Inputs:          ResolvedToStates(in.Inputs...),
+		References:      ResolvedToStates(in.References...),
+		Outputs:         ToStates(in.Txid, in.Outputs...),
+		Parameters:      ToParameters(in.Parameters...),
+		RequiredSigners: ToParties(in.RequiredSigners...),
+		Signatures:      ToSignatures(in.Signatures...),
+	}
 }
 
 func FromResolved(in *Resolved) *validationv1.ResolvedTransaction {
