@@ -12,6 +12,7 @@ require (
 	github.com/go-logfmt/logfmt v0.5.0
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2 // indirect
+	github.com/google/go-cmp v0.5.4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.0.0
 	github.com/hokaccha/go-prettyjson v0.0.0-20190818114111-108c894c2c0e
 	github.com/kr/text v0.2.0 // indirect

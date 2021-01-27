@@ -4,12 +4,11 @@
 package utxo
 
 import (
-	"os"
-
 	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
-	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 	"google.golang.org/protobuf/proto"
+
+	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 )
 
 // UTXOValidator implements the validator.Validator interface and provides
@@ -17,27 +16,14 @@ import (
 // module handles transaction signature verification.
 type UTXOValidator struct {
 	adapter *adapter
-	engine  *wasmtime.Engine
 	store   *wasmtime.Store
 	module  *wasmtime.Module
 }
 
-func NewValidator(modulePath string) (*UTXOValidator, error) {
-	engine := wasmtime.NewEngine()
-	store := wasmtime.NewStore(engine)
-
-	if _, err := os.Stat(modulePath); os.IsNotExist(err) {
-		return nil, errors.Errorf("module does not exist at %s", modulePath)
-	}
-
-	module, err := wasmtime.NewModuleFromFile(engine, modulePath)
-	if err != nil {
-		return nil, err
-	}
-
+// func NewValidator(modulePath string) (*UTXOValidator, error) {
+func NewValidator(store *wasmtime.Store, module *wasmtime.Module) (*UTXOValidator, error) {
 	return &UTXOValidator{
 		adapter: &adapter{},
-		engine:  engine,
 		store:   store,
 		module:  module,
 	}, nil

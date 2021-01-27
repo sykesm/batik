@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bytecodealliance/wasmtime-go"
 	. "github.com/onsi/gomega"
 
 	"github.com/sykesm/batik/pkg/ecdsautil"
@@ -42,15 +43,19 @@ func TestUTXOValidator(t *testing.T) {
 		signer          *ecdsautil.Signer
 	)
 
+	gt := NewGomegaWithT(t)
+	engine := wasmtime.NewEngine()
+	store := wasmtime.NewStore(engine)
+	modulefile := filepath.Join(modulePath, "target", "wasm32-unknown-unknown", "debug", "utxotx.wasm")
+	gt.Expect(modulefile).To(BeAnExistingFile())
+	module, err := wasmtime.NewModuleFromFile(engine, modulefile)
+	gt.Expect(err).NotTo(HaveOccurred())
+
 	setup := func(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
 		var err error
-
-		wasmPath := filepath.Join(modulePath, "target", "wasm32-unknown-unknown", "debug", "utxotx.wasm")
-		gt.Expect(wasmPath).To(BeAnExistingFile())
-
-		validator, err = NewValidator(wasmPath)
+		validator, err = NewValidator(store, module)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)

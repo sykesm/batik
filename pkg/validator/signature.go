@@ -14,11 +14,11 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
+type Signature struct{}
+
 func NewSignature() *Signature {
 	return &Signature{}
 }
-
-type Signature struct{}
 
 func (s *Signature) Validate(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
 	err := validate(transaction.ToResolved(req.ResolvedTransaction))
