@@ -4,17 +4,13 @@
 package tested
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
-	"math/big"
-	"net"
-	"time"
+
+	"github.com/sykesm/batik/pkg/tlscerts"
 )
 
 type CertKeyPair struct {
@@ -27,7 +23,12 @@ type CertKeyPair struct {
 type CA CertKeyPair
 
 func NewCA(t TestingT, subjectCN string) CA {
-	cert, key := generateCA(t, subjectCN)
+	caTemplate, err := tlscerts.NewCATemplate(subjectCN)
+	assertNoError(t, err)
+
+	cert, key, err := tlscerts.GenerateCA(caTemplate)
+	assertNoError(t, err)
+
 	certificate, err := tls.X509KeyPair(cert, key)
 	assertNoError(t, err)
 	return CA{Cert: cert, CertChain: cert, Key: key, Certificate: certificate}
@@ -41,12 +42,16 @@ func (ca CA) IssueServerCertificate(t TestingT, subjectCN string, sans ...string
 	assertNoError(t, err)
 	publicKey := privateKey.Public()
 
-	template := newTemplate(t, subjectCN, sans...)
+	template, err := tlscerts.NewBaseTemplate(subjectCN, sans...)
+	assertNoError(t, err)
+
 	template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, cacert, publicKey, ca.Certificate.PrivateKey)
 	assertNoError(t, err)
 
-	cert, key := pemEncode(t, derBytes, privateKey)
+	cert, key, err := tlscerts.PemEncode(derBytes, privateKey)
+	assertNoError(t, err)
+
 	certChain := join(cert, ca.Cert)
 	certificate, err := tls.X509KeyPair(certChain, key)
 	assertNoError(t, err)
@@ -62,12 +67,16 @@ func (ca CA) IssueClientCertificate(t TestingT, subjectCN string, sans ...string
 	assertNoError(t, err)
 	publicKey := privateKey.Public()
 
-	template := newTemplate(t, subjectCN, sans...)
+	template, err := tlscerts.NewBaseTemplate(subjectCN, sans...)
+	assertNoError(t, err)
 	template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
+
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, cacert, publicKey, ca.Certificate.PrivateKey)
 	assertNoError(t, err)
 
-	cert, key := pemEncode(t, derBytes, privateKey)
+	cert, key, err := tlscerts.PemEncode(derBytes, privateKey)
+	assertNoError(t, err)
+
 	certChain := join(cert, ca.Cert)
 	certificate, err := tls.X509KeyPair(certChain, key)
 	assertNoError(t, err)
@@ -114,63 +123,6 @@ func (ckp CertKeyPair) ClientTLSConfig(t TestingT, serverCA *tls.Certificate) *t
 		RootCAs:            caCertPool,
 		ClientSessionCache: tls.NewLRUClientSessionCache(10),
 	}
-}
-
-func generateCA(t TestingT, subjectCN string) (pemCert, pemKey []byte) {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	assertNoError(t, err)
-	publicKey := privateKey.Public()
-
-	template := newTemplate(t, subjectCN)
-	template.KeyUsage |= x509.KeyUsageCertSign
-	template.IsCA = true
-
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey, privateKey)
-	assertNoError(t, err)
-
-	return pemEncode(t, derBytes, privateKey)
-}
-
-func newTemplate(t TestingT, subjectCN string, sans ...string) x509.Certificate {
-	notBefore := time.Now().Add(-1 * time.Minute)
-	notAfter := time.Now().Add(time.Duration(365 * 24 * time.Hour))
-
-	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	assertNoError(t, err)
-
-	template := x509.Certificate{
-		Subject:               pkix.Name{CommonName: subjectCN},
-		SerialNumber:          serialNumber,
-		NotBefore:             notBefore,
-		NotAfter:              notAfter,
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		BasicConstraintsValid: true,
-	}
-	for _, s := range sans {
-		if ip := net.ParseIP(s); ip != nil {
-			template.IPAddresses = append(template.IPAddresses, ip)
-		} else {
-			template.DNSNames = append(template.DNSNames, s)
-		}
-	}
-
-	return template
-}
-
-func pemEncode(t TestingT, derCert []byte, key *ecdsa.PrivateKey) (pemCert, pemKey []byte) {
-	certBuf := &bytes.Buffer{}
-	err := pem.Encode(certBuf, &pem.Block{Type: "CERTIFICATE", Bytes: derCert})
-	assertNoError(t, err)
-
-	keyBytes, err := x509.MarshalECPrivateKey(key)
-	assertNoError(t, err)
-
-	keyBuf := &bytes.Buffer{}
-	err = pem.Encode(keyBuf, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
-	assertNoError(t, err)
-
-	return certBuf.Bytes(), keyBuf.Bytes()
 }
 
 func join(b ...[]byte) []byte {
