@@ -5,8 +5,11 @@ package options
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"io/ioutil"
+	"net"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -100,7 +103,7 @@ func TestCertKeyPairTLSCertificate(t *testing.T) {
 func TestServerTLSDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	ts := ServerTLSDefaults()
-	gt.Expect(ts).To(Equal(&ServerTLS{}))
+	gt.Expect(ts).To(Equal(&ServerTLS{CertsDir: "tls-certs"}))
 }
 
 func TestServerTLSApplyDefaults(t *testing.T) {
@@ -132,10 +135,11 @@ func TestServerTLSFlagNames(t *testing.T) {
 		names = append(names, f.Names()...)
 	}
 
-	gt.Expect(flags).To(HaveLen(2))
+	gt.Expect(flags).To(HaveLen(3))
 	gt.Expect(names).To(ConsistOf(
 		"tls-cert-file",
 		"tls-private-key-file",
+		"tls-certs-dir",
 	))
 }
 
@@ -156,15 +160,23 @@ func TestServerTLSFlags(t *testing.T) {
 			[]string{"--tls-private-key-file", "private.key"},
 			ServerTLS{ServerCert: CertKeyPair{KeyFile: "private.key"}},
 		},
-		"cert and key files": {
+		"certs dir": {
+			[]string{"--tls-certs-dir", "some-dir"},
+			ServerTLS{CertsDir: "some-dir"},
+		},
+		"cert and key files and certs dir": {
 			[]string{
 				"--tls-cert-file", "certificate.file",
 				"--tls-private-key-file", "private.key",
+				"--tls-certs-dir", "some-dir",
 			},
-			ServerTLS{ServerCert: CertKeyPair{
-				CertFile: "certificate.file",
-				KeyFile:  "private.key",
-			}},
+			ServerTLS{
+				ServerCert: CertKeyPair{
+					CertFile: "certificate.file",
+					KeyFile:  "private.key",
+				},
+				CertsDir: "some-dir",
+			},
 		},
 	}
 
@@ -218,7 +230,7 @@ func TestServerTLSConfig(t *testing.T) {
 		expected   *tls.Config
 		errMatcher types.GomegaMatcher
 	}{
-		"missing key pair": {expected: nil},
+		"missing key pair": {errMatcher: MatchError(ErrServerTLSNotBootstrapped)},
 		"valid key pair": {
 			srv: ServerTLS{
 				ServerCert: CertKeyPair{CertData: string(skp.Cert), KeyData: string(skp.Key)},
@@ -244,6 +256,86 @@ func TestServerTLSConfig(t *testing.T) {
 			}
 			gt.Expect(err).NotTo(HaveOccurred())
 			gt.Expect(tlsConf).To(Equal(tt.expected))
+		})
+	}
+}
+
+func TestServerTLSBootstrap(t *testing.T) {
+	tests := map[string]struct {
+		errMatcher types.GomegaMatcher
+		inspectTLS func(*GomegaWithT, *tls.Config)
+		mangleDir  func(gt *GomegaWithT, certsDir string)
+	}{
+		"green path": {
+			inspectTLS: func(gt *GomegaWithT, config *tls.Config) {
+				gt.Expect(config.Certificates).To(HaveLen(1))
+				gt.Expect(config.Certificates[0].Certificate).To(HaveLen(1))
+				rawCert := config.Certificates[0].Certificate[0]
+
+				cert, err := x509.ParseCertificate(rawCert)
+				gt.Expect(err).NotTo(HaveOccurred())
+				gt.Expect(cert).NotTo(BeNil())
+
+				gt.Expect(cert.DNSNames).To(ContainElement("localhost"))
+				gt.Expect(cert.IPAddresses).To(ConsistOf(
+					net.ParseIP("::1"),
+					// Weirdly, net.IPv4 produces an IPv6 length address and doesn't match
+					net.IP([]byte{127, 0, 0, 1}),
+				))
+			},
+		},
+		"unwritable dir": {
+			mangleDir: func(gt *GomegaWithT, certsDir string) {
+				file, err := os.Create(certsDir)
+				gt.Expect(err).NotTo(HaveOccurred())
+
+				file.Close()
+			},
+			errMatcher: MatchError(MatchRegexp("failed to create tls-certs-dir.*")),
+		},
+		"unwritable cert": {
+			mangleDir: func(gt *GomegaWithT, certsDir string) {
+				err := os.MkdirAll(filepath.Join(certsDir, "server-cert.pem"), 0755)
+				gt.Expect(err).NotTo(HaveOccurred())
+			},
+			errMatcher: MatchError(MatchRegexp("failed to write cert to.*")),
+		},
+		"unwritable key": {
+			mangleDir: func(gt *GomegaWithT, certsDir string) {
+				err := os.MkdirAll(filepath.Join(certsDir, "server-key.pem"), 0755)
+				gt.Expect(err).NotTo(HaveOccurred())
+			},
+			errMatcher: MatchError(MatchRegexp("failed to write key to.*")),
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+
+			tempDir, cleanup := tested.TempDir(t, "", "options_tls_bootstrap")
+			defer cleanup()
+
+			serverTLSConf := &ServerTLS{
+				CertsDir: filepath.Join(tempDir, "certs-dir"),
+			}
+
+			if tt.mangleDir != nil {
+				tt.mangleDir(gt, serverTLSConf.CertsDir)
+			}
+
+			err := serverTLSConf.Bootstrap()
+			if tt.errMatcher != nil {
+				gt.Expect(err).To(tt.errMatcher)
+				return
+			}
+
+			tlsConf, err := serverTLSConf.TLSConfig()
+			gt.Expect(err).NotTo(HaveOccurred())
+
+			if tt.inspectTLS != nil {
+				tt.inspectTLS(gt, tlsConf)
+			}
 		})
 	}
 }

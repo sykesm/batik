@@ -68,6 +68,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 			},
 			TLS: ServerTLS{
 				ServerCert: CertKeyPair{CertData: "PEM ME\n", KeyData: "PEM ME\n"},
+				CertsDir:   "relative/certs-dir-path",
 			},
 		},
 		Ledger: Ledger{
@@ -98,6 +99,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 					CertData: "PEM ME\n",
 					KeyData:  "PEM ME\n",
 				},
+				CertsDir: "relative/certs-dir-path",
 			},
 		},
 		Ledger: Ledger{

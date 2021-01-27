@@ -59,12 +59,20 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 	)
 
 	tlsConf, err := config.Server.TLS.TLSConfig()
+	if errors.Is(err, options.ErrServerTLSNotBootstrapped) {
+		logger.Debug("initializing server TLS with self signed certificate", zap.String("certs_dir", config.Server.TLS.CertsDir))
+		err = config.Server.TLS.Bootstrap()
+		if err != nil {
+			return cli.Exit(errors.WithMessage(err, "failed to bootstrap server tls"), exitServerCreateFailed)
+		}
+
+		tlsConf, err = config.Server.TLS.TLSConfig()
+	}
 	if err != nil {
 		return cli.Exit(errors.WithMessage(err, "failed to create server"), exitServerCreateFailed)
 	}
-	if tlsConf != nil {
-		grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsConf)))
-	}
+
+	grpcServerOptions = append(grpcServerOptions, grpc.Creds(credentials.NewTLS(tlsConf)))
 
 	grpcServer := grpccomm.NewServer(
 		grpccomm.ServerConfig{

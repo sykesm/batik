@@ -53,7 +53,7 @@ func TestServerFlagNames(t *testing.T) {
 		names = append(names, f.Names()...)
 	}
 
-	gt.Expect(flags).To(HaveLen(11))
+	gt.Expect(flags).To(HaveLen(12))
 	gt.Expect(names).To(ConsistOf(
 		"grpc-conn-timeout",
 		"grpc-listen-address",
@@ -66,6 +66,7 @@ func TestServerFlagNames(t *testing.T) {
 		"http-idle-timeout",
 		"tls-cert-file",
 		"tls-private-key-file",
+		"tls-certs-dir",
 	))
 }
 
@@ -93,6 +94,7 @@ func TestServerFlags(t *testing.T) {
 				"--grpc-max-send-message-size", "8888",
 				"--tls-cert-file", "file.crt",
 				"--tls-private-key-file", "private.key",
+				"--tls-certs-dir", "custom/tls-certs",
 			},
 			expected: Server{
 				GRPC: GRPCServer{
@@ -101,6 +103,7 @@ func TestServerFlags(t *testing.T) {
 				},
 				TLS: ServerTLS{
 					ServerCert: CertKeyPair{CertFile: "file.crt", KeyFile: "private.key"},
+					CertsDir:   "custom/tls-certs",
 				},
 			},
 		},

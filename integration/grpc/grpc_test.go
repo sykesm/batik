@@ -7,6 +7,8 @@ import (
 	"context"
 	"crypto"
 	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,6 +24,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -34,11 +38,13 @@ import (
 
 var _ = Describe("gRPC", func() {
 	var (
-		session     *gexec.Session
-		grpcAddress string
-		httpAddress string
-		dbPath      string
-		cleanup     func()
+		session      *gexec.Session
+		grpcAddress  string
+		httpAddress  string
+		dbPath       string
+		certsPath    string
+		dbCleanup    func()
+		certsCleanup func()
 
 		clientConn *grpc.ClientConn
 	)
@@ -46,12 +52,14 @@ var _ = Describe("gRPC", func() {
 	BeforeEach(func() {
 		grpcAddress = fmt.Sprintf("127.0.0.1:%d", StartPort())
 		httpAddress = fmt.Sprintf("127.0.0.1:%d", StartPort()+1)
-		dbPath, cleanup = tested.TempDir(GinkgoT(), "", "level")
+		dbPath, dbCleanup = tested.TempDir(GinkgoT(), "", "level")
+		certsPath, certsCleanup = tested.TempDir(GinkgoT(), "", "certs")
 		cmd := exec.Command(
 			batikPath,
 			"--data-dir", dbPath,
 			"--color=yes",
 			"start",
+			"--tls-certs-dir", certsPath,
 			"--grpc-listen-address", grpcAddress,
 			"--http-listen-address", httpAddress,
 		)
@@ -62,7 +70,9 @@ var _ = Describe("gRPC", func() {
 		Eventually(session.Err, testTimeout).Should(gbytes.Say("Starting server"))
 		Eventually(session.Err, testTimeout).Should(gbytes.Say("Server started"))
 
-		clientConn, err = grpc.Dial(grpcAddress, grpc.WithInsecure(), grpc.WithBlock())
+		creds, err := credentials.NewClientTLSFromFile(filepath.Join(certsPath, "server-cert.pem"), "")
+		Expect(err).NotTo(HaveOccurred())
+		clientConn, err = grpc.Dial(grpcAddress, grpc.WithTransportCredentials(creds), grpc.WithBlock())
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -73,8 +83,11 @@ var _ = Describe("gRPC", func() {
 		if clientConn != nil {
 			clientConn.Close()
 		}
-		if cleanup != nil {
-			cleanup()
+		if dbCleanup != nil {
+			dbCleanup()
+		}
+		if certsCleanup != nil {
+			certsCleanup()
 		}
 	})
 
@@ -284,8 +297,20 @@ var _ = Describe("gRPC", func() {
 
 				// TODO: Reorganize the integration tests
 				It("works through the REST gateway", func() {
-					client := &http.Client{}
-					url := "http://" + httpAddress + "/v1/store/bogus-namespace/tx/" + base64.URLEncoding.EncodeToString(txid)
+					caCertPEM, err := ioutil.ReadFile(filepath.Join(certsPath, "server-cert.pem"))
+					Expect(err).NotTo(HaveOccurred())
+
+					caCertPool := x509.NewCertPool()
+					caCertPool.AppendCertsFromPEM(caCertPEM)
+
+					client := &http.Client{
+						Transport: &http.Transport{
+							TLSClientConfig: &tls.Config{
+								RootCAs: caCertPool,
+							},
+						},
+					}
+					url := "https://" + httpAddress + "/v1/store/bogus-namespace/tx/" + base64.URLEncoding.EncodeToString(txid)
 					resp, err := client.Get(url)
 					Expect(err).NotTo(HaveOccurred())
 					defer resp.Body.Close()
