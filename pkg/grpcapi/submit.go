@@ -16,10 +16,6 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
-type SubmitterMap interface {
-	Submitter(namespace string) (Submitter, bool)
-}
-
 type Submitter interface {
 	Submit(ctx context.Context, signedTx *transaction.Signed) error
 }
@@ -34,13 +30,13 @@ type SubmitService struct {
 	hasher merkle.Hasher
 	// submitters are the set of domain specific transaction processors asociated
 	// with each namespace
-	submitters SubmitterMap
+	submitters map[string]Submitter
 }
 
 var _ txv1.SubmitAPIServer = (*SubmitService)(nil)
 
 // NewSubmitService creates a new instance of the SubmitService.
-func NewSubmitService(submitters SubmitterMap) *SubmitService {
+func NewSubmitService(submitters map[string]Submitter) *SubmitService {
 	return &SubmitService{
 		hasher:     crypto.SHA256,
 		submitters: submitters,
@@ -63,7 +59,7 @@ func (s *SubmitService) Submit(ctx context.Context, req *txv1.SubmitRequest) (*t
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	submitter, ok := s.submitters.Submitter(req.Namespace)
+	submitter, ok := s.submitters[req.Namespace]
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "namespace %q not found", req.Namespace)
 	}
