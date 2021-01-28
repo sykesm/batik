@@ -27,8 +27,8 @@ type Repository interface {
 // TODO: proper error values with semantics
 
 type Service struct {
-	repo      Repository          // repo is a reference to the transaction state repository.
-	validator validator.Validator // validator the transaction Validator
+	repo      Repository // repo is a reference to the transaction state repository.
+	validator Validator  // validator the transaction Validator
 }
 
 func NewService(repo Repository) *Service {
