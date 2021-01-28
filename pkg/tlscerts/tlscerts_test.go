@@ -22,8 +22,8 @@ func TestNewBaseTemplate(t *testing.T) {
 
 	gt.Expect(template.Subject).To(Equal(pkix.Name{CommonName: "some-cn"}))
 	gt.Expect(template.SerialNumber).NotTo(Equal(0))
-	gt.Expect(time.Since(template.NotAfter)).To(BeNumerically("<", 0))
-	gt.Expect(time.Since(template.NotBefore)).To(BeNumerically(">", 0))
+	gt.Expect(template.NotAfter).To(BeTemporally(">", time.Now()))
+	gt.Expect(template.NotBefore).To(BeTemporally("<", time.Now()))
 	gt.Expect(template.KeyUsage).To(Equal(x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature))
 	gt.Expect(template.ExtKeyUsage).To(HaveLen(0))
 	gt.Expect(template.BasicConstraintsValid).To(BeTrue())
