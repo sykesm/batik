@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -14,6 +15,10 @@ import (
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	"github.com/sykesm/batik/pkg/transaction"
 )
+
+type RepositoryMap interface {
+	Repository(namespace string) (Repository, bool)
+}
 
 type Repository interface {
 	PutTransaction(*transaction.Transaction) error
@@ -29,22 +34,27 @@ type StoreService struct {
 	storev1.UnsafeStoreAPIServer
 
 	hasher merkle.Hasher
-	repo   Repository
+	repos  RepositoryMap
 }
 
 var _ storev1.StoreAPIServer = (*StoreService)(nil)
 
-func NewStoreService(repo Repository) *StoreService {
+func NewStoreService(repos RepositoryMap) *StoreService {
 	return &StoreService{
 		hasher: crypto.SHA256,
-		repo:   repo,
+		repos:  repos,
 	}
 }
 
 // GetTransaction retrieves the associated transaction corresponding to the
 // txid passed in the GetTransactionRequest.
 func (s *StoreService) GetTransaction(ctx context.Context, req *storev1.GetTransactionRequest) (*storev1.GetTransactionResponse, error) {
-	tx, err := s.repo.GetTransaction(req.Txid)
+	repo, ok := s.repos.Repository(req.Namespace)
+	if !ok {
+		return nil, errors.Errorf("could not find namespace '%s'", req.Namespace)
+	}
+
+	tx, err := repo.GetTransaction(req.Txid)
 	if err != nil {
 		return nil, err
 	}
@@ -57,11 +67,16 @@ func (s *StoreService) GetTransaction(ctx context.Context, req *storev1.GetTrans
 // PutTransaction hashes the transaction to a txid and then stores
 // the encoded transaction in the backing store.
 func (s *StoreService) PutTransaction(ctx context.Context, req *storev1.PutTransactionRequest) (*storev1.PutTransactionResponse, error) {
+	repo, ok := s.repos.Repository(req.Namespace)
+	if !ok {
+		return nil, errors.Errorf("could not find namespace '%s'", req.Namespace)
+	}
+
 	tx, err := transaction.New(s.hasher, req.Transaction)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := s.repo.PutTransaction(tx); err != nil {
+	if err := repo.PutTransaction(tx); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -73,8 +88,13 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *storev1.PutTrans
 // output index that the State was originally created at in the transaction output
 // list.
 func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateRequest) (*storev1.GetStateResponse, error) {
+	repo, ok := s.repos.Repository(req.Namespace)
+	if !ok {
+		return nil, errors.Errorf("could not find namespace '%s'", req.Namespace)
+	}
+
 	stateID := transaction.StateID{TxID: req.StateRef.Txid, OutputIndex: req.StateRef.OutputIndex}
-	state, err := s.repo.GetState(stateID, req.Consumed)
+	state, err := repo.GetState(stateID, req.Consumed)
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +106,13 @@ func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateReques
 
 // PutState stores the encoded resolved state in the backing store.
 func (s *StoreService) PutState(ctx context.Context, req *storev1.PutStateRequest) (*storev1.PutStateResponse, error) {
+	repo, ok := s.repos.Repository(req.Namespace)
+	if !ok {
+		return nil, errors.Errorf("could not find namespace '%s'", req.Namespace)
+	}
+
 	state := transaction.ToState(req.State, req.StateRef.Txid, req.StateRef.OutputIndex)
-	if err := s.repo.PutState(state); err != nil {
+	if err := repo.PutState(state); err != nil {
 		return nil, err
 	}
 
