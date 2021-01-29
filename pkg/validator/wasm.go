@@ -79,12 +79,12 @@ func (v *UTXOValidator) Validate(req *validationv1.ValidateRequest) (*validation
 		return nil, errors.Errorf("validate failed, return code: %d", res)
 	}
 
-	validateResponse := &validationv1.ValidateResponse{}
-	if err := proto.Unmarshal(v.adapter.response, validateResponse); err != nil {
+	var resp validationv1.ValidateResponse
+	if err := proto.Unmarshal(v.adapter.response, &resp); err != nil {
 		return nil, err
 	}
 
-	return validateResponse, nil
+	return &resp, nil
 }
 
 func (v *UTXOValidator) newImports(module *wasmtime.Module) ([]*wasmtime.Extern, error) {

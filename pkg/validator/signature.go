@@ -40,7 +40,7 @@ func validate(resolved *transaction.Resolved) error {
 		}
 		pk, err := ecdsautil.UnmarshalPublicKey(signer.PublicKey)
 		if err != nil {
-			return errors.Wrap(err, "unmarshal public key failed")
+			return errors.Wrap(err, "failed to unmarshal public key")
 		}
 		txidHash := digest(resolved.ID.Bytes())
 		ok, err := ecdsautil.Verify(pk, sig.Signature, txidHash[:])

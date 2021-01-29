@@ -37,7 +37,7 @@ func UnmarshalECDSASignature(raw []byte) (*big.Int, *big.Int, error) {
 	sig := &ecdsaSignature{}
 	_, err := asn1.Unmarshal(raw, sig)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed unmarshalling signature")
+		return nil, nil, errors.Wrap(err, "failed to unmarshal signature")
 	}
 	if sig.R == nil || sig.S == nil || sig.R.Sign() != 1 || sig.S.Sign() != 1 {
 		return nil, nil, errors.Errorf("invalid signature: %x", raw)

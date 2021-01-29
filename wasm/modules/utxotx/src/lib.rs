@@ -46,8 +46,8 @@ impl std::fmt::Display for Error {
             Error::RequiredSignerMissingPublicKey => {
                 f.write_str("required signer missing public key")?
             }
-            Error::UnmarshalPublicKeyFailed => f.write_str("unmarshal public key failed")?,
-            Error::UnmarshalSignatureFailed => f.write_str("failed unmarshalling signature")?,
+            Error::UnmarshalPublicKeyFailed => f.write_str("failed to unmarshal public key")?,
+            Error::UnmarshalSignatureFailed => f.write_str("failed to unmarshal signature")?,
             Error::ProtobufError(e) => e.fmt(f)?,
             Error::UnknownAlgorithm => f.write_str("unknown algorithm")?,
             Error::UnknownCurve => f.write_str("unknown curve")?,

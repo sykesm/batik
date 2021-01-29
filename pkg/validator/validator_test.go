@@ -75,7 +75,7 @@ func TestValidate(t *testing.T) {
 				tx.Signatures[0].PublicKey = []byte("invalid-public-key")
 			},
 			valid:      false,
-			errMessage: ContainSubstring("unmarshal public key failed"),
+			errMessage: ContainSubstring("failed to unmarshal public key"),
 			errMatcher: nil,
 		},
 		{
@@ -93,7 +93,7 @@ func TestValidate(t *testing.T) {
 				tx.Signatures[0].Signature = []byte("bad-signature")
 			},
 			valid:      false,
-			errMessage: ContainSubstring("failed unmarshalling signature"),
+			errMessage: ContainSubstring("failed to unmarshal signature"),
 			errMatcher: nil,
 		},
 		{
