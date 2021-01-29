@@ -19,6 +19,9 @@ enum Error {
     InvalidKeyEncoding,
     InvalidPKIXEncoding,
     MissingSignature(Party),
+    RequiredSignerMissingPublicKey,
+    UnmarshalPublicKeyFailed,
+    UnmarshalSignatureFailed,
     ProtobufError(protobuf::ProtobufError),
     UnknownAlgorithm,
     UnknownCurve,
@@ -38,12 +41,17 @@ impl std::fmt::Display for Error {
             }
             Error::MissingSignature(party) => {
                 let pk = party.get_public_key();
-                f.write_fmt(format_args!("missing signature for {}", hex::encode(pk)))
+                f.write_fmt(format_args!("missing signature from {}", hex::encode(pk)))
             }?,
+            Error::RequiredSignerMissingPublicKey => {
+                f.write_str("required signer missing public key")?
+            }
+            Error::UnmarshalPublicKeyFailed => f.write_str("unmarshal public key failed")?,
+            Error::UnmarshalSignatureFailed => f.write_str("failed unmarshalling signature")?,
             Error::ProtobufError(e) => e.fmt(f)?,
             Error::UnknownAlgorithm => f.write_str("unknown algorithm")?,
             Error::UnknownCurve => f.write_str("unknown curve")?,
-            Error::SignatureError(e) => e.fmt(f)?,
+            Error::SignatureError(_) => f.write_str("signature verification failed")?,
         }
         Ok(())
     }
@@ -101,12 +109,16 @@ fn verify_sigs(tx: &ResolvedTransaction) -> Result<()> {
     let signatures = tx.get_signatures();
     for signer in required_signers(tx) {
         let pkix_key = signer.get_public_key();
+        if pkix_key.len() == 0 {
+            return Err(Error::RequiredSignerMissingPublicKey);
+        }
 
-        let sec1 = extract_sec1_key(pkix_key)?;
+        let sec1 = extract_sec1_key(pkix_key).or_else(|_| Err(Error::UnmarshalPublicKeyFailed))?;
         let vk = ecdsa::VerifyingKey::from_sec1_bytes(&sec1)?;
 
         let sig = signature(&signatures, pkix_key).ok_or(Error::MissingSignature(signer))?;
-        let signature = ecdsa::Signature::from_asn1(sig.get_signature())?;
+        let signature = ecdsa::Signature::from_asn1(sig.get_signature())
+            .or_else(|_| Err(Error::UnmarshalSignatureFailed))?;
 
         vk.verify(txid, &signature)?;
     }

@@ -28,11 +28,12 @@ func NewWASM(engine *wasmtime.Engine, asm []byte) (*WASM, error) {
 }
 
 func (w *WASM) Validate(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
-	validator, err := NewValidator(w.store, w.module)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed creating validator")
+	v := &UTXOValidator{
+		adapter: &adapter{},
+		store:   w.store,
+		module:  w.module,
 	}
-	return validator.Validate(req)
+	return v.Validate(req)
 }
 
 // UTXOValidator implements the validator.Validator interface and provides
@@ -42,15 +43,6 @@ type UTXOValidator struct {
 	adapter *adapter
 	store   *wasmtime.Store
 	module  *wasmtime.Module
-}
-
-// func NewValidator(modulePath string) (*UTXOValidator, error) {
-func NewValidator(store *wasmtime.Store, module *wasmtime.Module) (*UTXOValidator, error) {
-	return &UTXOValidator{
-		adapter: &adapter{},
-		store:   store,
-		module:  module,
-	}, nil
 }
 
 func (v *UTXOValidator) Validate(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {

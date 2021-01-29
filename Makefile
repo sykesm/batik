@@ -30,11 +30,15 @@ batik:
 		-o dist/$@ \
 		github.com/sykesm/batik/cmd/batik
 
-checks: gotools linting unit-test integration-test
+checks: gotools linting cargo-test unit-test integration-test
 
 .PHONY: unit-test unit-tests
 unit-test unit-tests:
 	@scripts/run-unit-tests
+
+.PHONY: cargo-test
+cargo-test:
+	@cargo test --manifest-path ./wasm/modules/utxotx/Cargo.toml
 
 .PHONY: linting
 linting:
