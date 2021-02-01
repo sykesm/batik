@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
@@ -21,11 +22,10 @@ import (
 	"github.com/sykesm/batik/pkg/grpcapi"
 	"github.com/sykesm/batik/pkg/grpccomm"
 	"github.com/sykesm/batik/pkg/grpclogging"
+	"github.com/sykesm/batik/pkg/namespace"
 	"github.com/sykesm/batik/pkg/options"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
-	"github.com/sykesm/batik/pkg/store"
-	"github.com/sykesm/batik/pkg/submit"
 )
 
 func startCommand(config *options.Batik, interactive bool) *cli.Command {
@@ -82,24 +82,31 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 		grpcServerOptions...,
 	)
 
-	logger.Debug("initializing database", zap.String("data_dir", config.Ledger.DataDir))
-	db, err := levelDB(ctx, config.Ledger.DataDir)
-	if err != nil {
-		return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
-	}
-
-	transactionRepo := store.NewRepository(db)
-
 	encodeService := &grpcapi.EncodeService{}
 	txv1.RegisterEncodeAPIServer(grpcServer.Server, encodeService)
 
-	submitters := map[string]grpcapi.Submitter{
-		"namespace": submit.NewService(transactionRepo),
+	namespaceNames := []string{"namespace"}
+
+	namespaces := map[string]*namespace.Namespace{}
+	for _, namespaceName := range namespaceNames {
+		namespaceLogger := logger.With(zap.String("namespace", namespaceName))
+
+		dbPath := filepath.Join(config.Ledger.DataDir, namespaceName)
+		namespaceLogger.Debug("initializing database", zap.String("data_dir", dbPath))
+		db, err := levelDB(ctx, dbPath)
+		if err != nil {
+			return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
+		}
+
+		namespaces[namespaceName] = namespace.New(namespaceLogger, db)
 	}
-	submitService := grpcapi.NewSubmitService(submitters)
+
+	grpcapiAdapter := grpcapi.NamespaceMapAdapter(namespaces)
+
+	submitService := grpcapi.NewSubmitService(grpcapiAdapter)
 	txv1.RegisterSubmitAPIServer(grpcServer.Server, submitService)
 
-	storeService := grpcapi.NewStoreService(transactionRepo)
+	storeService := grpcapi.NewStoreService(grpcapiAdapter)
 	storev1.RegisterStoreAPIServer(grpcServer.Server, storeService)
 
 	mux := gwruntime.NewServeMux()

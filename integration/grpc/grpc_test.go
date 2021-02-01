@@ -153,7 +153,10 @@ var _ = Describe("gRPC", func() {
 
 			result, err := storeClient.GetTransaction(
 				context.Background(),
-				&storev1.GetTransactionRequest{Txid: resp.Txid},
+				&storev1.GetTransactionRequest{
+					Namespace: "namespace",
+					Txid:      resp.Txid,
+				},
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(ProtoEqual(&storev1.GetTransactionResponse{Transaction: tx}))
@@ -235,6 +238,7 @@ var _ = Describe("gRPC", func() {
 			_, err = storeClient.GetState(
 				context.Background(),
 				&storev1.GetStateRequest{
+					Namespace: "namespace",
 					StateRef: &txv1.StateReference{
 						Txid:        itx.ID,
 						OutputIndex: 0,
@@ -267,7 +271,8 @@ var _ = Describe("gRPC", func() {
 
 			BeforeEach(func() {
 				req = &storev1.GetTransactionRequest{
-					Txid: txid,
+					Namespace: "namespace",
+					Txid:      txid,
 				}
 			})
 
@@ -279,9 +284,22 @@ var _ = Describe("gRPC", func() {
 				})
 			})
 
+			When("the namespace does not exist", func() {
+				BeforeEach(func() {
+					req.Namespace = "missing"
+				})
+
+				It("returns an error", func() {
+					resp, err := storeServiceClient.GetTransaction(context.Background(), req)
+					Expect(err).To(MatchError(ContainSubstring("namespace not found")))
+					Expect(resp).To(BeNil())
+				})
+			})
+
 			When("the transaction exists", func() {
 				BeforeEach(func() {
 					putReq := &storev1.PutTransactionRequest{
+						Namespace:   "namespace",
 						Transaction: testTx,
 					}
 
@@ -310,7 +328,7 @@ var _ = Describe("gRPC", func() {
 							},
 						},
 					}
-					url := "https://" + httpAddress + "/v1/store/bogus-namespace/tx/" + base64.URLEncoding.EncodeToString(txid)
+					url := "https://" + httpAddress + "/v1/store/namespace/tx/" + base64.URLEncoding.EncodeToString(txid)
 					resp, err := client.Get(url)
 					Expect(err).NotTo(HaveOccurred())
 					defer resp.Body.Close()
@@ -331,6 +349,7 @@ var _ = Describe("gRPC", func() {
 
 			BeforeEach(func() {
 				req = &storev1.PutTransactionRequest{
+					Namespace:   "namespace",
 					Transaction: testTx,
 				}
 			})
@@ -342,7 +361,8 @@ var _ = Describe("gRPC", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				getReq := &storev1.GetTransactionRequest{
-					Txid: txid,
+					Namespace: "namespace",
+					Txid:      txid,
 				}
 				resp, err := storeServiceClient.GetTransaction(context.Background(), getReq)
 				Expect(err).NotTo(HaveOccurred())
@@ -364,7 +384,8 @@ var _ = Describe("gRPC", func() {
 					OutputIndex: 0,
 				}
 				req = &storev1.GetStateRequest{
-					StateRef: stateRef,
+					Namespace: "namespace",
+					StateRef:  stateRef,
 				}
 			})
 
@@ -379,8 +400,9 @@ var _ = Describe("gRPC", func() {
 			When("the state exists", func() {
 				BeforeEach(func() {
 					putReq := &storev1.PutStateRequest{
-						StateRef: stateRef,
-						State:    state,
+						Namespace: "namespace",
+						StateRef:  stateRef,
+						State:     state,
 					}
 
 					_, err := storeServiceClient.PutState(context.Background(), putReq)
@@ -410,8 +432,9 @@ var _ = Describe("gRPC", func() {
 				}
 
 				req = &storev1.PutStateRequest{
-					StateRef: stateRef,
-					State:    state,
+					Namespace: "namespace",
+					StateRef:  stateRef,
+					State:     state,
 				}
 			})
 
@@ -422,7 +445,8 @@ var _ = Describe("gRPC", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				getReq := &storev1.GetStateRequest{
-					StateRef: stateRef,
+					Namespace: "namespace",
+					StateRef:  stateRef,
 				}
 				resp, err := storeServiceClient.GetState(context.Background(), getReq)
 				Expect(err).NotTo(HaveOccurred())

@@ -21,6 +21,17 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
+type submitMapAdapter map[string]submitterFunc
+
+func (sma submitMapAdapter) Submitter(namespace string) Submitter {
+	s, ok := sma[namespace]
+	if !ok {
+		return notFoundSubmitter(namespace)
+	}
+
+	return s
+}
+
 type submitterFunc func(context.Context, *transaction.Signed) error
 
 func (s submitterFunc) Submit(ctx context.Context, tx *transaction.Signed) error {
@@ -67,7 +78,7 @@ func TestSubmit(t *testing.T) {
 		},
 		"unknown namespace": {
 			setup:      func(sr *txv1.SubmitRequest) { sr.Namespace = "missing" },
-			errMatcher: MatchError(status.Errorf(codes.InvalidArgument, "namespace %q not found", "missing")),
+			errMatcher: MatchError(status.Errorf(codes.InvalidArgument, "storing transaction %s failed: bad namespace %q: namespace not found", tx.ID, "missing")),
 		},
 		"valid transaction": {
 			resp: &txv1.SubmitResponse{Txid: tx.ID},
@@ -96,9 +107,9 @@ func TestSubmit(t *testing.T) {
 			var submitter submitterFunc = func(ctx context.Context, tx *transaction.Signed) error {
 				return tt.submitErr
 			}
-			ss := NewSubmitService(map[string]Submitter{
+			ss := NewSubmitService(submitMapAdapter(map[string]submitterFunc{
 				"namespace": submitter,
-			})
+			}))
 
 			resp, err := ss.Submit(context.Background(), req)
 			if tt.errMatcher != nil {

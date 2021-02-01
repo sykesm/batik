@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/sykesm/batik/pkg/namespace"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/store"
@@ -28,12 +29,16 @@ func TestStoreService_GetTransaction(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	req := &storev1.GetTransactionRequest{
-		Txid: intTx.ID,
+		Namespace: "ns1",
+		Txid:      intTx.ID,
 	}
 	resp, err := storeSvc.GetTransaction(context.Background(), req)
 	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
-	err = storeSvc.repo.PutTransaction(intTx)
+	err = storeSvc.repos.Repository("missing").PutTransaction(intTx)
+	gt.Expect(err).To(MatchError("bad namespace \"missing\": namespace not found"))
+
+	err = storeSvc.repos.Repository("ns1").PutTransaction(intTx)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetTransaction(context.Background(), req)
@@ -51,13 +56,15 @@ func TestStoreService_PutTransaction(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	req := &storev1.PutTransactionRequest{
+		Namespace:   "ns1",
 		Transaction: testTx,
 	}
 	_, err = storeSvc.PutTransaction(context.Background(), req)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	result, err := storeSvc.GetTransaction(context.Background(), &storev1.GetTransactionRequest{
-		Txid: intTx.ID,
+		Namespace: "ns1",
+		Txid:      intTx.ID,
 	})
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(result.Transaction).To(ProtoEqual(testTx))
@@ -78,13 +85,14 @@ func TestStoreService_GetState(t *testing.T) {
 	}
 
 	req := &storev1.GetStateRequest{
-		StateRef: stateRef,
+		Namespace: "ns1",
+		StateRef:  stateRef,
 	}
 	resp, err := storeSvc.GetState(context.Background(), req)
 	gt.Expect(err).To(MatchError(ContainSubstring("leveldb: not found")))
 
 	state := transaction.ToState(testTx.Outputs[0], intTx.ID, 0)
-	err = storeSvc.repo.PutState(state)
+	err = storeSvc.repos.Repository("ns1").PutState(state)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	resp, err = storeSvc.GetState(context.Background(), req)
@@ -104,6 +112,7 @@ func TestStoreService_PutState(t *testing.T) {
 	testState := testTx.Outputs[0]
 
 	req := &storev1.PutStateRequest{
+		Namespace: "ns1",
 		StateRef: &txv1.StateReference{
 			Txid:        intTx.ID,
 			OutputIndex: 0,
@@ -117,7 +126,7 @@ func TestStoreService_PutState(t *testing.T) {
 		TxID:        req.StateRef.Txid,
 		OutputIndex: req.StateRef.OutputIndex,
 	}
-	state, err := storeSvc.repo.GetState(stateID, false)
+	state, err := storeSvc.repos.Repository("ns1").GetState(stateID, false)
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(transaction.FromStateInfo(state.StateInfo)).To(ProtoEqual(testState.Info))
 	gt.Expect(state.Data).To(Equal(testState.State))
@@ -129,8 +138,9 @@ func newStoreService(t *testing.T) (*StoreService, func()) {
 	db, err := store.NewLevelDB(path)
 	NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred())
 
-	repo := store.NewRepository(db)
-	storeSvc := NewStoreService(repo)
+	ns := namespace.New(nil, db)
+
+	storeSvc := NewStoreService(NamespaceMapAdapter(map[string]*namespace.Namespace{"ns1": ns}))
 
 	return storeSvc, func() {
 		tested.Close(t, db)

@@ -15,6 +15,10 @@ import (
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
+type RepositoryMap interface {
+	Repository(namespace string) Repository
+}
+
 type Repository interface {
 	PutTransaction(*transaction.Transaction) error
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
@@ -29,22 +33,22 @@ type StoreService struct {
 	storev1.UnsafeStoreAPIServer
 
 	hasher merkle.Hasher
-	repo   Repository
+	repos  RepositoryMap
 }
 
 var _ storev1.StoreAPIServer = (*StoreService)(nil)
 
-func NewStoreService(repo Repository) *StoreService {
+func NewStoreService(repos RepositoryMap) *StoreService {
 	return &StoreService{
 		hasher: crypto.SHA256,
-		repo:   repo,
+		repos:  repos,
 	}
 }
 
 // GetTransaction retrieves the associated transaction corresponding to the
 // txid passed in the GetTransactionRequest.
 func (s *StoreService) GetTransaction(ctx context.Context, req *storev1.GetTransactionRequest) (*storev1.GetTransactionResponse, error) {
-	tx, err := s.repo.GetTransaction(req.Txid)
+	tx, err := s.repos.Repository(req.Namespace).GetTransaction(req.Txid)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +65,7 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *storev1.PutTrans
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := s.repo.PutTransaction(tx); err != nil {
+	if err := s.repos.Repository(req.Namespace).PutTransaction(tx); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -74,7 +78,7 @@ func (s *StoreService) PutTransaction(ctx context.Context, req *storev1.PutTrans
 // list.
 func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateRequest) (*storev1.GetStateResponse, error) {
 	stateID := transaction.StateID{TxID: req.StateRef.Txid, OutputIndex: req.StateRef.OutputIndex}
-	state, err := s.repo.GetState(stateID, req.Consumed)
+	state, err := s.repos.Repository(req.Namespace).GetState(stateID, req.Consumed)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +91,7 @@ func (s *StoreService) GetState(ctx context.Context, req *storev1.GetStateReques
 // PutState stores the encoded resolved state in the backing store.
 func (s *StoreService) PutState(ctx context.Context, req *storev1.PutStateRequest) (*storev1.PutStateResponse, error) {
 	state := transaction.ToState(req.State, req.StateRef.Txid, req.StateRef.OutputIndex)
-	if err := s.repo.PutState(state); err != nil {
+	if err := s.repos.Repository(req.Namespace).PutState(state); err != nil {
 		return nil, err
 	}
 
