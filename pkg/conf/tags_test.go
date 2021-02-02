@@ -24,6 +24,9 @@ type EmbeddedPtr struct{ *Simple }
 type WrongType struct {
 	Relpath int `batik:"relpath"`
 }
+type Sliced struct {
+	Simples []Simple
+}
 
 func TestResolveRelpathAddressable(t *testing.T) {
 	expected := "source_path/testdata"
@@ -59,6 +62,10 @@ func TestResolveRelpathAddressable(t *testing.T) {
 			input:  &EmbeddedPtr{Simple: &Simple{Relpath: "testdata"}},
 			result: func(s interface{}) string { return s.(*EmbeddedPtr).Relpath },
 		},
+		"slice field": {
+			input:  Sliced{Simples: []Simple{{Relpath: "testdata"}}},
+			result: func(s interface{}) string { return s.(Sliced).Simples[0].Relpath },
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -70,6 +77,29 @@ func TestResolveRelpathAddressable(t *testing.T) {
 			gt.Expect(tt.result(tt.input)).To(Equal(expected))
 		})
 	}
+}
+
+func TestResolveRelpathMultipleSliceEntries(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	tr := &TagResolver{SourcePath: "source_path"}
+
+	multi := struct {
+		Entries []struct {
+			Path string `batik:"relpath"`
+		}
+	}{
+		Entries: []struct {
+			Path string `batik:"relpath"`
+		}{
+			{Path: "path/A"},
+			{Path: "path/B"},
+		},
+	}
+
+	err := tr.Resolve(&multi)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(multi.Entries[0].Path).To(Equal("source_path/path/A"))
+	gt.Expect(multi.Entries[1].Path).To(Equal("source_path/path/B"))
 }
 
 func TestResolveRelpathMultipleFields(t *testing.T) {

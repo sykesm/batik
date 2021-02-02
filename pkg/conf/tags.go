@@ -52,6 +52,13 @@ func (tr *TagResolver) resolve(v reflect.Value) error {
 			}
 		case reflect.Struct:
 			err = tr.resolve(v.Field(i))
+		case reflect.Slice:
+			for j := 0; j < v.Field(i).Len(); j++ {
+				err = tr.resolve(v.Field(i).Index(j))
+				if err != nil {
+					break
+				}
+			}
 		default:
 			if tag, ok := t.Field(i).Tag.Lookup("batik"); ok {
 				err = tr.resolveTag(tag, v.Field(i))
