@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
@@ -22,7 +21,6 @@ import (
 	"github.com/sykesm/batik/pkg/grpcapi"
 	"github.com/sykesm/batik/pkg/grpccomm"
 	"github.com/sykesm/batik/pkg/grpclogging"
-	"github.com/sykesm/batik/pkg/namespace"
 	"github.com/sykesm/batik/pkg/options"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
@@ -85,20 +83,9 @@ func startAction(ctx *cli.Context, config *options.Batik, interactive bool) erro
 	encodeService := &grpcapi.EncodeService{}
 	txv1.RegisterEncodeAPIServer(grpcServer.Server, encodeService)
 
-	namespaceNames := []string{"namespace"}
-
-	namespaces := map[string]*namespace.Namespace{}
-	for _, namespaceName := range namespaceNames {
-		namespaceLogger := logger.With(zap.String("namespace", namespaceName))
-
-		dbPath := filepath.Join(config.Ledger.DataDir, namespaceName)
-		namespaceLogger.Debug("initializing database", zap.String("data_dir", dbPath))
-		db, err := levelDB(ctx, dbPath)
-		if err != nil {
-			return cli.Exit(errors.Wrap(err, "failed to create server"), exitServerCreateFailed)
-		}
-
-		namespaces[namespaceName] = namespace.New(namespaceLogger, db)
+	namespaces := GetNamespaces(ctx)
+	if len(namespaces) == 0 {
+		logger.Warn("no namespaces defined")
 	}
 
 	grpcapiAdapter := grpcapi.NamespaceMapAdapter(namespaces)

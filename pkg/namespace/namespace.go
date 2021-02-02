@@ -14,14 +14,16 @@ import (
 // for the operation of a namespace.
 type Namespace struct {
 	Logger        *zap.Logger
+	LevelDB       *store.LevelDBKV
 	TxRepo        *store.TransactionRepository
 	SubmitService *submit.Service
 }
 
-func New(logger *zap.Logger, kvStore store.KV) *Namespace {
-	repo := store.NewRepository(kvStore)
+func New(logger *zap.Logger, level *store.LevelDBKV) *Namespace {
+	repo := store.NewRepository(level)
 	return &Namespace{
 		Logger:        logger,
+		LevelDB:       level,
 		TxRepo:        repo,
 		SubmitService: submit.NewService(repo),
 	}

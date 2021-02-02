@@ -5,15 +5,15 @@ package app
 
 import (
 	"context"
-	"errors"
 
+	"github.com/pkg/errors"
 	zaplogfmt "github.com/sykesm/zap-logfmt"
 	cli "github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/sykesm/batik/pkg/log"
-	"github.com/sykesm/batik/pkg/store"
+	"github.com/sykesm/batik/pkg/namespace"
 )
 
 type contextKey int
@@ -23,7 +23,7 @@ const (
 	loggerKey
 	levelerKey
 	serverKey
-	kvKey
+	namespacesKey
 )
 
 // GetLogger retrieves a zap.Logger from the *cli.Context if one exists.
@@ -69,25 +69,43 @@ func SetLeveler(ctx *cli.Context, leveler zapcore.LevelEnabler) {
 	setOnCtx(ctx, levelerKey, leveler)
 }
 
-// GetKV retrieves a KV store instance from the *cli.Context if one exists.
-func GetKV(ctx *cli.Context) store.KV {
-	kv := retrieveFromCtx(ctx, kvKey)
-
-	if kv == nil {
+// GetNamespaces retrieves the namespaces map from the *cli.Context if one exists.
+func GetNamespaces(ctx *cli.Context) map[string]*namespace.Namespace {
+	val := retrieveFromCtx(ctx, namespacesKey)
+	if val == nil {
 		return nil
 	}
 
-	db, ok := kv.(store.KV)
+	namespaces, ok := val.(map[string]*namespace.Namespace)
 	if !ok {
 		return nil
 	}
 
-	return db
+	return namespaces
 }
 
-// SetKV stores a store.KV on the *cli.Context.
-func SetKV(ctx *cli.Context, kv store.KV) {
-	setOnCtx(ctx, kvKey, kv)
+// SetNamespaces stores a map of namespaces on the *cli.Context.
+func SetNamespaces(ctx *cli.Context, namespaces map[string]*namespace.Namespace) {
+	setOnCtx(ctx, namespacesKey, namespaces)
+}
+
+func GetCurrentNamespace(ctx *cli.Context) (*namespace.Namespace, error) {
+	namespaces := GetNamespaces(ctx)
+	if namespaces == nil {
+		return nil, errors.Errorf("could not find namespaces from context")
+	}
+
+	namespaceName := ctx.String("namespace")
+	if namespaceName == "" {
+		return nil, errors.Errorf("target namespace is not set")
+	}
+
+	ns, ok := namespaces[namespaceName]
+	if !ok {
+		return nil, errors.Errorf("namespace %q is not defined", namespaceName)
+	}
+
+	return ns, nil
 }
 
 func retrieveFromCtx(ctx *cli.Context, key contextKey) interface{} {

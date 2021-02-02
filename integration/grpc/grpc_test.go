@@ -15,6 +15,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -28,7 +29,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"gopkg.in/yaml.v3"
 
+	"github.com/sykesm/batik/pkg/options"
 	storev1 "github.com/sykesm/batik/pkg/pb/store/v1"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/tested"
@@ -38,13 +41,11 @@ import (
 
 var _ = Describe("gRPC", func() {
 	var (
-		session      *gexec.Session
-		grpcAddress  string
-		httpAddress  string
-		dbPath       string
-		certsPath    string
-		dbCleanup    func()
-		certsCleanup func()
+		session        *gexec.Session
+		grpcAddress    string
+		httpAddress    string
+		storagePath    string
+		storageCleanup func()
 
 		clientConn *grpc.ClientConn
 	)
@@ -52,25 +53,28 @@ var _ = Describe("gRPC", func() {
 	BeforeEach(func() {
 		grpcAddress = fmt.Sprintf("127.0.0.1:%d", StartPort())
 		httpAddress = fmt.Sprintf("127.0.0.1:%d", StartPort()+1)
-		dbPath, dbCleanup = tested.TempDir(GinkgoT(), "", "level")
-		certsPath, certsCleanup = tested.TempDir(GinkgoT(), "", "certs")
+
+		storagePath, storageCleanup = tested.TempDir(GinkgoT(), "", "grpc-integration")
+
+		confFilePath := filepath.Join(storagePath, "batik.yaml")
+		err := writeNewConfig(confFilePath)
+		Expect(err).NotTo(HaveOccurred())
+
 		cmd := exec.Command(
 			batikPath,
-			"--data-dir", dbPath,
+			"--config", confFilePath,
 			"--color=yes",
 			"start",
-			"--tls-certs-dir", certsPath,
 			"--grpc-listen-address", grpcAddress,
 			"--http-listen-address", httpAddress,
 		)
 
-		var err error
 		session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).To(BeNil())
 		Eventually(session.Err, testTimeout).Should(gbytes.Say("Starting server"))
 		Eventually(session.Err, testTimeout).Should(gbytes.Say("Server started"))
 
-		creds, err := credentials.NewClientTLSFromFile(filepath.Join(certsPath, "server-cert.pem"), "")
+		creds, err := credentials.NewClientTLSFromFile(filepath.Join(storagePath, "tls-certs", "server-cert.pem"), "")
 		Expect(err).NotTo(HaveOccurred())
 		clientConn, err = grpc.Dial(grpcAddress, grpc.WithTransportCredentials(creds), grpc.WithBlock())
 		Expect(err).NotTo(HaveOccurred())
@@ -83,11 +87,8 @@ var _ = Describe("gRPC", func() {
 		if clientConn != nil {
 			clientConn.Close()
 		}
-		if dbCleanup != nil {
-			dbCleanup()
-		}
-		if certsCleanup != nil {
-			certsCleanup()
+		if storageCleanup != nil {
+			storageCleanup()
 		}
 	})
 
@@ -315,7 +316,7 @@ var _ = Describe("gRPC", func() {
 
 				// TODO: Reorganize the integration tests
 				It("works through the REST gateway", func() {
-					caCertPEM, err := ioutil.ReadFile(filepath.Join(certsPath, "server-cert.pem"))
+					caCertPEM, err := ioutil.ReadFile(filepath.Join(storagePath, "tls-certs", "server-cert.pem"))
 					Expect(err).NotTo(HaveOccurred())
 
 					caCertPool := x509.NewCertPool()
@@ -455,6 +456,33 @@ var _ = Describe("gRPC", func() {
 		})
 	})
 })
+
+// writeNewConfig creates a config file with a single statically
+// defined namespace inside it.
+func writeNewConfig(path string) error {
+	config := options.Batik{
+		Namespaces: []options.Namespace{
+			{
+				Name: "namespace",
+			},
+		},
+	}
+	config.ApplyDefaults()
+
+	confFile, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer confFile.Close()
+
+	encoder := yaml.NewEncoder(confFile)
+	err = encoder.Encode(config)
+	if err != nil {
+		return err
+	}
+	encoder.Close()
+	return nil
+}
 
 func newTestTransaction() *txv1.Transaction {
 	return &txv1.Transaction{

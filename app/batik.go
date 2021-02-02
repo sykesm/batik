@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -21,8 +22,10 @@ import (
 	"github.com/sykesm/batik/pkg/conf"
 	"github.com/sykesm/batik/pkg/log"
 	"github.com/sykesm/batik/pkg/log/pretty"
+	"github.com/sykesm/batik/pkg/namespace"
 	"github.com/sykesm/batik/pkg/options"
 	"github.com/sykesm/batik/pkg/repl"
+	"github.com/sykesm/batik/pkg/store"
 )
 
 func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
@@ -50,7 +53,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		},
 	}
 	app.Flags = append(app.Flags, config.Logging.Flags()...)
-	app.Flags = append(app.Flags, config.Ledger.Flags()...)
+	app.Flags = append(app.Flags, (&options.Namespace{}).Flags()...)
 	app.Commands = []*cli.Command{
 		startCommand(config, false),
 		dbCommand(config),
@@ -74,6 +77,11 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		SetLogger(ctx, logger)
 		SetLeveler(ctx, leveler)
 
+		namespaces, err := newBatikNamespaceComponents(ctx, config.Namespaces)
+		SetNamespaces(ctx, namespaces)
+		// TODO safely shut down the DB
+		// atexit.Register(func() { namespaces.Close() })
+
 		return nil
 	}
 
@@ -89,14 +97,6 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			ctx.App.CommandNotFound(ctx, arg)
 			return cli.Exit("", exitCommandNotFound)
 		}
-
-		// Create the db and attach it to the context prior to entering the shell app so we can
-		// reuse the connection between shell app commands.
-		db, err := levelDB(ctx, config.Ledger.DataDir)
-		if err != nil {
-			return cli.Exit(errors.Wrapf(err, "failed to create server at %s", config.Ledger.DataDir), exitServerCreateFailed)
-		}
-		SetKV(ctx, db)
 
 		sa, err := shellApp(ctx, config)
 		if err != nil {
@@ -146,4 +146,26 @@ func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore
 	}
 
 	return encoder, log.NewWriteSyncer(w), log.NewLeveler(config.LogSpec)
+}
+
+func newBatikNamespaceComponents(ctx *cli.Context, config []options.Namespace) (map[string]*namespace.Namespace, error) {
+	logger, err := GetLogger(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "could not retrieve logger")
+	}
+
+	namespaces := map[string]*namespace.Namespace{}
+	for _, ns := range config {
+		namespaceLogger := logger.With(zap.String("namespace", ns.Name))
+
+		dbPath := filepath.Join(ns.DataDir, ns.Name)
+		namespaceLogger.Debug("initializing database", zap.String("data_dir", dbPath))
+		db, err := store.NewLevelDB(dbPath)
+		if err != nil {
+			return nil, err
+		}
+
+		namespaces[ns.Name] = namespace.New(namespaceLogger, db)
+	}
+	return namespaces, nil
 }

@@ -17,7 +17,6 @@ func TestBatikDefaults(t *testing.T) {
 	config := BatikDefaults()
 	gt.Expect(config).To(Equal(&Batik{
 		Server:  *ServerDefaults(),
-		Ledger:  *LedgerDefaults(),
 		Logging: *LoggingDefaults(),
 	}))
 }
@@ -28,7 +27,6 @@ func TestBatikApplyDefaults(t *testing.T) {
 	}{
 		"empty":   {setup: func(c *Batik) { *c = Batik{} }},
 		"server":  {setup: func(c *Batik) { c.Server = Server{} }},
-		"ledger":  {setup: func(c *Batik) { c.Ledger = Ledger{} }},
 		"logging": {setup: func(c *Batik) { c.Logging = Logging{} }},
 	}
 
@@ -71,8 +69,14 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				CertsDir:   "relative/certs-dir-path",
 			},
 		},
-		Ledger: Ledger{
-			DataDir: "relative/path",
+		Namespaces: []Namespace{
+			{
+				Name:    "ns1",
+				DataDir: "relative/path1",
+			},
+			{
+				Name: "ns2",
+			},
 		},
 		Logging: Logging{
 			LogSpec: "debug",
@@ -102,8 +106,15 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				CertsDir: "relative/certs-dir-path",
 			},
 		},
-		Ledger: Ledger{
-			DataDir: "relative/path",
+		Namespaces: []Namespace{
+			{
+				Name:    "ns1",
+				DataDir: "relative/path1",
+			},
+			{
+				Name:    "ns2",
+				DataDir: "data",
+			},
 		},
 		Logging: Logging{
 			LogSpec: "debug",

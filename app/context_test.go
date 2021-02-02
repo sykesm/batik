@@ -6,6 +6,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"flag"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -15,8 +16,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/sykesm/batik/pkg/log"
-	"github.com/sykesm/batik/pkg/store"
-	"github.com/sykesm/batik/pkg/tested"
+	"github.com/sykesm/batik/pkg/namespace"
 )
 
 func TestContext_Logger(t *testing.T) {
@@ -83,27 +83,42 @@ func TestContext_Leveler(t *testing.T) {
 	gt.Expect(buf.String()).To(MatchRegexp("msg=test-debug"))
 }
 
-func TestContext_KV(t *testing.T) {
+func TestContext_Namespaces(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	path, cleanup := tested.TempDir(t, "", "level")
-	defer cleanup()
+	fs := flag.NewFlagSet("test", 0)
+	fs.String("namespace", "", "")
+	ctx := cli.NewContext(cli.NewApp(), fs, nil)
 
-	ctx := cli.NewContext(cli.NewApp(), nil, nil)
+	nss := GetNamespaces(ctx)
+	gt.Expect(nss).To(BeNil())
 
-	kv := GetKV(ctx)
-	gt.Expect(kv).To(BeNil())
+	_, err := GetCurrentNamespace(ctx)
+	gt.Expect(err).To(MatchError("could not find namespaces from context"))
 
-	ctx.Context = context.WithValue(ctx.Context, kvKey, "invalidkv")
-	kv = GetKV(ctx)
-	gt.Expect(kv).To(BeNil())
+	configNSS := map[string]*namespace.Namespace{
+		"ns1": {},
+		"ns2": {},
+	}
 
-	newKV, err := store.NewLevelDB(path)
+	SetNamespaces(ctx, configNSS)
+
+	nss = GetNamespaces(ctx)
+	gt.Expect(nss).To(Equal(configNSS))
+
+	_, err = GetCurrentNamespace(ctx)
+	gt.Expect(err).To(MatchError("target namespace is not set"))
+
+	err = ctx.Set("namespace", "missing")
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	SetKV(ctx, newKV)
-	gt.Expect(ctx.Context.Value(kvKey)).To(Equal(newKV))
+	_, err = GetCurrentNamespace(ctx)
+	gt.Expect(err).To(MatchError("namespace \"missing\" is not defined"))
 
-	kv = GetKV(ctx)
-	gt.Expect(kv).To(Equal(newKV))
+	err = ctx.Set("namespace", "ns1")
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	ns, err := GetCurrentNamespace(ctx)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(ns).To(Equal(configNSS["ns1"]))
 }

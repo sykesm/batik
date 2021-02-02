@@ -12,18 +12,25 @@ import (
 	"github.com/hokaccha/go-prettyjson"
 	cli "github.com/urfave/cli/v2"
 	"github.com/sykesm/batik/pkg/options"
-	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
 func dbCommand(config *options.Batik) *cli.Command {
+
 	command := &cli.Command{
 		Name:  "db",
 		Usage: "perform operations against a kv store",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "namespace",
+				Usage:    "target namespace for the subcommand",
+				Required: true,
+			},
+		},
 		Subcommands: []*cli.Command{
-			getSubcommand(config.Ledger.DataDir),
-			keysSubcommand(config.Ledger.DataDir),
-			putSubcommand(config.Ledger.DataDir),
+			getSubcommand(),
+			keysSubcommand(),
+			putSubcommand(),
 		},
 	}
 
@@ -32,16 +39,16 @@ func dbCommand(config *options.Batik) *cli.Command {
 	return command
 }
 
-func getSubcommand(dataDir string) *cli.Command {
+func getSubcommand() *cli.Command {
 	command := &cli.Command{
 		Name:  "get",
 		Usage: "get a value from the db",
 		Subcommands: []*cli.Command{
-			getTransactionSubcommand(dataDir),
-			getStateSubcommand(dataDir),
+			getTransactionSubcommand(),
+			getStateSubcommand(),
 		},
 		Action: func(ctx *cli.Context) error {
-			db, err := levelDB(ctx, dataDir)
+			ns, err := GetCurrentNamespace(ctx)
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
@@ -53,7 +60,7 @@ func getSubcommand(dataDir string) *cli.Command {
 				return nil
 			}
 
-			val, err := db.Get(key)
+			val, err := ns.LevelDB.Get(key)
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
@@ -69,18 +76,16 @@ func getSubcommand(dataDir string) *cli.Command {
 	return command
 }
 
-func getTransactionSubcommand(dataDir string) *cli.Command {
+func getTransactionSubcommand() *cli.Command {
 	return &cli.Command{
 		Name:  "tx",
 		Usage: "get a transaction from the db",
 		Action: func(ctx *cli.Context) error {
-			db, err := levelDB(ctx, dataDir)
+			ns, err := GetCurrentNamespace(ctx)
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
 			}
-
-			transactionRepo := store.NewRepository(db)
 
 			txID, err := hex.DecodeString(ctx.Args().First())
 			if err != nil {
@@ -88,7 +93,7 @@ func getTransactionSubcommand(dataDir string) *cli.Command {
 				return nil
 			}
 
-			val, err := transactionRepo.GetTransaction(txID)
+			val, err := ns.TxRepo.GetTransaction(txID)
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
@@ -106,7 +111,7 @@ func getTransactionSubcommand(dataDir string) *cli.Command {
 	}
 }
 
-func getStateSubcommand(dataDir string) *cli.Command {
+func getStateSubcommand() *cli.Command {
 	return &cli.Command{
 		Name:  "state",
 		Usage: "get a state from the db",
@@ -117,13 +122,11 @@ func getStateSubcommand(dataDir string) *cli.Command {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
-			db, err := levelDB(ctx, dataDir)
+			ns, err := GetCurrentNamespace(ctx)
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
 			}
-
-			transactionRepo := store.NewRepository(db)
 
 			txID, err := hex.DecodeString(ctx.Args().First())
 			if err != nil {
@@ -140,7 +143,7 @@ func getStateSubcommand(dataDir string) *cli.Command {
 				TxID:        txID,
 				OutputIndex: outputIndex,
 			}
-			val, err := transactionRepo.GetState(stateID, ctx.Bool("consumed"))
+			val, err := ns.TxRepo.GetState(stateID, ctx.Bool("consumed"))
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
@@ -158,7 +161,7 @@ func getStateSubcommand(dataDir string) *cli.Command {
 	}
 }
 
-func keysSubcommand(dataDir string) *cli.Command {
+func keysSubcommand() *cli.Command {
 	return &cli.Command{
 		Name:  "keys",
 		Usage: "dump all keys in the db",
@@ -170,7 +173,7 @@ func keysSubcommand(dataDir string) *cli.Command {
 			},
 		},
 		Action: func(ctx *cli.Context) error {
-			db, err := levelDB(ctx, dataDir)
+			ns, err := GetCurrentNamespace(ctx)
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
@@ -182,7 +185,7 @@ func keysSubcommand(dataDir string) *cli.Command {
 				return nil
 			}
 
-			iter := db.NewIterator(prefix, nil)
+			iter := ns.LevelDB.NewIterator(prefix, nil)
 			keys, err := iter.Keys()
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
@@ -197,12 +200,12 @@ func keysSubcommand(dataDir string) *cli.Command {
 	}
 }
 
-func putSubcommand(dataDir string) *cli.Command {
+func putSubcommand() *cli.Command {
 	return &cli.Command{
 		Name:  "put",
 		Usage: "store a value in the db",
 		Action: func(ctx *cli.Context) error {
-			db, err := levelDB(ctx, dataDir)
+			ns, err := GetCurrentNamespace(ctx)
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
@@ -219,24 +222,11 @@ func putSubcommand(dataDir string) *cli.Command {
 				return nil
 			}
 
-			if err := db.Put(key, val); err != nil {
+			if err := ns.LevelDB.Put(key, val); err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 			}
 
 			return nil
 		},
 	}
-}
-
-func levelDB(ctx *cli.Context, dir string) (*store.LevelDBKV, error) {
-	var err error
-	db := GetKV(ctx)
-	if db == nil {
-		db, err = store.NewLevelDB(dir)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return db.(*store.LevelDBKV), nil
 }

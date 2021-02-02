@@ -14,8 +14,10 @@ server:
       PEM ME
     certs_dir: relative/certs-dir-path
 
-ledger:
-  data_dir: relative/path
+namespaces:
+  - name: ns1
+    data_dir: relative/path1
+  - name: ns2
 
 logging:
   log_spec: debug

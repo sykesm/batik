@@ -23,6 +23,7 @@ func TestNamespace_New(t *testing.T) {
 
 	ns := New(logger, db)
 	gt.Expect(ns.Logger).To(Equal(logger))
+	gt.Expect(ns.LevelDB).To(Equal(db))
 	gt.Expect(ns.TxRepo).NotTo(BeNil())
 	gt.Expect(ns.SubmitService).NotTo(BeNil())
 }
