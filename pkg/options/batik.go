@@ -7,6 +7,7 @@ package options
 type Batik struct {
 	Server     Server      `yaml:"server,omitempty"`
 	Namespaces []Namespace `yaml:"namespaces,omitempty"`
+	Validators []Validator `yaml:"validators,omitempty"`
 	Logging    Logging     `yaml:"logging,omitempty"`
 }
 
@@ -23,6 +24,9 @@ func (c *Batik) ApplyDefaults() {
 	c.Server.ApplyDefaults()
 	for i := range c.Namespaces {
 		(&c.Namespaces[i]).ApplyDefaults()
+	}
+	for i := range c.Validators {
+		(&c.Validators[i]).ApplyDefaults()
 	}
 	c.Logging.ApplyDefaults()
 }

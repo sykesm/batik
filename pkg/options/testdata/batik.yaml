@@ -19,5 +19,13 @@ namespaces:
     data_dir: relative/path1
   - name: ns2
 
+validators:
+  - name: builtin-validator
+    type: builtin
+  - name: wasm-validator1
+    type: wasm
+  - name: wasm-validator2
+    code_dir: relative/code-dir-path
+
 logging:
   log_spec: debug

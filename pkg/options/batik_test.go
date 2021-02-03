@@ -78,6 +78,20 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				Name: "ns2",
 			},
 		},
+		Validators: []Validator{
+			{
+				Name: "builtin-validator",
+				Type: "builtin",
+			},
+			{
+				Name: "wasm-validator1",
+				Type: "wasm",
+			},
+			{
+				Name:    "wasm-validator2",
+				CodeDir: "relative/code-dir-path",
+			},
+		},
 		Logging: Logging{
 			LogSpec: "debug",
 		},
@@ -114,6 +128,23 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 			{
 				Name:    "ns2",
 				DataDir: "data",
+			},
+		},
+		Validators: []Validator{
+			{
+				Name:    "builtin-validator",
+				Type:    "builtin",
+				CodeDir: "validators",
+			},
+			{
+				Name:    "wasm-validator1",
+				Type:    "wasm",
+				CodeDir: "validators",
+			},
+			{
+				Name:    "wasm-validator2",
+				Type:    "wasm",
+				CodeDir: "relative/code-dir-path",
 			},
 		},
 		Logging: Logging{
