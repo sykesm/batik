@@ -7,11 +7,13 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
 	cli "github.com/urfave/cli/v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/sykesm/batik/pkg/options"
 	"github.com/sykesm/batik/pkg/tested"
@@ -87,6 +89,81 @@ func TestBatikConfigNotFound(t *testing.T) {
 	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(3))
 	gt.Expect(stdout.String()).To(BeEmpty())
 	gt.Expect(stderr.String()).To(MatchRegexp("unable to read config:.*missing-file.txt"))
+}
+
+func TestBatikBadNamespaces(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	path, cleanup := tested.TempDir(t, "", "namespaces")
+	defer cleanup()
+
+	config := options.BatikDefaults()
+	config.Namespaces = []options.Namespace{
+		{
+			Name:      "dummy",
+			Validator: "missing-validator",
+			DataDir:   filepath.Join(path, "data"), // TODO, Should not be necessary
+		},
+	}
+
+	configBytes, err := yaml.Marshal(config)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	configPath := filepath.Join(path, "batik.yaml")
+	err = ioutil.WriteFile(configPath, configBytes, 0o666)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	stdin := bytes.NewBuffer(nil)
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+
+	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
+	app.ExitErrHandler = func(ctx *cli.Context, err error) {
+		fmt.Fprintf(ctx.App.ErrWriter, "%+v\n", err)
+	}
+
+	err = app.Run([]string{"batik", "--config", configPath})
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(3))
+	gt.Expect(stdout.String()).To(BeEmpty())
+	gt.Expect(stderr.String()).To(MatchRegexp("namespace.*missing-validator"))
+}
+
+func TestBatikBadValidator(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	path, cleanup := tested.TempDir(t, "", "namespaces")
+	defer cleanup()
+
+	config := options.BatikDefaults()
+	config.Validators = []options.Validator{
+		{
+			Name: "missing",
+			Type: "wasm", // TODO, why isn't this applying from defaults? (remove, test fails)
+		},
+	}
+
+	configBytes, err := yaml.Marshal(config)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	configPath := filepath.Join(path, "batik.yaml")
+	err = ioutil.WriteFile(configPath, configBytes, 0o666)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	stdin := bytes.NewBuffer(nil)
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+
+	app := Batik(nil, ioutil.NopCloser(stdin), stdout, stderr)
+	app.ExitErrHandler = func(ctx *cli.Context, err error) {
+		fmt.Fprintf(ctx.App.ErrWriter, "%+v\n", err)
+	}
+
+	err = app.Run([]string{"batik", "--config", configPath})
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(err.(cli.ExitCoder).ExitCode()).To(Equal(3))
+	gt.Expect(stdout.String()).To(BeEmpty())
+	gt.Expect(stderr.String()).To(MatchRegexp("could not load wasm binary for validator \"missing\".*"))
 }
 
 func TestBatikInteractive(t *testing.T) {

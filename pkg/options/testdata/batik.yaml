@@ -18,6 +18,7 @@ namespaces:
   - name: ns1
     data_dir: relative/path1
   - name: ns2
+    validator: wasm-validator1
 
 validators:
   - name: builtin-validator

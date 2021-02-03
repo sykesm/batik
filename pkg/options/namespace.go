@@ -21,12 +21,18 @@ type Namespace struct {
 	// to avoid collisions, so multiple namespaces may safely specify the same
 	// DataDir.
 	DataDir string `yaml:"data_dir,omitempty" batik:"relpath"`
+
+	// Validator is the name of the validator used to validate transactions
+	// in this namespace.  It must be defined in the top level Validators
+	// section of the Batik configuration.
+	Validator string `yaml:"validator,omitempty"`
 }
 
 // NamespaceDefaults returns the default configuration values for the ledger.
 func NamespaceDefaults() *Namespace {
 	return &Namespace{
-		DataDir: "data",
+		DataDir:   "data",
+		Validator: "signature-builtin",
 	}
 }
 
@@ -35,6 +41,9 @@ func (n *Namespace) ApplyDefaults() {
 	defaults := NamespaceDefaults()
 	if n.DataDir == "" {
 		n.DataDir = defaults.DataDir
+	}
+	if n.Validator == "" {
+		n.Validator = defaults.Validator
 	}
 }
 

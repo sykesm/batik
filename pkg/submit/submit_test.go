@@ -17,6 +17,7 @@ import (
 	"github.com/sykesm/batik/pkg/submit/fake"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
+	"github.com/sykesm/batik/pkg/validator"
 )
 
 //go:generate counterfeiter -o fake/repository.go --fake-name Repository . fakeRepository
@@ -41,7 +42,7 @@ func TestSubmitGetTransaction(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
 		fakeRepo := &fake.Repository{}
-		submitService := NewService(fakeRepo)
+		submitService := NewService(fakeRepo, validator.NewSignature())
 
 		err := submitService.Submit(context.Background(), signed)
 		gt.Expect(err).To(HaveOccurred())
@@ -53,7 +54,7 @@ func TestSubmitGetTransaction(t *testing.T) {
 
 		fakeRepo := &fake.Repository{}
 		fakeRepo.GetTransactionReturns(nil, errors.New("unexpected-error"))
-		submitService := NewService(fakeRepo)
+		submitService := NewService(fakeRepo, validator.NewSignature())
 
 		err := submitService.Submit(context.Background(), signed)
 		gt.Expect(err).To(MatchError(ErrHalt))

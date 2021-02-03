@@ -463,7 +463,8 @@ func writeNewConfig(path string) error {
 	config := options.Batik{
 		Namespaces: []options.Namespace{
 			{
-				Name: "namespace",
+				Name:      "namespace",
+				Validator: "signature-builtin",
 			},
 		},
 	}

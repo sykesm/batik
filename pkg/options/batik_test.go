@@ -16,7 +16,13 @@ func TestBatikDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	config := BatikDefaults()
 	gt.Expect(config).To(Equal(&Batik{
-		Server:  *ServerDefaults(),
+		Server: *ServerDefaults(),
+		Validators: []Validator{
+			{
+				Name: "signature-builtin",
+				Type: "builtin",
+			},
+		},
 		Logging: *LoggingDefaults(),
 	}))
 }
@@ -75,7 +81,8 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				DataDir: "relative/path1",
 			},
 			{
-				Name: "ns2",
+				Name:      "ns2",
+				Validator: "wasm-validator1",
 			},
 		},
 		Validators: []Validator{
@@ -122,19 +129,20 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 		},
 		Namespaces: []Namespace{
 			{
-				Name:    "ns1",
-				DataDir: "relative/path1",
+				Name:      "ns1",
+				DataDir:   "relative/path1",
+				Validator: "signature-builtin",
 			},
 			{
-				Name:    "ns2",
-				DataDir: "data",
+				Name:      "ns2",
+				DataDir:   "data",
+				Validator: "wasm-validator1",
 			},
 		},
 		Validators: []Validator{
 			{
-				Name:    "builtin-validator",
-				Type:    "builtin",
-				CodeDir: "validators",
+				Name: "builtin-validator",
+				Type: "builtin",
 			},
 			{
 				Name:    "wasm-validator1",

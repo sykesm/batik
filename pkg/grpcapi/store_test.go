@@ -17,6 +17,7 @@ import (
 	"github.com/sykesm/batik/pkg/tested"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
+	"github.com/sykesm/batik/pkg/validator"
 )
 
 func TestStoreService_GetTransaction(t *testing.T) {
@@ -138,7 +139,7 @@ func newStoreService(t *testing.T) (*StoreService, func()) {
 	db, err := store.NewLevelDB(path)
 	NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred())
 
-	ns := namespace.New(nil, db)
+	ns := namespace.New(nil, db, validator.NewSignature())
 
 	storeSvc := NewStoreService(NamespaceMapAdapter(map[string]*namespace.Namespace{"ns1": ns}))
 

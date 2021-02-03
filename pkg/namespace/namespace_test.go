@@ -11,6 +11,7 @@ import (
 
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/tested"
+	"github.com/sykesm/batik/pkg/validator"
 )
 
 func TestNamespace_New(t *testing.T) {
@@ -20,8 +21,9 @@ func TestNamespace_New(t *testing.T) {
 	defer cleanup()
 
 	logger := zap.NewExample()
+	v := validator.NewSignature()
 
-	ns := New(logger, db)
+	ns := New(logger, db, v)
 	gt.Expect(ns.Logger).To(Equal(logger))
 	gt.Expect(ns.LevelDB).To(Equal(db))
 	gt.Expect(ns.TxRepo).NotTo(BeNil())

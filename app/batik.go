@@ -6,10 +6,12 @@ package app
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 
+	"github.com/bytecodealliance/wasmtime-go"
 	"github.com/pkg/errors"
 	zaplogfmt "github.com/sykesm/zap-logfmt"
 	cli "github.com/urfave/cli/v2"
@@ -26,6 +28,8 @@ import (
 	"github.com/sykesm/batik/pkg/options"
 	"github.com/sykesm/batik/pkg/repl"
 	"github.com/sykesm/batik/pkg/store"
+	"github.com/sykesm/batik/pkg/submit"
+	"github.com/sykesm/batik/pkg/validator"
 )
 
 func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.App {
@@ -54,6 +58,7 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	}
 	app.Flags = append(app.Flags, config.Logging.Flags()...)
 	app.Flags = append(app.Flags, (&options.Namespace{}).Flags()...)
+	app.Flags = append(app.Flags, (&options.Validator{}).Flags()...)
 	app.Commands = []*cli.Command{
 		startCommand(config, false),
 		dbCommand(config),
@@ -77,7 +82,16 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		SetLogger(ctx, logger)
 		SetLeveler(ctx, leveler)
 
-		namespaces, err := newBatikNamespaceComponents(ctx, config.Namespaces)
+		validators, err := newBatikValidatorComponents(config.Validators)
+		if err != nil {
+			return cli.Exit(err, exitConfigLoadFailed)
+		}
+
+		namespaces, err := newBatikNamespaceComponents(ctx, config.Namespaces, validators)
+		if err != nil {
+			return cli.Exit(err, exitConfigLoadFailed)
+		}
+
 		SetNamespaces(ctx, namespaces)
 		// TODO safely shut down the DB
 		// atexit.Register(func() { namespaces.Close() })
@@ -148,7 +162,7 @@ func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore
 	return encoder, log.NewWriteSyncer(w), log.NewLeveler(config.LogSpec)
 }
 
-func newBatikNamespaceComponents(ctx *cli.Context, config []options.Namespace) (map[string]*namespace.Namespace, error) {
+func newBatikNamespaceComponents(ctx *cli.Context, config []options.Namespace, validators map[string]submit.Validator) (map[string]*namespace.Namespace, error) {
 	logger, err := GetLogger(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not retrieve logger")
@@ -165,7 +179,51 @@ func newBatikNamespaceComponents(ctx *cli.Context, config []options.Namespace) (
 			return nil, err
 		}
 
-		namespaces[ns.Name] = namespace.New(namespaceLogger, db)
+		v, ok := validators[ns.Validator]
+		if !ok {
+			return nil, errors.Errorf("namespace %q requires validator %q which is not defined", ns.Name, ns.Validator)
+		}
+
+		namespaces[ns.Name] = namespace.New(namespaceLogger, db, v)
 	}
 	return namespaces, nil
+}
+
+func newBatikValidatorComponents(config []options.Validator) (map[string]submit.Validator, error) {
+	var wasmEngine *wasmtime.Engine
+	result := map[string]submit.Validator{}
+	for i, validatorConf := range config {
+		if validatorConf.Name == "" {
+			return nil, errors.Errorf("validator at position %d in config has no name", i)
+		}
+		var v submit.Validator
+		switch validatorConf.Type {
+		case "builtin":
+			if validatorConf.Name != "signature-builtin" {
+				return nil, errors.Errorf("validator %q is not a known builtin validator", validatorConf.Name)
+			}
+			v = validator.NewSignature()
+		case "wasm":
+			wasmPath := filepath.Join(validatorConf.CodeDir, validatorConf.Name, ".wasm")
+			wasmBin, err := ioutil.ReadFile(wasmPath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not load wasm binary for validator %q at %q", validatorConf.Name, wasmPath)
+			}
+
+			if wasmEngine == nil {
+				wasmEngine = wasmtime.NewEngine()
+			}
+
+			v, err = validator.NewWASM(wasmEngine, wasmBin)
+			if err != nil {
+				return nil, errors.WithMessagef(err, "could not create wasm validator for %q", validatorConf.Name)
+			}
+		default:
+			return nil, errors.Errorf("validator %q has unknown type %q, must be wasm or builtin", validatorConf.Name, validatorConf.Type)
+		}
+
+		result[validatorConf.Name] = v
+	}
+
+	return result, nil
 }

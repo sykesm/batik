@@ -19,12 +19,12 @@ type Namespace struct {
 	SubmitService *submit.Service
 }
 
-func New(logger *zap.Logger, level *store.LevelDBKV) *Namespace {
+func New(logger *zap.Logger, level *store.LevelDBKV, validator submit.Validator) *Namespace {
 	repo := store.NewRepository(level)
 	return &Namespace{
 		Logger:        logger,
 		LevelDB:       level,
 		TxRepo:        repo,
-		SubmitService: submit.NewService(repo),
+		SubmitService: submit.NewService(repo, validator),
 	}
 }

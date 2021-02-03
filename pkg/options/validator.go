@@ -40,11 +40,11 @@ func ValidatorDefaults() *Validator {
 // ApplyDefaults applies default values for missing configuration fields.
 func (n *Validator) ApplyDefaults() {
 	defaults := ValidatorDefaults()
-	if n.CodeDir == "" {
-		n.CodeDir = defaults.CodeDir
-	}
 	if n.Type == "" {
 		n.Type = defaults.Type
+	}
+	if n.Type == "wasm" && n.CodeDir == "" {
+		n.CodeDir = defaults.CodeDir
 	}
 }
 

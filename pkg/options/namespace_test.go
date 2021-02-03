@@ -14,7 +14,8 @@ func TestNamespaceDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	ledger := NamespaceDefaults()
 	gt.Expect(ledger).To(Equal(&Namespace{
-		DataDir: "data",
+		DataDir:   "data",
+		Validator: "signature-builtin",
 	}))
 }
 
@@ -22,8 +23,9 @@ func TestNamespaceApplyDefaults(t *testing.T) {
 	tests := map[string]struct {
 		setup func(*Namespace)
 	}{
-		"empty":    {setup: func(l *Namespace) { *l = Namespace{} }},
-		"data dir": {setup: func(l *Namespace) { l.DataDir = "" }},
+		"empty":     {setup: func(l *Namespace) { *l = Namespace{} }},
+		"data dir":  {setup: func(l *Namespace) { l.DataDir = "" }},
+		"validator": {setup: func(l *Namespace) { l.Validator = "" }},
 	}
 
 	for name, tt := range tests {

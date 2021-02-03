@@ -16,17 +16,28 @@ func BatikDefaults() *Batik {
 	return &Batik{
 		Server:  *ServerDefaults(),
 		Logging: *LoggingDefaults(),
+		Validators: []Validator{
+			{
+				Name: "signature-builtin",
+				Type: "builtin",
+			},
+		},
 	}
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
 func (c *Batik) ApplyDefaults() {
+	defaults := BatikDefaults()
 	c.Server.ApplyDefaults()
 	for i := range c.Namespaces {
 		(&c.Namespaces[i]).ApplyDefaults()
 	}
-	for i := range c.Validators {
-		(&c.Validators[i]).ApplyDefaults()
+	if len(c.Validators) == 0 {
+		c.Validators = defaults.Validators
+	} else {
+		for i := range c.Validators {
+			(&c.Validators[i]).ApplyDefaults()
+		}
 	}
 	c.Logging.ApplyDefaults()
 }

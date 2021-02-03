@@ -11,7 +11,6 @@ import (
 	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/transaction"
-	"github.com/sykesm/batik/pkg/validator"
 )
 
 // A Repository abstracts the data persistence layer for transactions and
@@ -31,10 +30,10 @@ type Service struct {
 	validator Validator  // validator the transaction Validator
 }
 
-func NewService(repo Repository) *Service {
+func NewService(repo Repository, v Validator) *Service {
 	return &Service{
 		repo:      repo,
-		validator: validator.NewSignature(),
+		validator: v,
 	}
 }
 
