@@ -132,7 +132,6 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 		}
 		configPath = cf
 	}
-
 	if configPath != "" {
 		err := conf.LoadFile(configPath, config)
 		if err != nil {

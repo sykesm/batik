@@ -102,7 +102,6 @@ func TestBatikBadNamespaces(t *testing.T) {
 		{
 			Name:      "dummy",
 			Validator: "missing-validator",
-			DataDir:   filepath.Join(path, "data"), // TODO, Should not be necessary
 		},
 	}
 
@@ -139,7 +138,6 @@ func TestBatikBadValidator(t *testing.T) {
 	config.Validators = []options.Validator{
 		{
 			Name: "missing",
-			Type: "wasm", // TODO, why isn't this applying from defaults? (remove, test fails)
 		},
 	}
 

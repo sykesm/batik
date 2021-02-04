@@ -15,9 +15,13 @@ import (
 
 // BatikConfig contains the configuration properties for a Batik instance.
 type BatikConfig struct {
+	// defApplied is set if defaults have been applied
+	defApplied bool
 	// Server contains the batik grpc server configuration properties.
 	Server Server `yaml:"server"`
 }
+
+func (b *BatikConfig) ApplyDefaults() { b.defApplied = true }
 
 // Server contains configuration properties for a Batik gRPC server.
 type Server struct {
@@ -36,6 +40,7 @@ func TestLoadFile(t *testing.T) {
 			name:    "load yaml from file",
 			cfgPath: filepath.Join("testdata", "batik-config.yaml"),
 			expectedConfig: BatikConfig{
+				defApplied: true,
 				Server: Server{
 					Address: "127.0.0.1:9000",
 					Relpath: filepath.Join("testdata", "relative.txt"),
@@ -66,6 +71,7 @@ func TestLoad(t *testing.T) {
 	err = Load(bytes.NewBuffer(contents), &batikConfig)
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(batikConfig).To(Equal(BatikConfig{
+		defApplied: true,
 		Server: Server{
 			Address: "127.0.0.1:9000",
 			Relpath: filepath.Join("relative.txt"),
