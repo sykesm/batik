@@ -4,7 +4,6 @@
 package grpc
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -23,13 +22,9 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	batikPath, err := gexec.Build("github.com/sykesm/batik/cmd/batik")
 	Expect(err).NotTo(HaveOccurred())
 
-	payload, err := json.Marshal(batikPath)
-	Expect(err).NotTo(HaveOccurred())
-
-	return payload
+	return []byte(batikPath)
 }, func(payload []byte) {
-	err := json.Unmarshal(payload, &batikPath)
-	Expect(err).NotTo(HaveOccurred())
+	batikPath = string(payload)
 })
 
 var _ = SynchronizedAfterSuite(func() {
