@@ -81,11 +81,11 @@ func (w *Writer) Write(p []byte) (int, error) {
 	}
 
 	reserved := map[string]struct{}{
-		w.encoderConfig.TimeKey:    struct{}{},
-		w.encoderConfig.LevelKey:   struct{}{},
-		w.encoderConfig.NameKey:    struct{}{},
-		w.encoderConfig.CallerKey:  struct{}{},
-		w.encoderConfig.MessageKey: struct{}{},
+		w.encoderConfig.TimeKey:    {},
+		w.encoderConfig.LevelKey:   {},
+		w.encoderConfig.NameKey:    {},
+		w.encoderConfig.CallerKey:  {},
+		w.encoderConfig.MessageKey: {},
 	}
 
 	var h header

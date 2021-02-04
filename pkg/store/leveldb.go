@@ -102,7 +102,7 @@ func (l *LevelDBKV) Get(key []byte) ([]byte, error) {
 }
 
 func (l *LevelDBKV) MultiGet(keys ...[]byte) ([][]byte, error) {
-	var bufs = make([][]byte, len(keys))
+	bufs := make([][]byte, len(keys))
 
 	for i := range keys {
 		b, err := l.Get(keys[i])

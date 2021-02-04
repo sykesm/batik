@@ -16,7 +16,6 @@ import (
 )
 
 func dbCommand(config *options.Batik) *cli.Command {
-
 	command := &cli.Command{
 		Name:  "db",
 		Usage: "perform operations against a kv store",

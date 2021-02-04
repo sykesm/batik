@@ -25,11 +25,9 @@ const (
 	TLSServerKeyName = "server-key.pem"
 )
 
-var (
-	// ErrServerTLSNotBootstrapped is returned when no server TLS configuration has been specified
-	// and the filesystem does not contain certs or keys in the default paths.
-	ErrServerTLSNotBootstrapped = errors.Errorf("no server certificate or key found in yaml or tls certs dir")
-)
+// ErrServerTLSNotBootstrapped is returned when no server TLS configuration has been specified
+// and the filesystem does not contain certs or keys in the default paths.
+var ErrServerTLSNotBootstrapped = errors.Errorf("no server certificate or key found in yaml or tls certs dir")
 
 // A CertKeyPair references files containing the TLS certificate and private
 // key.
@@ -150,7 +148,7 @@ func (s *ServerTLS) Flags() []cli.Flag {
 }
 
 func (s *ServerTLS) Bootstrap() error {
-	err := os.MkdirAll(s.CertsDir, 0700)
+	err := os.MkdirAll(s.CertsDir, 0o700)
 	if err != nil {
 		return errors.Wrap(err, "failed to create tls-certs-dir")
 	}
@@ -175,12 +173,12 @@ func (s *ServerTLS) Bootstrap() error {
 	certPath := filepath.Join(s.CertsDir, TLSServerCertName)
 	keyPath := filepath.Join(s.CertsDir, TLSServerKeyName)
 
-	err = ioutil.WriteFile(certPath, cert, 0644)
+	err = ioutil.WriteFile(certPath, cert, 0o644)
 	if err != nil {
 		return errors.Wrapf(err, "failed to write cert to %s", certPath)
 	}
 
-	err = ioutil.WriteFile(keyPath, key, 0600)
+	err = ioutil.WriteFile(keyPath, key, 0o600)
 	if err != nil {
 		return errors.Wrapf(err, "failed to write key to %s", keyPath)
 	}

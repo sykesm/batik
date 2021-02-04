@@ -35,9 +35,9 @@ func TestCertKeyPairTLSCertificate(t *testing.T) {
 		CertFile: filepath.Join(tempDir, "server.key"),
 	}
 
-	err := ioutil.WriteFile(ckp.CertFile, []byte(ckp.CertData), 0644)
+	err := ioutil.WriteFile(ckp.CertFile, []byte(ckp.CertData), 0o644)
 	gt.Expect(err).NotTo(HaveOccurred())
-	err = ioutil.WriteFile(ckp.KeyFile, []byte(ckp.KeyData), 0644)
+	err = ioutil.WriteFile(ckp.KeyFile, []byte(ckp.KeyData), 0o644)
 	gt.Expect(err).NotTo(HaveOccurred())
 
 	tests := map[string]struct {
@@ -295,14 +295,14 @@ func TestServerTLSBootstrap(t *testing.T) {
 		},
 		"unwritable cert": {
 			mangleDir: func(gt *GomegaWithT, certsDir string) {
-				err := os.MkdirAll(filepath.Join(certsDir, "server-cert.pem"), 0755)
+				err := os.MkdirAll(filepath.Join(certsDir, "server-cert.pem"), 0o755)
 				gt.Expect(err).NotTo(HaveOccurred())
 			},
 			errMatcher: MatchError(MatchRegexp("failed to write cert to.*")),
 		},
 		"unwritable key": {
 			mangleDir: func(gt *GomegaWithT, certsDir string) {
-				err := os.MkdirAll(filepath.Join(certsDir, "server-key.pem"), 0755)
+				err := os.MkdirAll(filepath.Join(certsDir, "server-key.pem"), 0o755)
 				gt.Expect(err).NotTo(HaveOccurred())
 			},
 			errMatcher: MatchError(MatchRegexp("failed to write key to.*")),

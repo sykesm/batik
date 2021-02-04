@@ -30,7 +30,6 @@ func TestNewBaseTemplate(t *testing.T) {
 
 	gt.Expect(template.IPAddresses).To(Equal([]net.IP{net.ParseIP("127.0.0.1")}))
 	gt.Expect(template.DNSNames).To(Equal([]string{"addr1.com"}))
-
 }
 
 func TestNewCATemplate(t *testing.T) {
@@ -49,7 +48,6 @@ func TestNewCATemplate(t *testing.T) {
 
 	gt.Expect(template.IPAddresses).To(Equal([]net.IP{net.ParseIP("127.0.0.1")}))
 	gt.Expect(template.DNSNames).To(Equal([]string{"addr1.com"}))
-
 }
 
 func TestNewCAServerTemplate(t *testing.T) {
@@ -68,7 +66,6 @@ func TestNewCAServerTemplate(t *testing.T) {
 
 	gt.Expect(template.IPAddresses).To(Equal([]net.IP{net.ParseIP("127.0.0.1")}))
 	gt.Expect(template.DNSNames).To(Equal([]string{"addr1.com"}))
-
 }
 
 func TestGenerateCA(t *testing.T) {

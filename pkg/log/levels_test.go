@@ -11,7 +11,7 @@ import (
 )
 
 func TestNameToLevel(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		names       []string
 		level       zapcore.Level
 		expectedErr string

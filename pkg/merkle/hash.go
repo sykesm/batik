@@ -157,7 +157,7 @@ func (t *Tree) Dump(w io.Writer) {
 }
 
 func (t *Tree) dumpLevel(w io.Writer, level, index int, prefix string) {
-	var glyphs = [][]string{
+	glyphs := [][]string{
 		{" ├─", " │ "}, // intermediate element
 		{" └─", "   "}, // last element
 	}

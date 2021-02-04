@@ -17,9 +17,7 @@ import (
 
 const testTimeout = 10 * time.Second
 
-var (
-	batikPath string
-)
+var batikPath string
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 	batikPath, err := gexec.Build("github.com/sykesm/batik/cmd/batik")

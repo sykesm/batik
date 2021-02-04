@@ -59,7 +59,7 @@ func TestTempDir(t *testing.T) {
 
 	t.Run("Fail", func(t *testing.T) {
 		ro := filepath.Join(tempdir, "ro")
-		if err := os.Mkdir(ro, 0110); err != nil {
+		if err := os.Mkdir(ro, 0o110); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
 

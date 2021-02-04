@@ -70,7 +70,7 @@ func TestNew(t *testing.T) {
 	unknownFields := func(tx *txv1.Transaction) { tx.Inputs[0].ProtoReflect().SetUnknown([]byte("garbage")) }
 	longKey := func(tx *txv1.Transaction) { tx.Outputs[0].Info.Owners[0].PublicKey = long }
 
-	var tests = map[string]struct {
+	tests := map[string]struct {
 		expected   ID
 		errMatcher types.GomegaMatcher
 		setup      func(*txv1.Transaction)
@@ -156,7 +156,7 @@ func TestReflectDetectsChanges(t *testing.T) {
 	encoded, err := protomsg.MarshalDeterministic(newTestTransaction())
 	gt.Expect(err).NotTo(HaveOccurred())
 
-	var tests = map[string]struct {
+	tests := map[string]struct {
 		message    proto.Message
 		errMatcher types.GomegaMatcher
 	}{

@@ -17,13 +17,16 @@ type Simple struct {
 	Relpath     string `batik:"relpath"`
 	IgnoredBool bool
 }
-type Field struct{ Simple Simple }
-type FieldPtr struct{ Simple *Simple }
-type Embedded struct{ Simple }
-type EmbeddedPtr struct{ *Simple }
-type WrongType struct {
-	Relpath int `batik:"relpath"`
-}
+type (
+	Field       struct{ Simple Simple }
+	FieldPtr    struct{ Simple *Simple }
+	Embedded    struct{ Simple }
+	EmbeddedPtr struct{ *Simple }
+	WrongType   struct {
+		Relpath int `batik:"relpath"`
+	}
+)
+
 type Sliced struct {
 	Simples []Simple
 }
@@ -106,7 +109,7 @@ func TestResolveRelpathMultipleFields(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	tr := &TagResolver{SourcePath: "source_path"}
 
-	var multi = struct {
+	multi := struct {
 		PathA string `batik:"relpath"`
 		PathB string `batik:"relpath"`
 	}{
@@ -141,7 +144,7 @@ func TestResolveRelpathNotAddressable(t *testing.T) {
 func TestResolveUnknownDirective(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
-	var unknownDirective = struct {
+	unknownDirective := struct {
 		Unknown string `batik:"say-what?"`
 	}{}
 
