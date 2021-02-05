@@ -4,70 +4,51 @@
 package options
 
 import (
-	"flag"
 	"testing"
 
 	. "github.com/onsi/gomega"
 )
 
-func TestValidatorDefaults(t *testing.T) {
-	gt := NewGomegaWithT(t)
-	ledger := ValidatorDefaults()
-	gt.Expect(ledger).To(Equal(&Validator{
-		CodeDir: "validators",
-		Type:    "wasm",
-	}))
-}
-
 func TestValidatorApplyDefaults(t *testing.T) {
+	defaults := Validator{
+		Name: "name",
+		Type: "wasm",
+		Path: "data/validators/name.wasm",
+	}
+
 	tests := map[string]struct {
-		setup func(*Validator)
-	}{
-		"empty":    {setup: func(l *Validator) { *l = Validator{} }},
-		"code dir": {setup: func(l *Validator) { l.CodeDir = "" }},
-		"type":     {setup: func(l *Validator) { l.Type = "" }},
-	}
-
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			gt := NewGomegaWithT(t)
-
-			input := ValidatorDefaults()
-			tt.setup(input)
-
-			input.ApplyDefaults()
-			gt.Expect(input).To(Equal(ValidatorDefaults()))
-		})
-	}
-}
-
-func TestValidatorFlagNames(t *testing.T) {
-	gt := NewGomegaWithT(t)
-	flags := (&Validator{}).Flags()
-
-	var names []string
-	for _, f := range flags {
-		names = append(names, f.Names()...)
-	}
-
-	gt.Expect(flags).To(HaveLen(1))
-	gt.Expect(names).To(ConsistOf(
-		"validators-dir",
-	))
-}
-
-func TestValidatorFlags(t *testing.T) {
-	tests := map[string]struct {
-		args     []string
+		setup    func(*Validator)
 		expected Validator
 	}{
-		"no flags": {
-			args:     []string{},
-			expected: Validator{},
+		"empty": {
+			setup:    func(l *Validator) { *l = Validator{Name: "name"} },
+			expected: defaults,
 		},
-		"code dir": {
-			args:     []string{"--validators-dir=some/path/name"},
-			expected: Validator{CodeDir: "some/path/name"},
+		"path empty": {
+			setup:    func(l *Validator) { l.Path = "" },
+			expected: defaults,
+		},
+		"path specified": {
+			setup: func(l *Validator) { l.Path = "some/path" },
+			expected: Validator{
+				Name: "name",
+				Type: "wasm",
+				Path: "some/path",
+			},
+		},
+		"type": {
+			setup:    func(l *Validator) { l.Type = "" },
+			expected: defaults,
+		},
+		"not wasm": {
+			setup: func(l *Validator) {
+				l.Type = "builtin"
+				l.Path = ""
+			},
+			expected: Validator{
+				Name: "name",
+				Type: "builtin",
+			},
 		},
 	}
 
@@ -75,21 +56,11 @@ func TestValidatorFlags(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			gt := NewGomegaWithT(t)
 
-			ledger := &Validator{}
-			flagSet := flag.NewFlagSet("validator-test", flag.ContinueOnError)
-			for _, f := range ledger.Flags() {
-				err := f.Apply(flagSet)
-				gt.Expect(err).NotTo(HaveOccurred())
-			}
+			input := defaults
+			tt.setup(&input)
 
-			err := flagSet.Parse(tt.args)
-			gt.Expect(err).NotTo(HaveOccurred())
-			gt.Expect(ledger).To(Equal(&tt.expected))
+			input.ApplyDefaults("data")
+			gt.Expect(input).To(Equal(tt.expected))
 		})
 	}
-}
-
-func TestValidatorFlagsDefaultText(t *testing.T) {
-	flags := ValidatorDefaults().Flags()
-	assertWrappedFlagWithDefaultText(t, flags...)
 }

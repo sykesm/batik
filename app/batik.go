@@ -56,9 +56,8 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			EnvVars: []string{"BATIK_CFG_PATH"},
 		},
 	}
+	app.Flags = append(app.Flags, config.Flags()...)
 	app.Flags = append(app.Flags, config.Logging.Flags()...)
-	app.Flags = append(app.Flags, (&options.Namespace{}).Flags()...)
-	app.Flags = append(app.Flags, (&options.Validator{}).Flags()...)
 	app.Commands = []*cli.Command{
 		startCommand(config, false),
 		dbCommand(config),
@@ -203,10 +202,9 @@ func newBatikValidatorComponents(config []options.Validator) (map[string]submit.
 			}
 			v = validator.NewSignature()
 		case "wasm":
-			wasmPath := filepath.Join(validatorConf.CodeDir, validatorConf.Name, ".wasm")
-			wasmBin, err := ioutil.ReadFile(wasmPath)
+			wasmBin, err := ioutil.ReadFile(validatorConf.Path)
 			if err != nil {
-				return nil, errors.Wrapf(err, "could not load wasm binary for validator %q at %q", validatorConf.Name, wasmPath)
+				return nil, errors.Wrapf(err, "could not load wasm binary for validator %q at %q", validatorConf.Name, validatorConf.Path)
 			}
 
 			if wasmEngine == nil {

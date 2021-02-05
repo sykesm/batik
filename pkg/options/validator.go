@@ -4,7 +4,8 @@
 package options
 
 import (
-	cli "github.com/urfave/cli/v2"
+	"fmt"
+	"path/filepath"
 )
 
 // Validator exposes configuration for a transaction validator.
@@ -19,50 +20,17 @@ type Validator struct {
 	// If omitted, defaults to "wasm".
 	Type string `yaml:"type"`
 
-	// CodeDir is the path to the directory where WASM binaries are stored.
-	// For validators of type "builtin", this field is ignored.
-	// For validators of type "wasm", compiled code  must exist at <code_dir>/<name>.wasm
-	// If a relative path is used, the path is relative to the working
-	// directory unless the path was retrieved from a configuration file, in
-	// which case it is relative to the directory containing the configuration
-	// file.
-	CodeDir string `yaml:"code_dir,omitempty" batik:"relpath"`
-}
-
-// ValidatorDefaults returns the default configuration values for the ledger.
-func ValidatorDefaults() *Validator {
-	return &Validator{
-		Type:    "wasm",
-		CodeDir: "validators",
-	}
+	// Path is the location that the WASM binary are stored.  If not specified,
+	// and the type is "wasm", it defaults to <data_dir>/validators/<validator_name>.wasm
+	Path string `yaml:"path,omitempty" batik:"relpath"`
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (n *Validator) ApplyDefaults() {
-	defaults := ValidatorDefaults()
+func (n *Validator) ApplyDefaults(dataDir string) {
 	if n.Type == "" {
-		n.Type = defaults.Type
+		n.Type = "wasm"
 	}
-	if n.Type == "wasm" && n.CodeDir == "" {
-		n.CodeDir = defaults.CodeDir
-	}
-}
-
-// Flags exposes configuration fields as flags. The current value of the
-// receiver is used as the default value of the flag so a ApplyDefaults should
-// be called before requesting flags.
-func (n *Validator) Flags() []cli.Flag {
-	def := ValidatorDefaults()
-	return []cli.Flag{
-		NewStringFlag(&cli.StringFlag{
-			Name:        "validators-dir",
-			Value:       n.CodeDir,
-			Destination: &n.CodeDir,
-			Usage: flow(`Sets the code directory for all validators in the configuration.  Because
-					the code directory is concatenated with the validator name when locating
-					wasm artifacts inside the code directory, this value is safe to set with multiple
-					validators without fear of collision.`),
-			DefaultText: def.CodeDir,
-		}),
+	if n.Type == "wasm" && n.Path == "" {
+		n.Path = filepath.Join(dataDir, "validators", fmt.Sprintf("%s.wasm", n.Name))
 	}
 }

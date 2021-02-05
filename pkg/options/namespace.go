@@ -4,7 +4,7 @@
 package options
 
 import (
-	cli "github.com/urfave/cli/v2"
+	"path/filepath"
 )
 
 // Namespace exposes configuration for a namespace.
@@ -13,13 +13,9 @@ type Namespace struct {
 	// transactors reference
 	Name string `yaml:"name"`
 
-	// DataDir is the path to the directory where ledger artifacts will be
-	// placed. If a relative path is used, the path is relative to the working
-	// directory unless the path was retrieved from a configuration file, in
-	// which case it is relative to the directory containing the configuration
-	// file.  Note, the namespace name is always concatenated with the DataDir
-	// to avoid collisions, so multiple namespaces may safely specify the same
-	// DataDir.
+	// DataDir is the location of the ledger artifacts for this namespace.
+	// If this field is not specified, its default is generated from
+	// the BaseDir in the Namespaces configuration.
 	DataDir string `yaml:"data_dir,omitempty" batik:"relpath"`
 
 	// Validator is the name of the validator used to validate transactions
@@ -28,40 +24,12 @@ type Namespace struct {
 	Validator string `yaml:"validator,omitempty"`
 }
 
-// NamespaceDefaults returns the default configuration values for the ledger.
-func NamespaceDefaults() *Namespace {
-	return &Namespace{
-		DataDir:   "data",
-		Validator: "signature-builtin",
-	}
-}
-
 // ApplyDefaults applies default values for missing configuration fields.
-func (n *Namespace) ApplyDefaults() {
-	defaults := NamespaceDefaults()
+func (n *Namespace) ApplyDefaults(baseDataDir string) {
 	if n.DataDir == "" {
-		n.DataDir = defaults.DataDir
+		n.DataDir = filepath.Join(baseDataDir, "namespaces", n.Name)
 	}
 	if n.Validator == "" {
-		n.Validator = defaults.Validator
-	}
-}
-
-// Flags exposes configuration fields as flags. The current value of the
-// receiver is used as the default value of the flag so a ApplyDefaults should
-// be called before requesting flags.
-func (n *Namespace) Flags() []cli.Flag {
-	def := NamespaceDefaults()
-	return []cli.Flag{
-		NewStringFlag(&cli.StringFlag{
-			Name:        "data-dir",
-			Value:       n.DataDir,
-			Destination: &n.DataDir,
-			Usage: flow(`Sets the data directory for all namespaces in the configuration.  Because
-					the data directory is concatenated with the namespace name when creating
-					artifacts inside the data directory, this value is safe to set with multiple
-					namespaces without fear of collision.`),
-			DefaultText: def.DataDir,
-		}),
+		n.Validator = "signature-builtin"
 	}
 }

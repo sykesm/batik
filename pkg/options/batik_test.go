@@ -4,6 +4,7 @@
 package options
 
 import (
+	"flag"
 	"os"
 	"testing"
 	"time"
@@ -16,7 +17,8 @@ func TestBatikDefaults(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	config := BatikDefaults()
 	gt.Expect(config).To(Equal(&Batik{
-		Server: *ServerDefaults(),
+		DataDir: "data",
+		Server:  *ServerDefaults(),
 		Validators: []Validator{
 			{
 				Name: "signature-builtin",
@@ -25,6 +27,59 @@ func TestBatikDefaults(t *testing.T) {
 		},
 		Logging: *LoggingDefaults(),
 	}))
+}
+
+func TestBatikFlagName(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	flags := (&Batik{}).Flags()
+
+	var names []string
+	for _, f := range flags {
+		names = append(names, f.Names()...)
+	}
+
+	gt.Expect(flags).To(HaveLen(1))
+	gt.Expect(names).To(ConsistOf(
+		"data-dir",
+	))
+}
+
+func TestBatikFlags(t *testing.T) {
+	tests := map[string]struct {
+		args     []string
+		expected Batik
+	}{
+		"no flags": {
+			args:     []string{},
+			expected: Batik{},
+		},
+		"data dir": {
+			args:     []string{"--data-dir=some/path/name"},
+			expected: Batik{DataDir: "some/path/name"},
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			gt := NewGomegaWithT(t)
+
+			batik := &Batik{}
+			flagSet := flag.NewFlagSet("batik-flag-test", flag.ContinueOnError)
+			for _, f := range batik.Flags() {
+				err := f.Apply(flagSet)
+				gt.Expect(err).NotTo(HaveOccurred())
+			}
+
+			err := flagSet.Parse(tt.args)
+			gt.Expect(err).NotTo(HaveOccurred())
+			gt.Expect(batik).To(Equal(&tt.expected))
+		})
+	}
+}
+
+func TestBatikFlagsDefaultText(t *testing.T) {
+	flags := BatikDefaults().Flags()
+	assertWrappedFlagWithDefaultText(t, flags...)
 }
 
 func TestBatikApplyDefaults(t *testing.T) {
@@ -62,6 +117,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 	err = decoder.Decode(&config)
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(config).To(Equal(Batik{
+		DataDir: "relative/path",
 		Server: Server{
 			GRPC: GRPCServer{
 				GRPC:          GRPC{MaxSendMessageSize: 104857600},
@@ -78,7 +134,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 		Namespaces: []Namespace{
 			{
 				Name:    "ns1",
-				DataDir: "relative/path1",
+				DataDir: "override/path",
 			},
 			{
 				Name:      "ns2",
@@ -95,8 +151,8 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				Type: "wasm",
 			},
 			{
-				Name:    "wasm-validator2",
-				CodeDir: "relative/code-dir-path",
+				Name: "wasm-validator2",
+				Path: "custom/relative/path",
 			},
 		},
 		Logging: Logging{
@@ -106,6 +162,7 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 
 	config.ApplyDefaults()
 	gt.Expect(config).To(Equal(Batik{
+		DataDir: "relative/path",
 		Server: Server{
 			GRPC: GRPCServer{
 				ConnTimeout: 30 * time.Second,
@@ -130,12 +187,12 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 		Namespaces: []Namespace{
 			{
 				Name:      "ns1",
-				DataDir:   "relative/path1",
+				DataDir:   "override/path",
 				Validator: "signature-builtin",
 			},
 			{
 				Name:      "ns2",
-				DataDir:   "data",
+				DataDir:   "relative/path/namespaces/ns2",
 				Validator: "wasm-validator1",
 			},
 		},
@@ -145,14 +202,14 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				Type: "builtin",
 			},
 			{
-				Name:    "wasm-validator1",
-				Type:    "wasm",
-				CodeDir: "validators",
+				Name: "wasm-validator1",
+				Type: "wasm",
+				Path: "relative/path/validators/wasm-validator1.wasm",
 			},
 			{
-				Name:    "wasm-validator2",
-				Type:    "wasm",
-				CodeDir: "relative/code-dir-path",
+				Name: "wasm-validator2",
+				Type: "wasm",
+				Path: "custom/relative/path",
 			},
 		},
 		Logging: Logging{
