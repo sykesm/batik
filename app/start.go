@@ -33,7 +33,11 @@ func startCommand(config *options.Batik, interactive bool) *cli.Command {
 		Usage:       "start the server",
 		Flags:       config.Server.Flags(),
 		Action: func(ctx *cli.Context) error {
-			return startAction(ctx, config, interactive)
+			err := startAction(ctx, config, interactive)
+			if err != nil {
+				return cli.Exit(err, exitServerStartFailed)
+			}
+			return nil
 		},
 	}
 }

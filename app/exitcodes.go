@@ -15,4 +15,5 @@ const (
 	exitServerStatusFailed
 	exitAppShutdownFailed
 	exitChangeLogspecFailed
+	exitConfigEncodeFailed
 )

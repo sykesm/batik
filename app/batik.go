@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/crypto/ssh/terminal"
+	"gopkg.in/yaml.v3"
 
 	"github.com/sykesm/batik/pkg/atexit"
 	"github.com/sykesm/batik/pkg/buildinfo"
@@ -55,6 +56,11 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 			Usage:   "Path to yaml configuration file",
 			EnvVars: []string{"BATIK_CFG_PATH"},
 		},
+		&cli.BoolFlag{
+			Name:   "show-config",
+			Hidden: true,
+			Usage:  "Show the yaml serialization of the active configuration",
+		},
 	}
 	app.Flags = append(app.Flags, config.Flags()...)
 	app.Flags = append(app.Flags, config.Logging.Flags()...)
@@ -67,6 +73,11 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	// https://github.com/urfave/cli/blob/master/docs/v2/manual.md#ordering
 	sort.Sort(cli.FlagsByName(app.Flags))
 	sort.Sort(cli.CommandsByName(app.Commands))
+
+	// Setup hooks to show configuration instead of running commands.
+	for i, cmd := range app.Commands {
+		app.Commands[i].Before = showConfigBefore(cmd.Before, config)
+	}
 
 	app.Before = func(ctx *cli.Context) error {
 		err := resolveConfig(ctx, config)
@@ -105,12 +116,19 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 
 	// The default action starts the interactive console shell.
 	app.Action = func(ctx *cli.Context) error {
+		// Handle --show-config without a subcommand
+		if err := showConfigBefore(nil, config)(ctx); err != nil {
+			return err
+		}
+
+		// User provided a command that was not found
 		if ctx.Args().Present() {
 			arg := ctx.Args().First()
 			ctx.App.CommandNotFound(ctx, arg)
 			return cli.Exit("", exitCommandNotFound)
 		}
 
+		// Interactive shell
 		sa, err := shellApp(ctx, config)
 		if err != nil {
 			return cli.Exit(err, exitShellSetupFailed)
@@ -139,6 +157,21 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 	}
 
 	return nil
+}
+
+func showConfigBefore(b cli.BeforeFunc, config *options.Batik) cli.BeforeFunc {
+	return func(ctx *cli.Context) error {
+		if ctx.Bool("show-config") {
+			if err := yaml.NewEncoder(ctx.App.Writer).Encode(config); err != nil {
+				return cli.Exit(err, exitConfigEncodeFailed)
+			}
+			return cli.Exit("", exitOkay)
+		}
+		if b != nil {
+			return b(ctx)
+		}
+		return nil
+	}
 }
 
 func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore.Encoder, zapcore.WriteSyncer, zap.AtomicLevel) {
