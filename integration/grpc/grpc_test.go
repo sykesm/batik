@@ -61,7 +61,7 @@ var _ = Describe("gRPC", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		cmd := exec.Command(
-			batikPath,
+			binPaths.Batik,
 			"--config", confFilePath,
 			"--color=yes",
 			"start",
@@ -136,118 +136,122 @@ var _ = Describe("gRPC", func() {
 				}},
 			}
 
-			resp, err := submitClient.Submit(
-				context.Background(),
-				&txv1.SubmitRequest{
-					Namespace: "namespace",
-					SignedTransaction: &txv1.SignedTransaction{
-						Transaction: tx,
+			for _, namespace := range []string{"ns2", "ns1"} {
+				tx := proto.Clone(tx).(*txv1.Transaction)
+				By("performing the submit process in " + namespace)
+				resp, err := submitClient.Submit(
+					context.Background(),
+					&txv1.SubmitRequest{
+						Namespace: namespace,
+						SignedTransaction: &txv1.SignedTransaction{
+							Transaction: tx,
+						},
 					},
-				},
-			)
-			Expect(err).NotTo(HaveOccurred())
+				)
+				Expect(err).NotTo(HaveOccurred())
 
-			By("retrieving the transaciton")
-			itx, err := transaction.New(crypto.SHA256, tx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Txid).To(Equal(itx.ID.Bytes()))
+				By("retrieving the transaciton")
+				itx, err := transaction.New(crypto.SHA256, tx)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(resp.Txid).To(Equal(itx.ID.Bytes()))
 
-			result, err := storeClient.GetTransaction(
-				context.Background(),
-				&storev1.GetTransactionRequest{
-					Namespace: "namespace",
-					Txid:      resp.Txid,
-				},
-			)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(ProtoEqual(&storev1.GetTransactionResponse{Transaction: tx}))
-
-			By("resubmitting the transaciton")
-			_, err = submitClient.Submit(
-				context.Background(),
-				&txv1.SubmitRequest{
-					Namespace: "namespace",
-					SignedTransaction: &txv1.SignedTransaction{
-						Transaction: tx,
+				result, err := storeClient.GetTransaction(
+					context.Background(),
+					&storev1.GetTransactionRequest{
+						Namespace: namespace,
+						Txid:      resp.Txid,
 					},
-				},
-			)
-			Expect(err).To(HaveOccurred())
-			st, ok := status.FromError(err)
-			Expect(ok).To(BeTrue())
-			Expect(st.Code()).To(Equal(codes.AlreadyExists))
-			Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx.ID)))
+				)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).To(ProtoEqual(&storev1.GetTransactionResponse{Transaction: tx}))
 
-			By("consuming the output")
-			salt = make([]byte, 32)
-			_, err = io.ReadFull(rand.Reader, salt)
-			Expect(err).NotTo(HaveOccurred())
-
-			tx = &txv1.Transaction{
-				Salt: salt,
-				Inputs: []*txv1.StateReference{{
-					Txid:        itx.ID,
-					OutputIndex: 0,
-				}},
-			}
-			itx2, err := transaction.New(crypto.SHA256, tx)
-			Expect(err).NotTo(HaveOccurred())
-			resp, err = submitClient.Submit(
-				context.Background(),
-				&txv1.SubmitRequest{
-					Namespace: "namespace",
-					SignedTransaction: &txv1.SignedTransaction{
-						Transaction: tx,
+				By("resubmitting the transaciton")
+				_, err = submitClient.Submit(
+					context.Background(),
+					&txv1.SubmitRequest{
+						Namespace: namespace,
+						SignedTransaction: &txv1.SignedTransaction{
+							Transaction: tx,
+						},
 					},
-				},
-			)
-			Expect(resp.Txid).To(Equal(itx2.ID.Bytes()))
-			Expect(err).NotTo(HaveOccurred())
+				)
+				Expect(err).To(HaveOccurred())
+				st, ok := status.FromError(err)
+				Expect(ok).To(BeTrue())
+				Expect(st.Code()).To(Equal(codes.AlreadyExists))
+				Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx.ID)))
 
-			By("verifying the output is consumed")
-			salt = make([]byte, 32)
-			_, err = io.ReadFull(rand.Reader, salt)
-			Expect(err).NotTo(HaveOccurred())
+				By("consuming the output")
+				salt = make([]byte, 32)
+				_, err = io.ReadFull(rand.Reader, salt)
+				Expect(err).NotTo(HaveOccurred())
 
-			tx2 := &txv1.Transaction{
-				Salt: salt,
-				Inputs: []*txv1.StateReference{{
-					Txid:        itx.ID,
-					OutputIndex: 0,
-				}},
-			}
-			_, err = submitClient.Submit(
-				context.Background(),
-				&txv1.SubmitRequest{
-					Namespace: "namespace",
-					SignedTransaction: &txv1.SignedTransaction{
-						Transaction: tx2,
-					},
-				},
-			)
-			Expect(err).To(HaveOccurred())
-
-			st, ok = status.FromError(err)
-			Expect(ok).To(BeTrue())
-			Expect(st.Code()).To(Equal(codes.FailedPrecondition))
-
-			itx3, err := transaction.New(crypto.SHA256, tx2)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx3.ID)))
-
-			By("fetching the consumed state")
-			_, err = storeClient.GetState(
-				context.Background(),
-				&storev1.GetStateRequest{
-					Namespace: "namespace",
-					StateRef: &txv1.StateReference{
+				tx = &txv1.Transaction{
+					Salt: salt,
+					Inputs: []*txv1.StateReference{{
 						Txid:        itx.ID,
 						OutputIndex: 0,
+					}},
+				}
+				itx2, err := transaction.New(crypto.SHA256, tx)
+				Expect(err).NotTo(HaveOccurred())
+				resp, err = submitClient.Submit(
+					context.Background(),
+					&txv1.SubmitRequest{
+						Namespace: namespace,
+						SignedTransaction: &txv1.SignedTransaction{
+							Transaction: tx,
+						},
 					},
-					Consumed: true,
-				},
-			)
-			Expect(err).NotTo(HaveOccurred())
+				)
+				Expect(resp.Txid).To(Equal(itx2.ID.Bytes()))
+				Expect(err).NotTo(HaveOccurred())
+
+				By("verifying the output is consumed")
+				salt = make([]byte, 32)
+				_, err = io.ReadFull(rand.Reader, salt)
+				Expect(err).NotTo(HaveOccurred())
+
+				tx2 := &txv1.Transaction{
+					Salt: salt,
+					Inputs: []*txv1.StateReference{{
+						Txid:        itx.ID,
+						OutputIndex: 0,
+					}},
+				}
+				_, err = submitClient.Submit(
+					context.Background(),
+					&txv1.SubmitRequest{
+						Namespace: namespace,
+						SignedTransaction: &txv1.SignedTransaction{
+							Transaction: tx2,
+						},
+					},
+				)
+				Expect(err).To(HaveOccurred())
+
+				st, ok = status.FromError(err)
+				Expect(ok).To(BeTrue())
+				Expect(st.Code()).To(Equal(codes.FailedPrecondition))
+
+				itx3, err := transaction.New(crypto.SHA256, tx2)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx3.ID)))
+
+				By("fetching the consumed state")
+				_, err = storeClient.GetState(
+					context.Background(),
+					&storev1.GetStateRequest{
+						Namespace: namespace,
+						StateRef: &txv1.StateReference{
+							Txid:        itx.ID,
+							OutputIndex: 0,
+						},
+						Consumed: true,
+					},
+				)
+				Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	})
 
@@ -272,7 +276,7 @@ var _ = Describe("gRPC", func() {
 
 			BeforeEach(func() {
 				req = &storev1.GetTransactionRequest{
-					Namespace: "namespace",
+					Namespace: "ns1",
 					Txid:      txid,
 				}
 			})
@@ -300,7 +304,7 @@ var _ = Describe("gRPC", func() {
 			When("the transaction exists", func() {
 				BeforeEach(func() {
 					putReq := &storev1.PutTransactionRequest{
-						Namespace:   "namespace",
+						Namespace:   "ns1",
 						Transaction: testTx,
 					}
 
@@ -329,7 +333,7 @@ var _ = Describe("gRPC", func() {
 							},
 						},
 					}
-					url := "https://" + httpAddress + "/v1/store/namespace/tx/" + base64.URLEncoding.EncodeToString(txid)
+					url := "https://" + httpAddress + "/v1/store/ns1/tx/" + base64.URLEncoding.EncodeToString(txid)
 					resp, err := client.Get(url)
 					Expect(err).NotTo(HaveOccurred())
 					defer resp.Body.Close()
@@ -350,7 +354,7 @@ var _ = Describe("gRPC", func() {
 
 			BeforeEach(func() {
 				req = &storev1.PutTransactionRequest{
-					Namespace:   "namespace",
+					Namespace:   "ns1",
 					Transaction: testTx,
 				}
 			})
@@ -362,7 +366,7 @@ var _ = Describe("gRPC", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				getReq := &storev1.GetTransactionRequest{
-					Namespace: "namespace",
+					Namespace: "ns1",
 					Txid:      txid,
 				}
 				resp, err := storeServiceClient.GetTransaction(context.Background(), getReq)
@@ -385,7 +389,7 @@ var _ = Describe("gRPC", func() {
 					OutputIndex: 0,
 				}
 				req = &storev1.GetStateRequest{
-					Namespace: "namespace",
+					Namespace: "ns1",
 					StateRef:  stateRef,
 				}
 			})
@@ -401,7 +405,7 @@ var _ = Describe("gRPC", func() {
 			When("the state exists", func() {
 				BeforeEach(func() {
 					putReq := &storev1.PutStateRequest{
-						Namespace: "namespace",
+						Namespace: "ns1",
 						StateRef:  stateRef,
 						State:     state,
 					}
@@ -433,7 +437,7 @@ var _ = Describe("gRPC", func() {
 				}
 
 				req = &storev1.PutStateRequest{
-					Namespace: "namespace",
+					Namespace: "ns1",
 					StateRef:  stateRef,
 					State:     state,
 				}
@@ -446,7 +450,7 @@ var _ = Describe("gRPC", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				getReq := &storev1.GetStateRequest{
-					Namespace: "namespace",
+					Namespace: "ns1",
 					StateRef:  stateRef,
 				}
 				resp, err := storeServiceClient.GetState(context.Background(), getReq)
@@ -463,12 +467,26 @@ func writeNewConfig(path string) error {
 	config := options.Batik{
 		Namespaces: []options.Namespace{
 			{
-				Name:      "namespace",
+				Name:      "ns1",
 				Validator: "signature-builtin",
+			},
+			{
+				Name:      "ns2",
+				Validator: "signature-wasm",
+			},
+		},
+		Validators: []options.Validator{
+			{
+				Name: "signature-builtin",
+				Type: "builtin",
+			},
+			{
+				Name: "signature-wasm",
+				Type: "wasm",
+				Path: binPaths.WASMSigValidator,
 			},
 		},
 	}
-	config.ApplyDefaults()
 
 	confFile, err := os.Create(path)
 	if err != nil {
