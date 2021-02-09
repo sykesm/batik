@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"sort"
 
 	"github.com/bytecodealliance/wasmtime-go"
@@ -30,6 +29,7 @@ import (
 	"github.com/sykesm/batik/pkg/repl"
 	"github.com/sykesm/batik/pkg/store"
 	"github.com/sykesm/batik/pkg/submit"
+	"github.com/sykesm/batik/pkg/totalorder"
 	"github.com/sykesm/batik/pkg/validator"
 )
 
@@ -91,6 +91,13 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 		atexit.Register(func() { logger.Sync() })
 		SetLogger(ctx, logger)
 		SetLeveler(ctx, leveler)
+
+		totalOrders, err := newBatikTotalOrderComponents(ctx, config.TotalOrders)
+		if err != nil {
+			return cli.Exit(err, exitConfigLoadFailed)
+		}
+		_ = totalOrders // TODO, wire into namespace
+		// TODO safely shut down the total orders and their dbs
 
 		validators, err := newBatikValidatorComponents(config.Validators)
 		if err != nil {
@@ -240,9 +247,8 @@ func newBatikNamespaceComponents(ctx *cli.Context, config []options.Namespace, v
 	for _, ns := range config {
 		namespaceLogger := logger.With(zap.String("namespace", ns.Name))
 
-		dbPath := filepath.Join(ns.DataDir, ns.Name)
-		namespaceLogger.Debug("initializing database", zap.String("data_dir", dbPath))
-		db, err := store.NewLevelDB(dbPath)
+		namespaceLogger.Debug("initializing namespace database", zap.String("data_dir", ns.DataDir))
+		db, err := store.NewLevelDB(ns.DataDir)
 		if err != nil {
 			return nil, err
 		}
@@ -290,6 +296,34 @@ func newBatikValidatorComponents(config []options.Validator) (map[string]submit.
 		}
 
 		result[validatorConf.Name] = v
+	}
+
+	return result, nil
+}
+
+// TODO, the map type is wrong, need to create our consumer and use the interface type there
+func newBatikTotalOrderComponents(ctx *cli.Context, config []options.TotalOrder) (map[string]*totalorder.InProcess, error) {
+	logger, err := GetLogger(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "could not retrieve logger")
+	}
+
+	result := map[string]*totalorder.InProcess{}
+	for _, to := range config {
+		if to.Type != "in-process" {
+			return nil, errors.Errorf("totalorder %q has unknown type %q, must be \"in-process\"", to.Name, to.Type)
+		}
+
+		totalorderLogger := logger.With(zap.String("namespace", to.Name))
+
+		totalorderLogger.Debug("initializing totalorder database", zap.String("data_dir", to.DataDir))
+		db, err := store.NewLevelDB(to.DataDir)
+		if err != nil {
+			return nil, err
+		}
+
+		ipo := totalorder.NewInProcess(totalorder.NewStore(db))
+		result[to.Name] = ipo
 	}
 
 	return result, nil

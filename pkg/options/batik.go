@@ -9,11 +9,12 @@ import (
 
 // Batik exposes the configurable elements of the application.
 type Batik struct {
-	DataDir    string      `yaml:"data_dir,omitempty" batik:"relpath"`
-	Server     Server      `yaml:"server,omitempty"`
-	Namespaces []Namespace `yaml:"namespaces,omitempty"`
-	Validators []Validator `yaml:"validators,omitempty"`
-	Logging    Logging     `yaml:"logging,omitempty"`
+	DataDir     string       `yaml:"data_dir,omitempty" batik:"relpath"`
+	Server      Server       `yaml:"server,omitempty"`
+	Namespaces  []Namespace  `yaml:"namespaces,omitempty"`
+	Validators  []Validator  `yaml:"validators,omitempty"`
+	TotalOrders []TotalOrder `yaml:"total_orders,omitempty"`
+	Logging     Logging      `yaml:"logging,omitempty"`
 }
 
 // BatikDefaults returns the default configuration values for the app.
@@ -40,6 +41,10 @@ func (c *Batik) ApplyDefaults() {
 	}
 
 	c.Server.ApplyDefaults()
+
+	for i := range c.TotalOrders {
+		(&c.TotalOrders[i]).ApplyDefaults(c.DataDir)
+	}
 
 	for i := range c.Namespaces {
 		(&c.Namespaces[i]).ApplyDefaults(c.DataDir)

@@ -30,5 +30,8 @@ validators:
   - name: wasm-validator2
     path: custom/relative/path
 
+total_orders:
+  - name: order1
+
 logging:
   log_spec: debug

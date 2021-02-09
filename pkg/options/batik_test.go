@@ -141,6 +141,11 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				Validator: "wasm-validator1",
 			},
 		},
+		TotalOrders: []TotalOrder{
+			{
+				Name: "order1",
+			},
+		},
 		Validators: []Validator{
 			{
 				Name: "builtin-validator",
@@ -194,6 +199,13 @@ func TestReadConfigFileApplyDefaults(t *testing.T) {
 				Name:      "ns2",
 				DataDir:   "relative/path/namespaces/ns2",
 				Validator: "wasm-validator1",
+			},
+		},
+		TotalOrders: []TotalOrder{
+			{
+				Name:    "order1",
+				Type:    "in-process",
+				DataDir: "relative/path/totalorders/order1",
 			},
 		},
 		Validators: []Validator{
