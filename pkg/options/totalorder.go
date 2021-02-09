@@ -3,6 +3,10 @@
 
 package options
 
+import (
+	"path/filepath"
+)
+
 // Namespace exposes configuration for a namespace.
 type TotalOrder struct {
 	// Name is the human readable name for this total order and how other
@@ -14,11 +18,19 @@ type TotalOrder struct {
 	// is 'in-process', but other types including 'static-leader', and ultimately
 	// more robust consensus types will be added.
 	Type string `yaml:"type,omitempty"`
+
+	// DataDir is the path where the db for this total order will be stored.  Note
+	// the database will only be created if this peer is a consenter on order.
+	DataDir string `yaml:"data_dir,omitempty" batik:"relpath"`
 }
 
 // ApplyDefaults applies default values for missing configuration fields.
-func (n *TotalOrder) ApplyDefaults() {
+func (n *TotalOrder) ApplyDefaults(baseDataDir string) {
 	if n.Type == "" {
 		n.Type = "in-process"
+	}
+
+	if n.DataDir == "" {
+		n.DataDir = filepath.Join(baseDataDir, "totalorders", n.Name)
 	}
 }

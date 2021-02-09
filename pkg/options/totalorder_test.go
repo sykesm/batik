@@ -11,18 +11,34 @@ import (
 
 func TestTotalOrderApplyDefaults(t *testing.T) {
 	defaults := TotalOrder{
-		Name: "name", // TODO / note, if name is unspecified, what behavior do we want?
-		Type: "in-process",
+		Name:    "name", // TODO / note, if name is unspecified, what behavior do we want?
+		Type:    "in-process",
+		DataDir: "base/dir/totalorders/name",
 	}
 
 	tests := map[string]struct {
-		setup func(*TotalOrder)
+		setup    func(*TotalOrder)
+		expected TotalOrder
 	}{
 		"empty": {
-			setup: func(l *TotalOrder) { *l = TotalOrder{Name: "name"} },
+			setup:    func(l *TotalOrder) { *l = TotalOrder{Name: "name"} },
+			expected: defaults,
 		},
 		"type": {
-			setup: func(l *TotalOrder) { l.Type = "" },
+			setup:    func(l *TotalOrder) { l.Type = "" },
+			expected: defaults,
+		},
+		"data dir": {
+			setup:    func(l *TotalOrder) { l.DataDir = "" },
+			expected: defaults,
+		},
+		"overridden data dir": {
+			setup: func(l *TotalOrder) { l.DataDir = "some/path" },
+			expected: TotalOrder{
+				Name:    "name",
+				Type:    "in-process",
+				DataDir: "some/path",
+			},
 		},
 	}
 
@@ -33,8 +49,8 @@ func TestTotalOrderApplyDefaults(t *testing.T) {
 			input := defaults
 			tt.setup(&input)
 
-			input.ApplyDefaults()
-			gt.Expect(input).To(Equal(defaults))
+			input.ApplyDefaults("base/dir")
+			gt.Expect(input).To(Equal(tt.expected))
 		})
 	}
 }
