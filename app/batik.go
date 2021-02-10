@@ -4,6 +4,7 @@
 package app
 
 import (
+	"crypto"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -322,7 +323,7 @@ func newBatikTotalOrderComponents(ctx *cli.Context, config []options.TotalOrder)
 			return nil, err
 		}
 
-		ipo := totalorder.NewInProcess(totalorder.NewStore(db))
+		ipo := totalorder.NewInProcess(totalorder.NewStore(crypto.SHA256, db))
 		result[to.Name] = ipo
 	}
 

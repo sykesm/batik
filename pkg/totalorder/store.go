@@ -5,14 +5,18 @@ package totalorder
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/binary"
+	"hash"
 	"sync"
 
 	"github.com/pkg/errors"
 
 	"github.com/sykesm/batik/pkg/store"
 )
+
+type Hasher interface {
+	New() hash.Hash
+}
 
 var (
 	// Global prefixes.
@@ -30,17 +34,19 @@ var (
 
 type Store struct {
 	mutex        sync.Mutex
+	hasher       Hasher
 	kv           store.KV
 	nextSequence uint64
 	accumulator  []byte
 	waitCs       map[uint64]chan struct{}
 }
 
-func NewStore(kv store.KV) *Store {
+func NewStore(hasher Hasher, kv store.KV) *Store {
 	// TODO, crash recovery
 
 	return &Store{
 		kv:     kv,
+		hasher: hasher,
 		waitCs: map[uint64]chan struct{}{},
 	}
 }
@@ -51,7 +57,7 @@ func (s *Store) Append(t TXIDAndHMAC) error {
 
 	tahBytes := t.serialize()
 
-	h := sha256.New()
+	h := s.hasher.New()
 	h.Write(s.accumulator)
 	h.Write(tahBytes)
 	nextAccumulator := h.Sum(nil)

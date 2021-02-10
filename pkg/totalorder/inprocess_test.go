@@ -5,6 +5,7 @@ package totalorder
 
 import (
 	"context"
+	"crypto"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -25,7 +26,7 @@ func TestInProcess(t *testing.T) {
 	defer tested.Close(t, db)
 
 	ip := &InProcess{
-		store: NewStore(db),
+		store: NewStore(crypto.SHA256, db),
 		doneC: make(chan struct{}),
 		queue: make(chan TXIDAndHMAC),
 	}
@@ -33,8 +34,8 @@ func TestInProcess(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	err = ip.Broadcast(ctx, TXIDAndHMAC{
-		ID:   transaction.ID(hash("tx1")),
-		HMAC: hash("tx1" + "secret"),
+		ID:   transaction.ID(sHash("tx1")),
+		HMAC: sHash("tx1" + "secret"),
 	})
 	gt.Expect(err).To(MatchError(context.Canceled))
 
@@ -49,8 +50,8 @@ func TestInProcess(t *testing.T) {
 	}()
 
 	err = ip.Broadcast(context.Background(), TXIDAndHMAC{
-		ID:   transaction.ID(hash("tx1")),
-		HMAC: hash("tx1" + "secret"),
+		ID:   transaction.ID(sHash("tx1")),
+		HMAC: sHash("tx1" + "secret"),
 	})
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -58,8 +59,8 @@ func TestInProcess(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(tah).To(Equal(
 		TXIDAndHMAC{
-			ID:   transaction.ID(hash("tx1")),
-			HMAC: hash("tx1" + "secret"),
+			ID:   transaction.ID(sHash("tx1")),
+			HMAC: sHash("tx1" + "secret"),
 		},
 	))
 
@@ -68,8 +69,8 @@ func TestInProcess(t *testing.T) {
 	gt.Eventually(exitC).Should(BeClosed())
 
 	err = ip.Broadcast(context.Background(), TXIDAndHMAC{
-		ID:   transaction.ID(hash("tx1")),
-		HMAC: hash("tx1" + "secret"),
+		ID:   transaction.ID(sHash("tx1")),
+		HMAC: sHash("tx1" + "secret"),
 	})
 	gt.Expect(err).To(MatchError("told to exit"))
 

@@ -5,6 +5,7 @@ package totalorder
 
 import (
 	"context"
+	"crypto"
 	"crypto/sha256"
 	"testing"
 
@@ -25,11 +26,11 @@ func TestStore(t *testing.T) {
 	gt.Expect(err).NotTo(HaveOccurred())
 	defer tested.Close(t, db)
 
-	orderStore := NewStore(db)
+	orderStore := NewStore(crypto.SHA256, db)
 
 	err = orderStore.Append(TXIDAndHMAC{
-		ID:   transaction.ID(hash("tx1")),
-		HMAC: hash("tx1" + "secret"),
+		ID:   transaction.ID(sHash("tx1")),
+		HMAC: sHash("tx1" + "secret"),
 	})
 	gt.Expect(err).NotTo(HaveOccurred())
 
@@ -37,8 +38,8 @@ func TestStore(t *testing.T) {
 	tah, err := orderStore.Get(context.Background(), 0)
 	gt.Expect(err).NotTo(HaveOccurred())
 	gt.Expect(tah).To(Equal(TXIDAndHMAC{
-		ID:   transaction.ID(hash("tx1")),
-		HMAC: hash("tx1" + "secret"),
+		ID:   transaction.ID(sHash("tx1")),
+		HMAC: sHash("tx1" + "secret"),
 	}))
 
 	type result struct {
@@ -79,8 +80,8 @@ func TestStore(t *testing.T) {
 	}).Should(Equal(1))
 
 	err = orderStore.Append(TXIDAndHMAC{
-		ID:   transaction.ID(hash("tx2")),
-		HMAC: hash("tx2" + "secret"),
+		ID:   transaction.ID(sHash("tx2")),
+		HMAC: sHash("tx2" + "secret"),
 	})
 	gt.Expect(err).NotTo(HaveOccurred())
 	orderStore.mutex.Lock()
@@ -92,15 +93,15 @@ func TestStore(t *testing.T) {
 	gt.Eventually(resultC).Should(Receive(&result1))
 	gt.Expect(result1.err).NotTo(HaveOccurred())
 	gt.Expect(result1.val).To(Equal(TXIDAndHMAC{
-		ID:   transaction.ID(hash("tx2")),
-		HMAC: hash("tx2" + "secret"),
+		ID:   transaction.ID(sHash("tx2")),
+		HMAC: sHash("tx2" + "secret"),
 	}))
 
 	gt.Eventually(resultC).Should(Receive(&result2))
 	gt.Expect(result2.err).NotTo(HaveOccurred())
 	gt.Expect(result2.val).To(Equal(TXIDAndHMAC{
-		ID:   transaction.ID(hash("tx2")),
-		HMAC: hash("tx2" + "secret"),
+		ID:   transaction.ID(sHash("tx2")),
+		HMAC: sHash("tx2" + "secret"),
 	}))
 
 	val, err := db.Get(keyMetadataLastCommitted)
@@ -114,8 +115,8 @@ func TestStore(t *testing.T) {
 		append(
 			initialAccumulator,
 			(&TXIDAndHMAC{
-				ID:   transaction.ID(hash("tx1")),
-				HMAC: hash("tx1" + "secret"),
+				ID:   transaction.ID(sHash("tx1")),
+				HMAC: sHash("tx1" + "secret"),
 			}).serialize()...,
 		),
 	)
@@ -123,15 +124,15 @@ func TestStore(t *testing.T) {
 		append(
 			accumulatorAfterTx1,
 			(&TXIDAndHMAC{
-				ID:   transaction.ID(hash("tx2")),
-				HMAC: hash("tx2" + "secret"),
+				ID:   transaction.ID(sHash("tx2")),
+				HMAC: sHash("tx2" + "secret"),
 			}).serialize()...,
 		),
 	)
 	gt.Expect(accumulator).To(Equal(acculatorAfterTx2))
 }
 
-func hash(value string) []byte {
+func sHash(value string) []byte {
 	return bHash([]byte(value))
 }
 
