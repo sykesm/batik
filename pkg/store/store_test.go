@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	"github.com/sykesm/batik/pkg/transaction"
 )
 
 func TestPending(t *testing.T) {
@@ -58,7 +59,28 @@ func newTestTransaction() *txv1.Transaction {
 func fromHex(t *testing.T, s string) []byte {
 	b, err := hex.DecodeString(s)
 	if err != nil {
-		t.Fatalf("failed to decode %q as hex string", s)
+		t.Fatalf("failed to decode %q as hex string: %s", s, err)
 	}
 	return b
+}
+
+func TestKeyEncodings(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	gt.Expect(true).To(BeTrue())
+
+	txID := fromHex(t, "deadbeef")
+
+	txKey := transactionKey(txID)
+	gt.Expect(txKey).To(Equal(fromHex(t, "01deadbeef")))
+
+	stateID := transaction.StateID{TxID: txID, OutputIndex: 1}
+
+	sKey := stateKey(stateID)
+	gt.Expect(sKey).To(Equal(fromHex(t, "02deadbeef0000000000000001")))
+
+	siKey := stateInfoKey(stateID)
+	gt.Expect(siKey).To(Equal(fromHex(t, "03deadbeef0000000000000001")))
+
+	scKey := consumedStateKey(stateID)
+	gt.Expect(scKey).To(Equal(fromHex(t, "04deadbeef0000000000000001")))
 }

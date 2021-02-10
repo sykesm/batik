@@ -5,7 +5,7 @@ package store
 
 import (
 	"crypto"
-	"strconv"
+	"encoding/binary"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -150,28 +150,33 @@ var (
 
 // transactionKey returns a db key for a transaction
 func transactionKey(txid []byte) []byte {
-	return append(keyTransactions[:], txid[:]...)
+	key := make([]byte, len(keyTransactions)+len(txid))
+	copy(key, keyTransactions[:])
+	copy(key[len(keyTransactions):], txid)
+	return key
+}
+
+// buildKey builds a fixed length key of the form:
+//  <prefix><txid><big-endian-uint64>
+func buildKey(prefix, txid []byte, outputIndex uint64) []byte {
+	key := make([]byte, len(prefix)+len(txid)+8)
+	copy(key, prefix)
+	copy(key[len(prefix):], txid)
+	binary.BigEndian.PutUint64(key[len(prefix)+len(txid):], outputIndex)
+	return key
 }
 
 // stateKey returns a db key for a state
 func stateKey(id transaction.StateID) []byte {
-	return append(
-		append(keyStates[:], id.TxID[:]...),
-		strconv.Itoa(int(id.OutputIndex))...,
-	)
+	return buildKey(keyStates[:], id.TxID, id.OutputIndex)
 }
 
-// stateKey returns a db key for a state
+// stateInfoKey returns a db key for a stateInfo
 func stateInfoKey(id transaction.StateID) []byte {
-	return append(
-		append(keyStateInfos[:], id.TxID[:]...),
-		strconv.Itoa(int(id.OutputIndex))...,
-	)
+	return buildKey(keyStateInfos[:], id.TxID, id.OutputIndex)
 }
 
+// stateIfoKey returns a db key for a stateInfo
 func consumedStateKey(id transaction.StateID) []byte {
-	return append(
-		append(keyConsumedStates[:], id.TxID[:]...),
-		strconv.Itoa(int(id.OutputIndex))...,
-	)
+	return buildKey(keyConsumedStates[:], id.TxID, id.OutputIndex)
 }
