@@ -97,6 +97,34 @@ type Signed struct {
 	Signatures []*Signature
 }
 
+// Receipt should be treated immutably, and represents a particular
+// instance of a tx's submission (including its txid and signatures).
+type Receipt struct {
+	TxID       ID           `json:"TxID"`
+	Signatures []*Signature `json:"Signatures"`
+
+	// ID is a hash of the above fields used as an opaque identifier.
+	ID []byte `json:"-"`
+}
+
+// NewReceipt creates a new receipt, populating its ID field based on
+// the result of applying the hasher to each of its serializable fields.
+func NewReceipt(hasher merkle.Hasher, txid ID, sigs []*Signature) *Receipt {
+	h := hasher.New()
+	h.Write(txid)
+	for _, sig := range sigs {
+		h.Write(sig.PublicKey)
+		h.Write(sig.Signature)
+	}
+	id := h.Sum(nil)
+
+	return &Receipt{
+		TxID:       txid,
+		Signatures: sigs,
+		ID:         id,
+	}
+}
+
 // encodedElement returns the encoded pieces of each message in a transaction.
 // The element is prepended with the protowire encoded tag of the field number
 // followed by the length of the encoded message.

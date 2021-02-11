@@ -136,6 +136,37 @@ func TestNewFromBytesError(t *testing.T) {
 	gt.Expect(err).To(MatchError(proto.Error))
 }
 
+func TestNewReceipt(t *testing.T) {
+	gt := NewGomegaWithT(t)
+	r := NewReceipt(crypto.SHA256, ID([]byte("txid")), []*Signature{
+		{
+			PublicKey: []byte("pk1"),
+			Signature: []byte("sig1"),
+		},
+		{
+			PublicKey: []byte("pk2"),
+			Signature: []byte("sig2"),
+		},
+	})
+	h := crypto.SHA256.New()
+	h.Write([]byte("txidpk1sig1pk2sig2"))
+	gt.Expect(r).To(Equal(&Receipt{
+		TxID: []byte("txid"),
+		Signatures: []*Signature{
+			{
+				PublicKey: []byte("pk1"),
+				Signature: []byte("sig1"),
+			},
+			{
+				PublicKey: []byte("pk2"),
+				Signature: []byte("sig2"),
+			},
+		},
+		ID: h.Sum(nil),
+	}))
+
+}
+
 func TestIDMatchesReflected(t *testing.T) {
 	gt := NewGomegaWithT(t)
 	intTx, err := New(crypto.SHA256, newTestTransaction())
