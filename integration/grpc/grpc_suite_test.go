@@ -4,7 +4,7 @@
 package grpc
 
 import (
-	"encoding/json"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -19,45 +19,34 @@ import (
 
 const testTimeout = 10 * time.Second
 
-var binPaths paths
+var (
+	batikPath            string
+	wasmSigValidatorPath string
+)
 
-type paths struct {
-	Batik            string
-	WASMSigValidator string
-}
+const sigvalPath = "../../rust/sigval/target/wasm32-unknown-unknown/release/sigval.wasm"
 
 var _ = SynchronizedBeforeSuite(func() []byte {
+	_, err := os.Stat(sigvalPath)
+	if os.IsNotExist(err) {
+		cmd := exec.Command("make", "cargo-build")
+		cmd.Dir = filepath.Join("..", "..")
+		sess, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(sess).Should(gexec.Exit(0))
+	}
+
 	batikPath, err := gexec.Build("github.com/sykesm/batik/cmd/batik")
 	Expect(err).NotTo(HaveOccurred())
 
-	cargoCmd := exec.Command("cargo", "build", "--target", "wasm32-unknown-unknown")
-	cargoCmd.Dir = filepath.Join("..", "..", "wasm", "modules", "utxotx")
-
-	wasmSigValidatorPath, err := filepath.Abs(
-		filepath.Join(
-			cargoCmd.Dir,
-			"target",
-			"wasm32-unknown-unknown",
-			"debug",
-			"utxotx.wasm",
-		),
-	)
-	Expect(err).NotTo(HaveOccurred())
-
-	cargoBuild, err := gexec.Start(cargoCmd, nil, nil)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(cargoBuild, time.Minute).Should(gexec.Exit(0))
-
-	payload, err := json.Marshal(paths{
-		Batik:            batikPath,
-		WASMSigValidator: wasmSigValidatorPath,
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	return []byte(payload)
+	return []byte(batikPath)
 }, func(payload []byte) {
-	err := json.Unmarshal(payload, &binPaths)
+	path, err := filepath.Abs(sigvalPath)
 	Expect(err).NotTo(HaveOccurred())
+	Expect(path).To(BeAnExistingFile())
+
+	batikPath = string(payload)
+	wasmSigValidatorPath = path
 })
 
 var _ = SynchronizedAfterSuite(func() {

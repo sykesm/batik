@@ -9,14 +9,13 @@ GOTOOLS_BINDIR = tools/bin
 
 export PATH := $(GOTOOLS_BINDIR):$(PATH)
 
-all: gotools batik checks
+all: gotools batik cargo-build checks
 
 .PHONY: clean
 clean:
-	@cargo clean --manifest-path ./wasm/modules/utxotx/Cargo.toml
 	@-rm -rf dist
 
-clean-all: clean gotools-clean
+clean-all: clean cargo-clean gotools-clean
 
 .PHONY: batik
 batik:
@@ -33,19 +32,28 @@ batik:
 checks: gotools linting cargo-test unit-test integration-test
 
 .PHONY: unit-test unit-tests
-unit-test unit-tests:
+unit-test unit-tests: cargo-build
 	@scripts/run-unit-tests
+
+.PHONY: cargo-build
+cargo-build:
+	@cargo build --release --target wasm32-unknown-unknown --manifest-path ./rust/sigval/Cargo.toml
+	@mkdir -p ./pkg/validator/testdata
+	@cp ./rust/sigval/target/wasm32-unknown-unknown/release/sigval.wasm ./pkg/validator/testdata/sigval.wasm
 
 .PHONY: cargo-test
 cargo-test:
-	@cargo test --manifest-path ./wasm/modules/utxotx/Cargo.toml
+	@cargo test --manifest-path ./rust/sigval/Cargo.toml
+
+.PHONY: cargo-clean
+	@cargo clean --manifest-path ./rust/sigval/Cargo.toml
 
 .PHONY: linting
 linting:
 	@scripts/run-linting
 
 .PHONY: integration-test integration-tests
-integration-test integration-tests:
+integration-test integration-tests: cargo-build
 	@scripts/run-integration-tests
 
 # go tool->path mapping

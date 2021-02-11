@@ -61,7 +61,7 @@ var _ = Describe("gRPC", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		cmd := exec.Command(
-			binPaths.Batik,
+			batikPath,
 			"--config", confFilePath,
 			"--color=yes",
 			"start",
@@ -483,7 +483,7 @@ func writeNewConfig(path string) error {
 			{
 				Name: "signature-wasm",
 				Type: "wasm",
-				Path: binPaths.WASMSigValidator,
+				Path: wasmSigValidatorPath,
 			},
 		},
 	}

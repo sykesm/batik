@@ -6,9 +6,9 @@ use std::path::Path;
 
 fn main() {
     let protos = &[
-        "../../../protos/tx/v1/transaction.proto",
-        "../../../protos/validation/v1/validation_api.proto",
-        "../../../protos/validation/v1/resolved.proto",
+        "../../protos/tx/v1/transaction.proto",
+        "../../protos/validation/v1/validation_api.proto",
+        "../../protos/validation/v1/resolved.proto",
     ];
     for proto in protos {
         println!("cargo:rerun-if-changed={}", proto);
@@ -20,7 +20,7 @@ fn generate_pb_rs(protos: impl IntoIterator<Item = impl AsRef<Path>>) {
     protobuf_codegen_pure::Codegen::new()
         .out_dir("src/messages")
         .inputs(protos)
-        .includes(&["../../../protos"])
+        .includes(&["../../protos"])
         .run()
         .expect("Running protoc failed.");
 }

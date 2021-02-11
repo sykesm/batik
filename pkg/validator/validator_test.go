@@ -9,6 +9,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -29,6 +31,17 @@ type validator interface {
 // in sync.
 func TestValidate(t *testing.T) {
 	gt := NewGomegaWithT(t)
+
+	_, err := os.Stat(filepath.Join("testdata", "sigval.wasm"))
+	if os.IsNotExist(err) {
+		cmd := exec.Command("make", "cargo-build")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Dir = filepath.Join("..", "..")
+
+		err := cmd.Run()
+		gt.Expect(err).NotTo(HaveOccurred())
+	}
 
 	sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)
 	gt.Expect(err).NotTo(HaveOccurred())
@@ -110,11 +123,12 @@ func TestValidate(t *testing.T) {
 		},
 	}
 
-	engine := wasmtime.NewEngine()
-	modfile := filepath.Join(moddir, "target", "wasm32-unknown-unknown", "debug", "utxotx.wasm")
+	modfile := filepath.Join("testdata", "sigval.wasm")
 	gt.Expect(modfile).To(BeAnExistingFile())
 	module, err := ioutil.ReadFile(modfile)
 	gt.Expect(err).NotTo(HaveOccurred())
+
+	engine := wasmtime.NewEngine()
 
 	validators := []struct {
 		name string
