@@ -140,7 +140,29 @@ func Batik(args []string, stdin io.ReadCloser, stdout, stderr io.Writer) *cli.Ap
 	return app
 }
 
+// resolveConfig is another hack related to the single configuration object
+// pattern we're using.
+//
+// Top-level flags are used to point to the location of the configuration file
+// and to setup things like logging and the data directory. When a value is
+// provided with a flag, it is supposed to take priority over values loaded
+// from the confguration file. The configuration file can't be loaded until
+// after the flags are processed (because `--config` is a flag) and loading the
+// configuration file will overwite the values set by the flags...
+//
+// So, the hack:
+//   1. Save the values set by the local flags
+//   2. Load the configuration file
+//   3. Reapply the values to the flags
+//   4. Rerun tag resolution on the configuration file
 func resolveConfig(ctx *cli.Context, config *options.Batik) error {
+	// Save the top-level flags to push back to the config
+	flags := map[string]interface{}{}
+	for _, name := range ctx.LocalFlagNames() {
+		flags[name] = ctx.Value(name)
+	}
+
+	// Find the configuration file to use
 	configPath := ctx.String("config")
 	if configPath == "" {
 		cf, err := conf.File(ctx.App.Name)
@@ -149,6 +171,8 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 		}
 		configPath = cf
 	}
+
+	// Load the configuration file.
 	if configPath != "" {
 		err := conf.LoadFile(configPath, config)
 		if err != nil {
@@ -156,9 +180,22 @@ func resolveConfig(ctx *cli.Context, config *options.Batik) error {
 		}
 	}
 
-	return nil
+	// Re-apply the top level flags to the config as they take priority over
+	// values loaded from the configuration file.
+	for name, val := range flags {
+		ctx.Set(name, fmt.Sprintf("%v", val))
+	}
+
+	// Resolve the tags after re-applying flags
+	tr := &conf.TagResolver{SourcePath: filepath.Dir(configPath)}
+	return tr.Resolve(config)
 }
 
+// showConfigBefore returns a function that dumps the configuration and
+// terminates the command when the `show-config` flag is used. If the flag is
+// not set, cli.BeforeFunc `b` is called instead.
+//
+// This is intented to be a test utility and debug aid.
 func showConfigBefore(b cli.BeforeFunc, config *options.Batik) cli.BeforeFunc {
 	return func(ctx *cli.Context) error {
 		if ctx.Bool("show-config") {

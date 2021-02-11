@@ -179,9 +179,7 @@ var _ = Describe("Command Line Configuration", func() {
 			Expect(active).To(Equal(config))
 		})
 
-		// This tests demonstrate that global flags do not override values
-		// from a configuration file.
-		PIt("global flags are prioritized over the configuration file", func() {
+		It("prioritizes global flags over the configuration file", func() {
 			config := &options.Batik{
 				DataDir: "/absolute/path",
 			}
@@ -202,7 +200,7 @@ var _ = Describe("Command Line Configuration", func() {
 			Expect(active).To(Equal(config))
 		})
 
-		It("command flags are prioritized over the configuration file", func() {
+		It("prioritizes command flags over the configuration file", func() {
 			config := &options.Batik{
 				Server: options.Server{
 					HTTP: options.HTTPServer{
