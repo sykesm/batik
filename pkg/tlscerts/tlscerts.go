@@ -4,7 +4,6 @@
 package tlscerts
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -91,22 +90,12 @@ func GenerateCA(template x509.Certificate) (pemCert, pemKey []byte, err error) {
 // PemEncode takes a der encoded certificate, and an ecdsa private key, and returns each
 // as Pem encoded blocks.
 func PemEncode(derCert []byte, key *ecdsa.PrivateKey) (pemCert, pemKey []byte, err error) {
-	certBuf := &bytes.Buffer{}
-	err = pem.Encode(certBuf, &pem.Block{Type: "CERTIFICATE", Bytes: derCert})
-	if err != nil {
-		return nil, nil, err
-	}
-
 	keyBytes, err := x509.MarshalECPrivateKey(key)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	keyBuf := &bytes.Buffer{}
-	err = pem.Encode(keyBuf, &pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return certBuf.Bytes(), keyBuf.Bytes(), nil
+	pemCert = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derCert})
+	pemKey = pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyBytes})
+	return pemCert, pemKey, nil
 }
