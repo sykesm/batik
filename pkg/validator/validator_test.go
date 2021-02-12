@@ -176,3 +176,54 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkNativeValidation(b *testing.B) {
+	validator := NewSignature()
+	benchmarkValidation(b, validator)
+}
+
+func BenchmarkWASMValidation(b *testing.B) {
+	gt := NewGomegaWithT(b)
+	engine := wasmtime.NewEngine()
+	modfile := filepath.Join("testdata", "sigval.wasm")
+	gt.Expect(modfile).To(BeAnExistingFile())
+	module, err := ioutil.ReadFile(modfile)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	validator, err := NewWASM(engine, module)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	benchmarkValidation(b, validator)
+}
+
+func benchmarkValidation(b *testing.B, validator validator) {
+	gt := NewGomegaWithT(b)
+	sk, err := ecdsautil.GenerateKey(elliptic.P256(), rand.Reader)
+	gt.Expect(err).NotTo(HaveOccurred())
+	pk, err := ecdsautil.MarshalPublicKey(&sk.PublicKey)
+	gt.Expect(err).NotTo(HaveOccurred())
+	signer := ecdsautil.NewSigner(sk)
+	txidHash := digest([]byte("transaction-id"))
+	sig, err := signer.Sign(rand.Reader, txidHash[:], crypto.SHA256)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	resolvedTx := &transaction.Resolved{
+		ID:              []byte("transaction-id"),
+		RequiredSigners: []*transaction.Party{{PublicKey: pk}},
+		Signatures:      []*transaction.Signature{{PublicKey: pk, Signature: sig}},
+	}
+	req := &validationv1.ValidateRequest{
+		ResolvedTransaction: transaction.FromResolved(resolvedTx),
+	}
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		resp, err := validator.Validate(req)
+		if err != nil {
+			b.Fatalf("validation failed with error: %v", err)
+		}
+		if !resp.Valid {
+			b.Fatalf("validation failed with reason: %s", resp.ErrorMessage)
+		}
+	}
+}
