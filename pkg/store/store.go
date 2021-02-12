@@ -6,6 +6,7 @@ package store
 import (
 	"crypto"
 	"encoding/binary"
+	"encoding/json"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -27,6 +28,37 @@ func NewRepository(kv KV) *TransactionRepository {
 	return &TransactionRepository{
 		kv: kv,
 	}
+}
+
+func (t *TransactionRepository) PutReceipt(receipt *transaction.Receipt) error {
+	serialized, err := json.Marshal(receipt)
+	if err != nil {
+		return errors.WithMessage(err, "could not serialize receipt to JSON")
+	}
+
+	err = t.kv.Put(receiptKey(receipt.ID), serialized)
+	if err != nil {
+		return errors.WithMessage(err, "failed to store receipt")
+	}
+
+	return nil
+}
+
+func (t *TransactionRepository) GetReceipt(id []byte) (*transaction.Receipt, error) {
+	data, err := t.kv.Get(receiptKey(id))
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get receipt from db")
+	}
+
+	var r transaction.Receipt
+	err = json.Unmarshal(data, &r)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to unmarshal retreived receipt")
+	}
+
+	r.ID = id
+
+	return &r, nil
 }
 
 func (t *TransactionRepository) PutTransaction(tx *transaction.Transaction) error {
@@ -146,6 +178,7 @@ var (
 	keyStates         = [...]byte{0x2}
 	keyStateInfos     = [...]byte{0x3}
 	keyConsumedStates = [...]byte{0x4}
+	keyReceipts       = [...]byte{0x5}
 )
 
 // transactionKey returns a db key for a transaction
@@ -179,4 +212,11 @@ func stateInfoKey(id transaction.StateID) []byte {
 // stateIfoKey returns a db key for a stateInfo
 func consumedStateKey(id transaction.StateID) []byte {
 	return buildKey(keyConsumedStates[:], id.TxID, id.OutputIndex)
+}
+
+func receiptKey(receiptID []byte) []byte {
+	key := make([]byte, len(keyReceipts)+len(receiptID))
+	copy(key, keyReceipts[:])
+	copy(key[len(keyReceipts):], receiptID)
+	return key
 }

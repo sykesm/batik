@@ -10,8 +10,56 @@ import (
 	. "github.com/onsi/gomega"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
+	"github.com/sykesm/batik/pkg/tested"
 	"github.com/sykesm/batik/pkg/transaction"
 )
+
+func TestReceipts(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	store, cleanup := setupTestStore(t)
+	defer cleanup()
+
+	r := &transaction.Receipt{
+		TxID: []byte("txid"),
+		Signatures: []*transaction.Signature{
+			{
+				PublicKey: []byte("pk1"),
+				Signature: []byte("sig1"),
+			},
+			{
+				PublicKey: []byte("pk2"),
+				Signature: []byte("sig2"),
+			},
+		},
+		ID: []byte("receiptid"),
+	}
+
+	_, err := store.GetReceipt([]byte("receiptid"))
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(IsNotFound(err)).To(BeTrue())
+
+	err = store.PutReceipt(r)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	nr, err := store.GetReceipt([]byte("receiptid"))
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(nr).To(Equal(r))
+}
+
+func setupTestStore(t *testing.T) (*TransactionRepository, func()) {
+	path, cleanup := tested.TempDir(t, "", "store")
+	db, err := NewLevelDB(path)
+	if err != nil {
+		cleanup()
+		t.Fatalf("could not create db: %s", err)
+	}
+
+	return NewRepository(db), func() {
+		tested.Close(t, db)
+		cleanup()
+	}
+}
 
 func TestPending(t *testing.T) {
 	gt := NewGomegaWithT(t)
