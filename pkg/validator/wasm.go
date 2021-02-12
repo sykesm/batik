@@ -93,17 +93,23 @@ func (v *UTXOValidator) newImports(module *wasmtime.Module) ([]*wasmtime.Extern,
 		var fn *wasmtime.Func
 		switch imp.Module() {
 		case "batik":
-			switch imp.Name() {
-			case "log":
-				fn = wasmtime.WrapFunc(v.store, v.adapter.log)
-			case "read":
-				fn = wasmtime.WrapFunc(v.store, v.adapter.read)
-			case "write":
-				fn = wasmtime.WrapFunc(v.store, v.adapter.write)
+			if imp.Name() != nil {
+				switch *imp.Name() {
+				case "log":
+					fn = wasmtime.WrapFunc(v.store, v.adapter.log)
+				case "read":
+					fn = wasmtime.WrapFunc(v.store, v.adapter.read)
+				case "write":
+					fn = wasmtime.WrapFunc(v.store, v.adapter.write)
+				}
 			}
 		}
 		if fn == nil {
-			return nil, errors.Errorf("import %s::%s not found", imp.Module(), imp.Name())
+			name := "*unknown*"
+			if imp.Name() != nil {
+				name = *imp.Name()
+			}
+			return nil, errors.Errorf("import %s::%s not found", imp.Module(), name)
 		}
 		importedFuncs = append(importedFuncs, fn.AsExtern())
 	}
