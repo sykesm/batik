@@ -4,17 +4,19 @@
 package store
 
 import (
+	"crypto"
 	"encoding/hex"
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	"github.com/sykesm/batik/pkg/tested"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
-func TestReceipts(t *testing.T) {
+func TestStoreReceipts(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	store, cleanup := setupTestStore(t)
@@ -47,6 +49,82 @@ func TestReceipts(t *testing.T) {
 	gt.Expect(nr).To(Equal(r))
 }
 
+func TestStoreTransaction(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	store, cleanup := setupTestStore(t)
+	defer cleanup()
+
+	tx, err := transaction.New(crypto.SHA256, newTestTransaction())
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	_, err = store.GetTransaction(tx.ID)
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(IsNotFound(err)).To(BeTrue())
+
+	err = store.PutTransaction(tx)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	ntx, err := store.GetTransaction(tx.ID)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(proto.Equal(tx.Tx, ntx.Tx)).To(BeTrue())
+	tx.Tx, ntx.Tx = nil, nil
+	gt.Expect(tx).To(Equal(ntx))
+}
+
+func TestStoreState(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	store, cleanup := setupTestStore(t)
+	defer cleanup()
+
+	tx, err := transaction.New(crypto.SHA256, newTestTransaction())
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(tx.Outputs).To(HaveLen(2))
+	state := tx.Outputs[0]
+
+	// Verify the state is not available as consumed or unconsumed, and fails to consume
+	_, err = store.GetState(state.ID, false)
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(IsNotFound(err)).To(BeTrue())
+
+	_, err = store.GetState(state.ID, true)
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(IsNotFound(err)).To(BeTrue())
+
+	err = store.ConsumeState(state.ID)
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(IsNotFound(err)).To(BeTrue())
+
+	// Put the state
+	err = store.PutState(state)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	// Verify it is reported not consumed
+	nstate, err := store.GetState(state.ID, false)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(nstate).To(Equal(state))
+
+	// Verify it is not reported consumed
+	_, err = store.GetState(state.ID, true)
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(IsNotFound(err)).To(BeTrue())
+
+	// Consume it
+	err = store.ConsumeState(state.ID)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	// Verify it is not reported not consumed
+	_, err = store.GetState(state.ID, false)
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(IsNotFound(err)).To(BeTrue())
+
+	// Verify it is reported consumed
+	nstate, err = store.GetState(state.ID, true)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(nstate).To(Equal(state))
+}
+
 func setupTestStore(t *testing.T) (*TransactionRepository, func()) {
 	path, cleanup := tested.TempDir(t, "", "store")
 	db, err := NewLevelDB(path)
@@ -59,11 +137,6 @@ func setupTestStore(t *testing.T) (*TransactionRepository, func()) {
 		tested.Close(t, db)
 		cleanup()
 	}
-}
-
-func TestPending(t *testing.T) {
-	gt := NewGomegaWithT(t)
-	gt.Expect(true).To(BeTrue())
 }
 
 func newTestTransaction() *txv1.Transaction {
