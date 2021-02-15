@@ -49,6 +49,31 @@ func TestStoreReceipts(t *testing.T) {
 	gt.Expect(nr).To(Equal(r))
 }
 
+func TestStoreCommits(t *testing.T) {
+	gt := NewGomegaWithT(t)
+
+	store, cleanup := setupTestStore(t)
+	defer cleanup()
+
+	txid := transaction.ID([]byte("tx-id"))
+
+	c := &transaction.Committed{
+		SeqNo:     7,
+		ReceiptID: []byte("receiptid"),
+	}
+
+	_, err := store.GetCommitted(txid)
+	gt.Expect(err).To(HaveOccurred())
+	gt.Expect(IsNotFound(err)).To(BeTrue())
+
+	err = store.PutCommitted(txid, c)
+	gt.Expect(err).NotTo(HaveOccurred())
+
+	nc, err := store.GetCommitted(txid)
+	gt.Expect(err).NotTo(HaveOccurred())
+	gt.Expect(nc).To(Equal(c))
+}
+
 func TestStoreTransaction(t *testing.T) {
 	gt := NewGomegaWithT(t)
 

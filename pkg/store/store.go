@@ -61,6 +61,35 @@ func (t *TransactionRepository) GetReceipt(id []byte) (*transaction.Receipt, err
 	return &r, nil
 }
 
+func (t *TransactionRepository) PutCommitted(id transaction.ID, commit *transaction.Committed) error {
+	serialized, err := json.Marshal(commit)
+	if err != nil {
+		return errors.WithMessage(err, "could not serialize commit to JSON")
+	}
+
+	err = t.kv.Put(commitKey(id), serialized)
+	if err != nil {
+		return errors.WithMessage(err, "failed to store commit")
+	}
+
+	return nil
+}
+
+func (t *TransactionRepository) GetCommitted(id transaction.ID) (*transaction.Committed, error) {
+	data, err := t.kv.Get(commitKey(id))
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get tx commitment from db")
+	}
+
+	var r transaction.Committed
+	err = json.Unmarshal(data, &r)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to unmarshal retreived commit")
+	}
+
+	return &r, nil
+}
+
 func (t *TransactionRepository) PutTransaction(tx *transaction.Transaction) error {
 	err := t.kv.Put(transactionKey(tx.ID), tx.Encoded)
 	if err != nil {
@@ -179,6 +208,7 @@ var (
 	keyStateInfos     = [...]byte{0x3}
 	keyConsumedStates = [...]byte{0x4}
 	keyReceipts       = [...]byte{0x5}
+	keyCommits        = [...]byte{0x6}
 )
 
 // transactionKey returns a db key for a transaction
@@ -218,5 +248,12 @@ func receiptKey(receiptID []byte) []byte {
 	key := make([]byte, len(keyReceipts)+len(receiptID))
 	copy(key, keyReceipts[:])
 	copy(key[len(keyReceipts):], receiptID)
+	return key
+}
+
+func commitKey(txid []byte) []byte {
+	key := make([]byte, len(keyCommits)+len(txid))
+	copy(key, keyCommits[:])
+	copy(key[len(keyCommits):], txid)
 	return key
 }

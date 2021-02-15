@@ -125,6 +125,13 @@ func NewReceipt(hasher merkle.Hasher, txid ID, sigs []*Signature) *Receipt {
 	}
 }
 
+// Committed indicates that a transaction successfull committed at a particular
+// sequence for a given transaction receipt.
+type Committed struct {
+	ReceiptID []byte `json:"receipt_id"`
+	SeqNo     uint64 `json:"seq_no"`
+}
+
 // encodedElement returns the encoded pieces of each message in a transaction.
 // The element is prepended with the protowire encoded tag of the field number
 // followed by the length of the encoded message.
