@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 
 	"github.com/bytecodealliance/wasmtime-go"
@@ -29,7 +30,6 @@ import (
 	"github.com/sykesm/batik/pkg/options"
 	"github.com/sykesm/batik/pkg/repl"
 	"github.com/sykesm/batik/pkg/store"
-	"github.com/sykesm/batik/pkg/submit"
 	"github.com/sykesm/batik/pkg/totalorder"
 	"github.com/sykesm/batik/pkg/validator"
 )
@@ -238,7 +238,7 @@ func newBatikLoggerComponents(ctx *cli.Context, config options.Logging) (zapcore
 	return encoder, log.NewWriteSyncer(w), log.NewLeveler(config.LogSpec)
 }
 
-func newBatikNamespaceComponents(ctx *cli.Context, config []options.Namespace, validators map[string]submit.Validator) (map[string]*namespace.Namespace, error) {
+func newBatikNamespaceComponents(ctx *cli.Context, config []options.Namespace, validators map[string]namespace.Validator) (map[string]*namespace.Namespace, error) {
 	logger, err := GetLogger(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not retrieve logger")
@@ -259,19 +259,19 @@ func newBatikNamespaceComponents(ctx *cli.Context, config []options.Namespace, v
 			return nil, errors.Errorf("namespace %q requires validator %q which is not defined", ns.Name, ns.Validator)
 		}
 
-		namespaces[ns.Name] = namespace.New(namespaceLogger, db, v)
+		namespaces[ns.Name] = namespace.New(namespaceLogger, crypto.SHA256, db, v)
 	}
 	return namespaces, nil
 }
 
-func newBatikValidatorComponents(config []options.Validator) (map[string]submit.Validator, error) {
+func newBatikValidatorComponents(config []options.Validator) (map[string]namespace.Validator, error) {
 	var wasmEngine *wasmtime.Engine
-	result := map[string]submit.Validator{}
+	result := map[string]namespace.Validator{}
 	for i, validatorConf := range config {
 		if validatorConf.Name == "" {
 			return nil, errors.Errorf("validator at position %d in config has no name", i)
 		}
-		var v submit.Validator
+		var v namespace.Validator
 		switch validatorConf.Type {
 		case "builtin":
 			if validatorConf.Name != "signature-builtin" {

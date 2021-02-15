@@ -19,6 +19,32 @@ type Repository struct {
 	consumeStateReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetCommittedStub        func(transaction.ID) (*transaction.Committed, error)
+	getCommittedMutex       sync.RWMutex
+	getCommittedArgsForCall []struct {
+		arg1 transaction.ID
+	}
+	getCommittedReturns struct {
+		result1 *transaction.Committed
+		result2 error
+	}
+	getCommittedReturnsOnCall map[int]struct {
+		result1 *transaction.Committed
+		result2 error
+	}
+	GetReceiptStub        func([]byte) (*transaction.Receipt, error)
+	getReceiptMutex       sync.RWMutex
+	getReceiptArgsForCall []struct {
+		arg1 []byte
+	}
+	getReceiptReturns struct {
+		result1 *transaction.Receipt
+		result2 error
+	}
+	getReceiptReturnsOnCall map[int]struct {
+		result1 *transaction.Receipt
+		result2 error
+	}
 	GetStateStub        func(transaction.StateID, bool) (*transaction.State, error)
 	getStateMutex       sync.RWMutex
 	getStateArgsForCall []struct {
@@ -45,6 +71,29 @@ type Repository struct {
 	getTransactionReturnsOnCall map[int]struct {
 		result1 *transaction.Transaction
 		result2 error
+	}
+	PutCommittedStub        func(transaction.ID, *transaction.Committed) error
+	putCommittedMutex       sync.RWMutex
+	putCommittedArgsForCall []struct {
+		arg1 transaction.ID
+		arg2 *transaction.Committed
+	}
+	putCommittedReturns struct {
+		result1 error
+	}
+	putCommittedReturnsOnCall map[int]struct {
+		result1 error
+	}
+	PutReceiptStub        func(*transaction.Receipt) error
+	putReceiptMutex       sync.RWMutex
+	putReceiptArgsForCall []struct {
+		arg1 *transaction.Receipt
+	}
+	putReceiptReturns struct {
+		result1 error
+	}
+	putReceiptReturnsOnCall map[int]struct {
+		result1 error
 	}
 	PutStateStub        func(*transaction.State) error
 	putStateMutex       sync.RWMutex
@@ -78,16 +127,15 @@ func (fake *Repository) ConsumeState(arg1 transaction.StateID) error {
 	fake.consumeStateArgsForCall = append(fake.consumeStateArgsForCall, struct {
 		arg1 transaction.StateID
 	}{arg1})
-	stub := fake.ConsumeStateStub
-	fakeReturns := fake.consumeStateReturns
 	fake.recordInvocation("ConsumeState", []interface{}{arg1})
 	fake.consumeStateMutex.Unlock()
-	if stub != nil {
-		return stub(arg1)
+	if fake.ConsumeStateStub != nil {
+		return fake.ConsumeStateStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.consumeStateReturns
 	return fakeReturns.result1
 }
 
@@ -133,6 +181,137 @@ func (fake *Repository) ConsumeStateReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *Repository) GetCommitted(arg1 transaction.ID) (*transaction.Committed, error) {
+	fake.getCommittedMutex.Lock()
+	ret, specificReturn := fake.getCommittedReturnsOnCall[len(fake.getCommittedArgsForCall)]
+	fake.getCommittedArgsForCall = append(fake.getCommittedArgsForCall, struct {
+		arg1 transaction.ID
+	}{arg1})
+	fake.recordInvocation("GetCommitted", []interface{}{arg1})
+	fake.getCommittedMutex.Unlock()
+	if fake.GetCommittedStub != nil {
+		return fake.GetCommittedStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getCommittedReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *Repository) GetCommittedCallCount() int {
+	fake.getCommittedMutex.RLock()
+	defer fake.getCommittedMutex.RUnlock()
+	return len(fake.getCommittedArgsForCall)
+}
+
+func (fake *Repository) GetCommittedCalls(stub func(transaction.ID) (*transaction.Committed, error)) {
+	fake.getCommittedMutex.Lock()
+	defer fake.getCommittedMutex.Unlock()
+	fake.GetCommittedStub = stub
+}
+
+func (fake *Repository) GetCommittedArgsForCall(i int) transaction.ID {
+	fake.getCommittedMutex.RLock()
+	defer fake.getCommittedMutex.RUnlock()
+	argsForCall := fake.getCommittedArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *Repository) GetCommittedReturns(result1 *transaction.Committed, result2 error) {
+	fake.getCommittedMutex.Lock()
+	defer fake.getCommittedMutex.Unlock()
+	fake.GetCommittedStub = nil
+	fake.getCommittedReturns = struct {
+		result1 *transaction.Committed
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *Repository) GetCommittedReturnsOnCall(i int, result1 *transaction.Committed, result2 error) {
+	fake.getCommittedMutex.Lock()
+	defer fake.getCommittedMutex.Unlock()
+	fake.GetCommittedStub = nil
+	if fake.getCommittedReturnsOnCall == nil {
+		fake.getCommittedReturnsOnCall = make(map[int]struct {
+			result1 *transaction.Committed
+			result2 error
+		})
+	}
+	fake.getCommittedReturnsOnCall[i] = struct {
+		result1 *transaction.Committed
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *Repository) GetReceipt(arg1 []byte) (*transaction.Receipt, error) {
+	var arg1Copy []byte
+	if arg1 != nil {
+		arg1Copy = make([]byte, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.getReceiptMutex.Lock()
+	ret, specificReturn := fake.getReceiptReturnsOnCall[len(fake.getReceiptArgsForCall)]
+	fake.getReceiptArgsForCall = append(fake.getReceiptArgsForCall, struct {
+		arg1 []byte
+	}{arg1Copy})
+	fake.recordInvocation("GetReceipt", []interface{}{arg1Copy})
+	fake.getReceiptMutex.Unlock()
+	if fake.GetReceiptStub != nil {
+		return fake.GetReceiptStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getReceiptReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *Repository) GetReceiptCallCount() int {
+	fake.getReceiptMutex.RLock()
+	defer fake.getReceiptMutex.RUnlock()
+	return len(fake.getReceiptArgsForCall)
+}
+
+func (fake *Repository) GetReceiptCalls(stub func([]byte) (*transaction.Receipt, error)) {
+	fake.getReceiptMutex.Lock()
+	defer fake.getReceiptMutex.Unlock()
+	fake.GetReceiptStub = stub
+}
+
+func (fake *Repository) GetReceiptArgsForCall(i int) []byte {
+	fake.getReceiptMutex.RLock()
+	defer fake.getReceiptMutex.RUnlock()
+	argsForCall := fake.getReceiptArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *Repository) GetReceiptReturns(result1 *transaction.Receipt, result2 error) {
+	fake.getReceiptMutex.Lock()
+	defer fake.getReceiptMutex.Unlock()
+	fake.GetReceiptStub = nil
+	fake.getReceiptReturns = struct {
+		result1 *transaction.Receipt
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *Repository) GetReceiptReturnsOnCall(i int, result1 *transaction.Receipt, result2 error) {
+	fake.getReceiptMutex.Lock()
+	defer fake.getReceiptMutex.Unlock()
+	fake.GetReceiptStub = nil
+	if fake.getReceiptReturnsOnCall == nil {
+		fake.getReceiptReturnsOnCall = make(map[int]struct {
+			result1 *transaction.Receipt
+			result2 error
+		})
+	}
+	fake.getReceiptReturnsOnCall[i] = struct {
+		result1 *transaction.Receipt
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *Repository) GetState(arg1 transaction.StateID, arg2 bool) (*transaction.State, error) {
 	fake.getStateMutex.Lock()
 	ret, specificReturn := fake.getStateReturnsOnCall[len(fake.getStateArgsForCall)]
@@ -140,16 +319,15 @@ func (fake *Repository) GetState(arg1 transaction.StateID, arg2 bool) (*transact
 		arg1 transaction.StateID
 		arg2 bool
 	}{arg1, arg2})
-	stub := fake.GetStateStub
-	fakeReturns := fake.getStateReturns
 	fake.recordInvocation("GetState", []interface{}{arg1, arg2})
 	fake.getStateMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2)
+	if fake.GetStateStub != nil {
+		return fake.GetStateStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
+	fakeReturns := fake.getStateReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -204,16 +382,15 @@ func (fake *Repository) GetTransaction(arg1 transaction.ID) (*transaction.Transa
 	fake.getTransactionArgsForCall = append(fake.getTransactionArgsForCall, struct {
 		arg1 transaction.ID
 	}{arg1})
-	stub := fake.GetTransactionStub
-	fakeReturns := fake.getTransactionReturns
 	fake.recordInvocation("GetTransaction", []interface{}{arg1})
 	fake.getTransactionMutex.Unlock()
-	if stub != nil {
-		return stub(arg1)
+	if fake.GetTransactionStub != nil {
+		return fake.GetTransactionStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
+	fakeReturns := fake.getTransactionReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -262,22 +439,142 @@ func (fake *Repository) GetTransactionReturnsOnCall(i int, result1 *transaction.
 	}{result1, result2}
 }
 
+func (fake *Repository) PutCommitted(arg1 transaction.ID, arg2 *transaction.Committed) error {
+	fake.putCommittedMutex.Lock()
+	ret, specificReturn := fake.putCommittedReturnsOnCall[len(fake.putCommittedArgsForCall)]
+	fake.putCommittedArgsForCall = append(fake.putCommittedArgsForCall, struct {
+		arg1 transaction.ID
+		arg2 *transaction.Committed
+	}{arg1, arg2})
+	fake.recordInvocation("PutCommitted", []interface{}{arg1, arg2})
+	fake.putCommittedMutex.Unlock()
+	if fake.PutCommittedStub != nil {
+		return fake.PutCommittedStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.putCommittedReturns
+	return fakeReturns.result1
+}
+
+func (fake *Repository) PutCommittedCallCount() int {
+	fake.putCommittedMutex.RLock()
+	defer fake.putCommittedMutex.RUnlock()
+	return len(fake.putCommittedArgsForCall)
+}
+
+func (fake *Repository) PutCommittedCalls(stub func(transaction.ID, *transaction.Committed) error) {
+	fake.putCommittedMutex.Lock()
+	defer fake.putCommittedMutex.Unlock()
+	fake.PutCommittedStub = stub
+}
+
+func (fake *Repository) PutCommittedArgsForCall(i int) (transaction.ID, *transaction.Committed) {
+	fake.putCommittedMutex.RLock()
+	defer fake.putCommittedMutex.RUnlock()
+	argsForCall := fake.putCommittedArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *Repository) PutCommittedReturns(result1 error) {
+	fake.putCommittedMutex.Lock()
+	defer fake.putCommittedMutex.Unlock()
+	fake.PutCommittedStub = nil
+	fake.putCommittedReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *Repository) PutCommittedReturnsOnCall(i int, result1 error) {
+	fake.putCommittedMutex.Lock()
+	defer fake.putCommittedMutex.Unlock()
+	fake.PutCommittedStub = nil
+	if fake.putCommittedReturnsOnCall == nil {
+		fake.putCommittedReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.putCommittedReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *Repository) PutReceipt(arg1 *transaction.Receipt) error {
+	fake.putReceiptMutex.Lock()
+	ret, specificReturn := fake.putReceiptReturnsOnCall[len(fake.putReceiptArgsForCall)]
+	fake.putReceiptArgsForCall = append(fake.putReceiptArgsForCall, struct {
+		arg1 *transaction.Receipt
+	}{arg1})
+	fake.recordInvocation("PutReceipt", []interface{}{arg1})
+	fake.putReceiptMutex.Unlock()
+	if fake.PutReceiptStub != nil {
+		return fake.PutReceiptStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.putReceiptReturns
+	return fakeReturns.result1
+}
+
+func (fake *Repository) PutReceiptCallCount() int {
+	fake.putReceiptMutex.RLock()
+	defer fake.putReceiptMutex.RUnlock()
+	return len(fake.putReceiptArgsForCall)
+}
+
+func (fake *Repository) PutReceiptCalls(stub func(*transaction.Receipt) error) {
+	fake.putReceiptMutex.Lock()
+	defer fake.putReceiptMutex.Unlock()
+	fake.PutReceiptStub = stub
+}
+
+func (fake *Repository) PutReceiptArgsForCall(i int) *transaction.Receipt {
+	fake.putReceiptMutex.RLock()
+	defer fake.putReceiptMutex.RUnlock()
+	argsForCall := fake.putReceiptArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *Repository) PutReceiptReturns(result1 error) {
+	fake.putReceiptMutex.Lock()
+	defer fake.putReceiptMutex.Unlock()
+	fake.PutReceiptStub = nil
+	fake.putReceiptReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *Repository) PutReceiptReturnsOnCall(i int, result1 error) {
+	fake.putReceiptMutex.Lock()
+	defer fake.putReceiptMutex.Unlock()
+	fake.PutReceiptStub = nil
+	if fake.putReceiptReturnsOnCall == nil {
+		fake.putReceiptReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.putReceiptReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *Repository) PutState(arg1 *transaction.State) error {
 	fake.putStateMutex.Lock()
 	ret, specificReturn := fake.putStateReturnsOnCall[len(fake.putStateArgsForCall)]
 	fake.putStateArgsForCall = append(fake.putStateArgsForCall, struct {
 		arg1 *transaction.State
 	}{arg1})
-	stub := fake.PutStateStub
-	fakeReturns := fake.putStateReturns
 	fake.recordInvocation("PutState", []interface{}{arg1})
 	fake.putStateMutex.Unlock()
-	if stub != nil {
-		return stub(arg1)
+	if fake.PutStateStub != nil {
+		return fake.PutStateStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.putStateReturns
 	return fakeReturns.result1
 }
 
@@ -329,16 +626,15 @@ func (fake *Repository) PutTransaction(arg1 *transaction.Transaction) error {
 	fake.putTransactionArgsForCall = append(fake.putTransactionArgsForCall, struct {
 		arg1 *transaction.Transaction
 	}{arg1})
-	stub := fake.PutTransactionStub
-	fakeReturns := fake.putTransactionReturns
 	fake.recordInvocation("PutTransaction", []interface{}{arg1})
 	fake.putTransactionMutex.Unlock()
-	if stub != nil {
-		return stub(arg1)
+	if fake.PutTransactionStub != nil {
+		return fake.PutTransactionStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.putTransactionReturns
 	return fakeReturns.result1
 }
 
@@ -389,10 +685,18 @@ func (fake *Repository) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.consumeStateMutex.RLock()
 	defer fake.consumeStateMutex.RUnlock()
+	fake.getCommittedMutex.RLock()
+	defer fake.getCommittedMutex.RUnlock()
+	fake.getReceiptMutex.RLock()
+	defer fake.getReceiptMutex.RUnlock()
 	fake.getStateMutex.RLock()
 	defer fake.getStateMutex.RUnlock()
 	fake.getTransactionMutex.RLock()
 	defer fake.getTransactionMutex.RUnlock()
+	fake.putCommittedMutex.RLock()
+	defer fake.putCommittedMutex.RUnlock()
+	fake.putReceiptMutex.RLock()
+	defer fake.putReceiptMutex.RUnlock()
 	fake.putStateMutex.RLock()
 	defer fake.putStateMutex.RUnlock()
 	fake.putTransactionMutex.RLock()

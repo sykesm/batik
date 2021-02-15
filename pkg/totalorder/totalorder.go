@@ -3,17 +3,13 @@
 
 package totalorder
 
-import (
-	"github.com/sykesm/batik/pkg/transaction"
-)
-
 // TXIDAndHMAC is a pair of txid, and an HMAC computed using
 // the namespace name, a secret, and the txid.  This allows for
 // namespace members to detect transactions for their namespace
 // while other namespace members can only discern it is not
 // for a namespcae they care about.
 type TXIDAndHMAC struct {
-	ID   transaction.ID
+	ID   []byte
 	HMAC []byte
 }
 

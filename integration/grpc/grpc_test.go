@@ -150,7 +150,7 @@ var _ = Describe("gRPC", func() {
 				)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("retrieving the transaciton")
+				By("retrieving the transaction")
 				itx, err := transaction.New(crypto.SHA256, tx)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(resp.Txid).To(Equal(itx.ID.Bytes()))
@@ -164,22 +164,6 @@ var _ = Describe("gRPC", func() {
 				)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(result).To(ProtoEqual(&storev1.GetTransactionResponse{Transaction: tx}))
-
-				By("resubmitting the transaciton")
-				_, err = submitClient.Submit(
-					context.Background(),
-					&txv1.SubmitRequest{
-						Namespace: namespace,
-						SignedTransaction: &txv1.SignedTransaction{
-							Transaction: tx,
-						},
-					},
-				)
-				Expect(err).To(HaveOccurred())
-				st, ok := status.FromError(err)
-				Expect(ok).To(BeTrue())
-				Expect(st.Code()).To(Equal(codes.AlreadyExists))
-				Expect(st.Message()).To(ContainSubstring(hex.EncodeToString(itx.ID)))
 
 				By("consuming the output")
 				salt = make([]byte, 32)
@@ -230,7 +214,7 @@ var _ = Describe("gRPC", func() {
 				)
 				Expect(err).To(HaveOccurred())
 
-				st, ok = status.FromError(err)
+				st, ok := status.FromError(err)
 				Expect(ok).To(BeTrue())
 				Expect(st.Code()).To(Equal(codes.FailedPrecondition))
 

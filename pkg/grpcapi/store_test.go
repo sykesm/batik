@@ -139,7 +139,7 @@ func newStoreService(t *testing.T) (*StoreService, func()) {
 	db, err := store.NewLevelDB(path)
 	NewGomegaWithT(t).Expect(err).NotTo(HaveOccurred())
 
-	ns := namespace.New(nil, db, validator.NewSignature())
+	ns := namespace.New(nil, crypto.SHA256, db, validator.NewSignature())
 
 	storeSvc := NewStoreService(NamespaceMapAdapter(map[string]*namespace.Namespace{"ns1": ns}))
 

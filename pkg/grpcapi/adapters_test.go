@@ -10,7 +10,6 @@ import (
 
 	"github.com/sykesm/batik/pkg/namespace"
 	"github.com/sykesm/batik/pkg/store"
-	"github.com/sykesm/batik/pkg/submit"
 	"github.com/sykesm/batik/pkg/transaction"
 )
 
@@ -18,20 +17,19 @@ func TestAdapters_MapAdapter(t *testing.T) {
 	gt := NewGomegaWithT(t)
 
 	repoPtr := &store.TransactionRepository{}
-	submitPtr := &submit.Service{}
+	namespacePtr := &namespace.Namespace{
+		Repo: repoPtr,
+	}
 
 	adapter := NamespaceMapAdapter(map[string]*namespace.Namespace{
-		"present": {
-			TxRepo:        repoPtr,
-			SubmitService: submitPtr,
-		},
+		"present": namespacePtr,
 	})
 
 	store := adapter.Repository("present")
 	gt.Expect(store).To(Equal(repoPtr))
 
 	submit := adapter.Submitter("present")
-	gt.Expect(submit).To(Equal(submitPtr))
+	gt.Expect(submit).To(Equal(namespacePtr))
 
 	missingStore := adapter.Repository("missing")
 	gt.Expect(missingStore).To(Equal(notFoundRepository("missing")))

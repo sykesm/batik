@@ -1,7 +1,7 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package submit
+package namespace
 
 import validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 

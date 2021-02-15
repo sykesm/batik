@@ -1,11 +1,9 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package submit
+package namespace
 
 import (
-	"context"
-
 	"github.com/pkg/errors"
 
 	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
@@ -16,6 +14,10 @@ import (
 // A Repository abstracts the data persistence layer for transactions and
 // states.
 type Repository interface {
+	PutCommitted(transaction.ID, *transaction.Committed) error
+	GetCommitted(transaction.ID) (*transaction.Committed, error)
+	PutReceipt(*transaction.Receipt) error
+	GetReceipt([]byte) (*transaction.Receipt, error)
 	PutTransaction(*transaction.Transaction) error
 	GetTransaction(transaction.ID) (*transaction.Transaction, error)
 	PutState(*transaction.State) error
@@ -25,40 +27,45 @@ type Repository interface {
 
 // TODO: proper error values with semantics
 
-type Service struct {
+type committer struct {
 	repo      Repository // repo is a reference to the transaction state repository.
 	validator Validator  // validator the transaction Validator
 }
 
-func NewService(repo Repository, v Validator) *Service {
-	return &Service{
+func newCommitter(repo Repository, validator Validator) *committer {
+	return &committer{
 		repo:      repo,
-		validator: v,
+		validator: validator,
 	}
 }
 
-func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error {
-	txid := signed.Transaction.ID
-
-	// Transaction must not have been processed before
-	_, err := s.repo.GetTransaction(txid)
-	if err == nil {
-		return &store.AlreadyExistsError{Err: errors.Errorf("transaction %s already exists", txid)}
+func (c *committer) commit(receiptID []byte) error {
+	receipt, err := c.repo.GetReceipt(receiptID)
+	if store.IsNotFound(err) {
+		return newHaltError(err, "receipt should have been disseminated but was not found")
 	}
-	if !store.IsNotFound(err) {
+	if err != nil {
+		return newHaltError(err, "transaction store failure")
+	}
+
+	tx, err := c.repo.GetTransaction(receipt.TxID)
+	if store.IsNotFound(err) {
+		return newHaltError(err, "transaction should have been disseminated but was not found")
+	}
+	if err != nil {
 		return newHaltError(err, "transaction store failure")
 	}
 
 	// resolve all inputs and references
-	resolved, err := resolve(s.repo, signed.Transaction, signed.Signatures)
+	resolved, err := resolve(c.repo, tx, receipt.Signatures)
 	if err != nil && store.IsNotFound(err) {
-		return errors.WithMessagef(err, "missing state for transaction %s", txid)
+		return errors.WithMessagef(err, "missing state for transaction %s", tx.ID)
 	}
 	if err != nil {
-		return newHaltError(err, "state resolution for transaction %s failed", txid)
+		return newHaltError(err, "state resolution for transaction %s failed", tx.ID)
 	}
 
-	resp, err := s.validator.Validate(&validationv1.ValidateRequest{
+	resp, err := c.validator.Validate(&validationv1.ValidateRequest{
 		ResolvedTransaction: transaction.FromResolved(resolved),
 	})
 	if err != nil {
@@ -71,20 +78,23 @@ func (s *Service) Submit(ctx context.Context, signed *transaction.Signed) error 
 		return errors.New("validation failed")
 	}
 
-	err = s.repo.PutTransaction(signed.Transaction)
+	err = c.repo.PutCommitted(tx.ID, &transaction.Committed{
+		// TODO, once ordered, include SeqNo
+		ReceiptID: receipt.ID,
+	})
 	if err != nil {
-		return newHaltError(err, "storing transaction %s failed", txid)
+		return newHaltError(err, "marking %s as committed failed", tx.ID)
 	}
 
 	for _, output := range resolved.Outputs {
-		err = s.repo.PutState(output)
+		err = c.repo.PutState(output)
 		if err != nil {
 			return newHaltError(err, "storing transaction output %s failed", output.ID)
 		}
 	}
 
 	for _, input := range resolved.Inputs {
-		err = s.repo.ConsumeState(input.ID)
+		err = c.repo.ConsumeState(input.ID)
 		if err != nil {
 			return newHaltError(err, "consuming transaction state %s failed", input.ID)
 		}

@@ -92,7 +92,7 @@ func getTransactionSubcommand() *cli.Command {
 				return nil
 			}
 
-			val, err := ns.TxRepo.GetTransaction(txID)
+			val, err := ns.Repo.GetTransaction(txID)
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil
@@ -142,7 +142,7 @@ func getStateSubcommand() *cli.Command {
 				TxID:        txID,
 				OutputIndex: outputIndex,
 			}
-			val, err := ns.TxRepo.GetState(stateID, ctx.Bool("consumed"))
+			val, err := ns.Repo.GetState(stateID, ctx.Bool("consumed"))
 			if err != nil {
 				fmt.Fprintln(ctx.App.ErrWriter, err)
 				return nil

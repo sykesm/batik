@@ -1,23 +1,22 @@
 // Copyright IBM Corp. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package submit
+package namespace
 
 import (
-	"context"
+	"bytes"
 	"crypto/sha256"
 	"testing"
 
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	"github.com/sykesm/batik/pkg/namespace/fake"
 	txv1 "github.com/sykesm/batik/pkg/pb/tx/v1"
 	validationv1 "github.com/sykesm/batik/pkg/pb/validation/v1"
 	"github.com/sykesm/batik/pkg/store"
-	"github.com/sykesm/batik/pkg/submit/fake"
 	. "github.com/sykesm/batik/pkg/tested/matcher"
 	"github.com/sykesm/batik/pkg/transaction"
-	"github.com/sykesm/batik/pkg/validator"
 )
 
 //go:generate counterfeiter -o fake/repository.go --fake-name Repository . fakeRepository
@@ -31,7 +30,10 @@ func (v validatorFunc) Validate(req *validationv1.ValidateRequest) (*validationv
 	return v(req)
 }
 
-func TestSubmitGetTransaction(t *testing.T) {
+/*
+
+// TODO, move to submit on namespace
+func TestCommitGetTransaction(t *testing.T) {
 	signed := &transaction.Signed{
 		Transaction: &transaction.Transaction{
 			ID: transaction.NewID([]byte("transaction-id")),
@@ -42,9 +44,9 @@ func TestSubmitGetTransaction(t *testing.T) {
 		gt := NewGomegaWithT(t)
 
 		fakeRepo := &fake.Repository{}
-		submitService := NewService(fakeRepo, validator.NewSignature())
+		committer := newCommitter(fakeRepo, validator.NewSignature())
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.Submit(context.Background(), signed)
 		gt.Expect(err).To(HaveOccurred())
 		gt.Expect(store.IsAlreadyExists(err)).To(BeTrue())
 	})
@@ -54,19 +56,20 @@ func TestSubmitGetTransaction(t *testing.T) {
 
 		fakeRepo := &fake.Repository{}
 		fakeRepo.GetTransactionReturns(nil, errors.New("unexpected-error"))
-		submitService := NewService(fakeRepo, validator.NewSignature())
+		committer := newCommitter(fakeRepo, validator.NewSignature())
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.Submit(context.Background(), signed)
 		gt.Expect(err).To(MatchError(ErrHalt))
 		gt.Expect(err).To(MatchError("transaction store failure: halt processing: unexpected-error"))
 	})
 }
+*/
 
-func TestSubmitTxResolve(t *testing.T) {
+func TestCommitTxResolve(t *testing.T) {
 	var (
 		fakeRepo *fake.Repository
 		tx       transaction.Transaction
-		signed   *transaction.Signed
+		receipt  *transaction.Receipt
 	)
 
 	noopValidator := func(r *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
@@ -97,8 +100,9 @@ func TestSubmitTxResolve(t *testing.T) {
 			Tx:      &txv1.Transaction{},
 			Encoded: []byte("encoded-transaction"),
 		}
-		signed = &transaction.Signed{
-			Transaction: &tx,
+		receipt = &transaction.Receipt{
+			ID:   []byte("tx-receipt"),
+			TxID: tx.ID,
 			Signatures: []*transaction.Signature{{
 				PublicKey: []byte("public-key"),
 				Signature: []byte("signature"),
@@ -106,7 +110,20 @@ func TestSubmitTxResolve(t *testing.T) {
 		}
 
 		fakeRepo = &fake.Repository{}
-		fakeRepo.GetTransactionReturns(nil, &store.NotFoundError{Err: errors.New("missing-transaction-error")})
+		fakeRepo.GetReceiptStub = func(id []byte) (*transaction.Receipt, error) {
+			if !bytes.Equal(id, receipt.ID) {
+				return nil, &store.NotFoundError{Err: errors.Errorf("missing-receipt %x", receipt.ID)}
+			}
+
+			return receipt, nil
+		}
+		fakeRepo.GetTransactionStub = func(txid transaction.ID) (*transaction.Transaction, error) {
+			if !bytes.Equal(txid, tx.ID) {
+				return nil, &store.NotFoundError{Err: errors.New("missing-transaction-error")}
+			}
+
+			return &tx, nil
+		}
 		fakeRepo.GetStateStub = func(sid transaction.StateID, consumed bool) (*transaction.State, error) {
 			switch {
 			case sid.Equals(*newStateID("txid-1", 1)):
@@ -136,12 +153,12 @@ func TestSubmitTxResolve(t *testing.T) {
 			req = r
 			return &validationv1.ValidateResponse{Valid: true}, nil
 		}
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(validator),
 		}
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).NotTo(HaveOccurred())
 
 		gt.Expect(fakeRepo.GetStateCallCount()).To(Equal(2))
@@ -199,14 +216,14 @@ func TestSubmitTxResolve(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(noopValidator),
 		}
 
 		fakeRepo.GetStateReturnsOnCall(0, nil, &store.NotFoundError{Err: errors.New("missing-input-state")})
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ContainSubstring("missing-input-state")))
 		gt.Expect(store.IsNotFound(err)).To(BeTrue())
 		input, _ := fakeRepo.GetStateArgsForCall(0)
@@ -217,14 +234,14 @@ func TestSubmitTxResolve(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(noopValidator),
 		}
 
 		fakeRepo.GetStateReturnsOnCall(0, nil, errors.New("get-input-state-failed"))
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ErrHalt))
 		gt.Expect(err).To(MatchError(MatchRegexp("state resolution for transaction [[:xdigit:]]+ failed: halt processing: get-input-state-failed")), err.Error())
 		input, _ := fakeRepo.GetStateArgsForCall(0)
@@ -235,14 +252,14 @@ func TestSubmitTxResolve(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(noopValidator),
 		}
 
 		fakeRepo.GetStateReturnsOnCall(1, nil, &store.NotFoundError{Err: errors.New("missing-reference-state")})
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ContainSubstring("missing-reference-state")))
 		gt.Expect(store.IsNotFound(err)).To(BeTrue())
 		ref, _ := fakeRepo.GetStateArgsForCall(1)
@@ -253,14 +270,14 @@ func TestSubmitTxResolve(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(noopValidator),
 		}
 
 		fakeRepo.GetStateReturnsOnCall(1, nil, errors.New("get-reference-state-failed"))
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ErrHalt))
 		gt.Expect(err).To(MatchError(MatchRegexp("state resolution for transaction [[:xdigit:]]+ failed: halt processing: get-reference-state-failed")), err.Error())
 		ref, _ := fakeRepo.GetStateArgsForCall(1)
@@ -268,11 +285,11 @@ func TestSubmitTxResolve(t *testing.T) {
 	})
 }
 
-func TestSubmitPostValidation(t *testing.T) {
+func TestCommitPostValidation(t *testing.T) {
 	var (
 		fakeRepo *fake.Repository
 		tx       transaction.Transaction
-		signed   *transaction.Signed
+		receipt  *transaction.Receipt
 	)
 
 	noopValidator := func(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
@@ -296,8 +313,9 @@ func TestSubmitPostValidation(t *testing.T) {
 			Tx:      &txv1.Transaction{},
 			Encoded: []byte("encoded-transaction"),
 		}
-		signed = &transaction.Signed{
-			Transaction: &tx,
+		receipt = &transaction.Receipt{
+			ID:   []byte("tx-receipt"),
+			TxID: tx.ID,
 			Signatures: []*transaction.Signature{{
 				PublicKey: []byte("public-key"),
 				Signature: []byte("signature"),
@@ -305,7 +323,20 @@ func TestSubmitPostValidation(t *testing.T) {
 		}
 
 		fakeRepo = &fake.Repository{}
-		fakeRepo.GetTransactionReturns(nil, &store.NotFoundError{Err: errors.New("missing-transaction-error")})
+		fakeRepo.GetTransactionStub = func(txid transaction.ID) (*transaction.Transaction, error) {
+			if !bytes.Equal(txid, tx.ID) {
+				return nil, &store.NotFoundError{Err: errors.New("missing-transaction-error")}
+			}
+
+			return &tx, nil
+		}
+		fakeRepo.GetReceiptStub = func(id []byte) (*transaction.Receipt, error) {
+			if !bytes.Equal(id, receipt.ID) {
+				return nil, &store.NotFoundError{Err: errors.Errorf("missing-receipt %x", receipt.ID)}
+			}
+
+			return receipt, nil
+		}
 		fakeRepo.GetStateStub = func(sid transaction.StateID, consumed bool) (*transaction.State, error) {
 			switch {
 			case sid.Equals(*newStateID("txid-1", 1)):
@@ -322,16 +353,21 @@ func TestSubmitPostValidation(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(noopValidator),
 		}
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).NotTo(HaveOccurred())
 
-		gt.Expect(fakeRepo.PutTransactionCallCount()).To(Equal(1))
-		gt.Expect(fakeRepo.PutTransactionArgsForCall(0)).To(Equal(&tx))
+		gt.Expect(fakeRepo.PutCommittedCallCount()).To(Equal(1))
+		txid, commit := fakeRepo.PutCommittedArgsForCall(0)
+		gt.Expect(txid).To(Equal(tx.ID))
+		gt.Expect(commit).To(Equal(&transaction.Committed{
+			SeqNo:     0,
+			ReceiptID: []byte("tx-receipt"),
+		}))
 		gt.Expect(fakeRepo.PutStateCallCount()).To(Equal(1))
 		gt.Expect(fakeRepo.PutStateArgsForCall(0)).To(Equal(tx.Outputs[0]))
 		gt.Expect(fakeRepo.ConsumeStateCallCount()).To(Equal(1))
@@ -342,14 +378,14 @@ func TestSubmitPostValidation(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo: fakeRepo,
 			validator: validatorFunc(func(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
 				return &validationv1.ValidateResponse{Valid: false}, nil
 			}),
 		}
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ContainSubstring("validation failed")))
 		gt.Expect(err).NotTo(MatchError(ErrHalt))
 
@@ -362,14 +398,14 @@ func TestSubmitPostValidation(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo: fakeRepo,
 			validator: validatorFunc(func(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
 				return &validationv1.ValidateResponse{Valid: false, ErrorMessage: "texas-toast"}, nil
 			}),
 		}
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ContainSubstring("validation failed: texas-toast")))
 		gt.Expect(err).NotTo(MatchError(ErrHalt))
 
@@ -382,14 +418,14 @@ func TestSubmitPostValidation(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo: fakeRepo,
 			validator: validatorFunc(func(req *validationv1.ValidateRequest) (*validationv1.ValidateResponse, error) {
 				return nil, errors.New("boom!")
 			}),
 		}
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ErrHalt))
 		gt.Expect(err).To(MatchError("validator failed: halt processing: boom!"))
 
@@ -398,22 +434,22 @@ func TestSubmitPostValidation(t *testing.T) {
 		gt.Expect(fakeRepo.ConsumeStateCallCount()).To(Equal(0))
 	})
 
-	t.Run("WhenPutTransactionFails", func(t *testing.T) {
+	t.Run("WhenPutCommittedFails", func(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(noopValidator),
 		}
 
-		fakeRepo.PutTransactionReturns(errors.New("put-transaction-failed"))
+		fakeRepo.PutCommittedReturns(errors.New("put-committed-failed"))
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ErrHalt))
-		gt.Expect(err).To(MatchError(MatchRegexp("storing transaction [[:xdigit:]]+ failed: halt processing: put-transaction-failed")))
+		gt.Expect(err).To(MatchError(MatchRegexp("marking [[:xdigit:]]+ as committed failed: halt processing: put-committed-failed")))
 
-		gt.Expect(fakeRepo.PutTransactionCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.PutCommittedCallCount()).To(Equal(1))
 		gt.Expect(fakeRepo.PutStateCallCount()).To(Equal(0))
 		gt.Expect(fakeRepo.ConsumeStateCallCount()).To(Equal(0))
 	})
@@ -422,18 +458,18 @@ func TestSubmitPostValidation(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(noopValidator),
 		}
 
 		fakeRepo.PutStateReturns(errors.New("put-state-failed"))
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ErrHalt))
 		gt.Expect(err).To(MatchError(MatchRegexp("storing transaction output [[:xdigit:]]+:[[:xdigit:]]+ failed: halt processing: put-state-failed")))
 
-		gt.Expect(fakeRepo.PutTransactionCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.PutCommittedCallCount()).To(Equal(1))
 		gt.Expect(fakeRepo.PutStateCallCount()).To(Equal(1))
 		gt.Expect(fakeRepo.ConsumeStateCallCount()).To(Equal(0))
 	})
@@ -442,18 +478,18 @@ func TestSubmitPostValidation(t *testing.T) {
 		setup(t)
 		gt := NewGomegaWithT(t)
 
-		submitService := &Service{
+		committer := &committer{
 			repo:      fakeRepo,
 			validator: validatorFunc(noopValidator),
 		}
 
 		fakeRepo.ConsumeStateReturns(errors.New("consume-state-failed"))
 
-		err := submitService.Submit(context.Background(), signed)
+		err := committer.commit(receipt.ID)
 		gt.Expect(err).To(MatchError(ErrHalt))
 		gt.Expect(err).To(MatchError(MatchRegexp("consuming transaction state [[:xdigit:]]+:[[:xdigit:]]+ failed: halt processing: consume-state-failed")))
 
-		gt.Expect(fakeRepo.PutTransactionCallCount()).To(Equal(1))
+		gt.Expect(fakeRepo.PutCommittedCallCount()).To(Equal(1))
 		gt.Expect(fakeRepo.PutStateCallCount()).To(Equal(1))
 		gt.Expect(fakeRepo.ConsumeStateCallCount()).To(Equal(1))
 	})

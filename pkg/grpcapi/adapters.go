@@ -20,7 +20,7 @@ func (nma NamespaceMapAdapter) Submitter(namespace string) Submitter {
 		return notFoundSubmitter(namespace)
 	}
 
-	return ns.SubmitService
+	return ns
 }
 
 func (nma NamespaceMapAdapter) Repository(namespace string) Repository {
@@ -29,7 +29,7 @@ func (nma NamespaceMapAdapter) Repository(namespace string) Repository {
 		return notFoundRepository(namespace)
 	}
 
-	return ns.TxRepo
+	return ns.Repo
 }
 
 var errNamespaceNotFound = errors.Errorf("namespace not found")
