@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.16' ]
+        rust-toolchain: [ 'stable' ]
+    name: Go v${{ matrix.go }}, Rust ${{ matrix.rust-toolchain }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 3
+      - name: setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+          toolchain: ${{ matrix.rust-toolchain }}
+      - name: build and test
+        run: make
+      - name: merge forward
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && success() }}
+        env:
+          PROMOTION_KEY: ${{ secrets.PROMOTION_KEY }}
+        run: ci/merge-forward

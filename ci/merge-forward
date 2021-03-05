@@ -3,29 +3,28 @@
 # Copyright IBM Corp. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-if [ ! "$TRAVIS_BRANCH" == "develop" ]; then
+if [ ! "${GITHUB_REF#refs/heads/}" == "develop" ]; then
     exit 0
 fi
 
+commit_sha="${GITHUB_SHA}"
 deploy_key="$(mktemp)"
-repo_dir=$(mktemp -d)
-
 cleanup() {
   rm -f "$deploy_key"
-  rm -rf "$repo_dir"
 }
 trap cleanup EXIT
 
-printf "%s" "$TRAVIS_PROMOTION_KEY" > "$deploy_key"
+printf "%s" "$PROMOTION_KEY" > "$deploy_key"
+unset PROMOTION_KEY
 
-export GIT_COMMITTER_EMAIL="travis@travis-ci.com"
-export GIT_COMMITTER_NAME="Travis CI"
-export GIT_SSH_COMMAND="ssh -i $deploy_key -o IdentitiesOnly=yes"
-
-git clone git@github.com:sykesm/batik "$repo_dir"
-
-cd "$repo_dir"
+git config color.diff always
+git config user.email github-actions@noreply.github.com
+git config user.name github-actions
+git fetch origin main
 git checkout main
-git merge --ff-only "$TRAVIS_COMMIT"
+git merge --ff-only "$commit_sha"
 git show
+
+git config url.git@github.com:.insteadOf https://github.com/
+export GIT_SSH_COMMAND="ssh -i $deploy_key -o IdentitiesOnly=yes"
 git push origin main
